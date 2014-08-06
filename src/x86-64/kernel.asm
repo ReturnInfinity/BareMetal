@@ -140,7 +140,7 @@ ap_process:				; Set the status byte to "Busy" and run the code
 %include "interrupt.asm"
 %include "sysvar.asm"			; Include this last to keep the read/write variables away from the code
 
-times 16384-($-$$) db 0			; Set the compiled kernel binary to at least this size in bytes
+times 10240-($-$$) db 0			; Set the compiled kernel binary to at least this size in bytes
 
 ; =============================================================================
 ; EOF
