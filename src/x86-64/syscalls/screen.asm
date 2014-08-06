@@ -152,7 +152,8 @@ os_output_chars:
 	mov ah, 0x07			; Store the attribute into AH so STOSW can be used later on
 
 os_output_chars_nextchar:
-	jrcxz os_output_chars_done
+	cmp rcx, 0
+	je os_output_chars_done
 	sub rcx, 1
 	lodsb				; Get char from string and store in AL
 	cmp al, 13			; Check if there was a newline character in the string

@@ -81,14 +81,6 @@ os_system_config:
 	je os_system_config_clockcallback_get
 	cmp rdx, 6
 	je os_system_config_clockcallback_set
-	cmp rdx, 20
-	je os_system_config_video_base
-	cmp rdx, 21
-	je os_system_config_video_x
-	cmp rdx, 22
-	je os_system_config_video_y
-	cmp rdx, 23
-	je os_system_config_video_bpp
 	cmp rdx, 30
 	je os_system_config_mac
 	ret
@@ -120,25 +112,6 @@ os_system_config_clockcallback_get:
 
 os_system_config_clockcallback_set:
 	mov qword [os_ClockCallback], rax
-	ret
-
-os_system_config_video_base:
-	mov rax, [os_VideoBase]
-	ret
-
-os_system_config_video_x:
-	xor eax, eax
-	mov ax, [os_VideoX]
-	ret
-
-os_system_config_video_y:
-	xor eax, eax
-	mov ax, [os_VideoY]
-	ret
-
-os_system_config_video_bpp:
-	xor eax, eax
-	mov al, [os_VideoDepth]
 	ret
 
 os_system_config_mac:
