@@ -39,7 +39,7 @@ os_delay_loop:
 os_get_argv:
 	push rsi
 	push rcx
-	mov rsi, os_arg
+	mov rsi, os_args
 	cmp al, 0x00
 	je os_get_argv_end
 	mov cl, al
