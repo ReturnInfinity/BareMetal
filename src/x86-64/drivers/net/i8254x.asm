@@ -104,7 +104,7 @@ os_net_i8254x_reset:
 	mov eax, 0x00000030
 	mov [rsi+I8254X_REG_PBA], eax		; PBA: set the RX buffer size to 48KB (TX buffer is calculated as 64-RX buffer)
 
-	mov eax, 0x08008060
+	mov eax, 0x80008060
 	mov [rsi+I8254X_REG_TXCW], eax		; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Request)
 
 	mov eax, [rsi+I8254X_REG_CTRL]
