@@ -28,12 +28,12 @@ kernel_start:
 	dq os_smp_wait			; 0x0048
 	dq os_mem_allocate		; 0x0050
 	dq os_mem_release		; 0x0058
-	dq os_ethernet_tx		; 0x0060
-	dq os_ethernet_rx		; 0x0068
-	dq os_disk_read
-	dq os_disk_write
-	dq os_system_config		; 0x00B0
-	dq os_system_misc		; 0x00B8
+	dq os_net_tx			; 0x0060
+	dq os_net_rx			; 0x0068
+	dq os_disk_read			; 0x0070
+	dq os_disk_write			; 0x0078
+	dq os_system_config		; 0x0080
+	dq os_system_misc		; 0x0088
 	align 16
 
 start:
