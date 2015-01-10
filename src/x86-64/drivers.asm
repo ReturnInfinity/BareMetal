@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2014 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2015 Return Infinity -- see LICENSE.TXT
 ;
 ; Driver Includes
 ; =============================================================================
@@ -15,6 +15,7 @@ align 16
 %include "drivers/pic.asm"
 
 %include "drivers/storage/ahci.asm"
+; %include "drivers/storage/ide.asm"
 
 %include "drivers/net/rtl8169.asm"
 %include "drivers/net/i8254x.asm"
