@@ -185,7 +185,7 @@ network:
 	pushfq
 
 	cld				; Clear direction flag
-	call os_ethernet_ack_int	; Call the driver function to acknowledge the interrupt internally
+	call os_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 	bt ax, 0			; TX bit set (caused the IRQ?)
 	jc network_tx			; If so then jump past RX section
@@ -196,7 +196,7 @@ network_rx_as_well:
 	mov rdi, os_EthernetBuffer	; Raw packet is copied here
 	push rdi
 	add rdi, 2
-	call os_ethernet_rx_from_interrupt
+	call os_net_rx_from_interrupt
 	pop rdi
 	mov rax, rcx
 	stosw				; Store the size of the packet

@@ -66,7 +66,7 @@ screen_cursor_offset:	equ os_SystemVariables + 32
 os_StackBase:		equ os_SystemVariables + 40
 os_net_transmit:	equ os_SystemVariables + 48
 os_net_poll:		equ os_SystemVariables + 56
-os_net_ack_int:		equ os_SystemVariables + 64
+os_net_ackint:		equ os_SystemVariables + 64
 os_NetIOBaseMem:	equ os_SystemVariables + 72
 os_NetMAC:		equ os_SystemVariables + 80
 os_HPETAddress:		equ os_SystemVariables + 88
@@ -100,7 +100,7 @@ cpuqueuefinish:		equ os_SystemVariables + 516
 os_QueueLen:		equ os_SystemVariables + 518
 os_QueueLock:		equ os_SystemVariables + 520	; Bit 0 clear for unlocked, set for locked.
 os_NetIOAddress:	equ os_SystemVariables + 522
-os_EthernetBusyLock:	equ os_SystemVariables + 524
+os_NetLock:		equ os_SystemVariables + 524
 os_VideoX:		equ os_SystemVariables + 526
 os_VideoY:		equ os_SystemVariables + 528
 os_Screen_Rows:		equ os_SystemVariables + 530

@@ -61,14 +61,14 @@ os_net_tx_maxcheck:
 	cmp rcx, 1522				; Fail if more than 1522 bytes
 	jg os_net_tx_fail
 
-	mov rax, os_net_Lock		; Lock the net so only one send can happen at a time
+	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
 	call os_smp_lock
 
 	add qword [os_net_TXPackets], 1
 	add qword [os_net_TXBytes], rcx
 	call qword [os_net_transmit]
 
-	mov rax, os_net_Lock
+	mov rax, os_NetLock
 	call os_smp_unlock
 
 os_net_tx_fail:
@@ -96,7 +96,7 @@ os_net_rx:
 	cmp byte [os_NetEnabled], 1
 	jne os_net_rx_fail
 
-	mov rsi, os_netBuffer
+	mov rsi, os_EthernetBuffer
 	mov ax, word [rsi]		; Grab the packet length
 	cmp ax, 0			; Anything there?
 	je os_net_rx_fail		; If not, bail out
@@ -123,7 +123,7 @@ os_net_rx_fail:
 ; OUT:	RAX = Type of interrupt trigger
 ;	All other registers preserved
 os_net_ack_int:
-	call qword [os_net_ack_int]
+	call qword [os_net_ackint]
 
 	ret
 ; -----------------------------------------------------------------------------

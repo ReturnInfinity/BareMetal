@@ -115,7 +115,7 @@ os_system_config_clockcallback_set:
 	ret
 
 os_system_config_mac:
-	call os_ethernet_status
+	call os_net_status
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -180,7 +180,7 @@ os_system_misc_delay:
 	ret
 
 os_system_misc_ethernet_status:
-	call os_ethernet_status
+	call os_net_status
 	ret
 
 os_system_misc_mem_get_free:

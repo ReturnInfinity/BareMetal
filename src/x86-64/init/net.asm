@@ -97,7 +97,7 @@ init_net_probe_found_finish:
 	call os_pic_mask_clear
 
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
-	call os_ethernet_ack_int	; Call the driver function to acknowledge the interrupt internally
+	call os_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 	mov cl, 6
 	mov rsi, os_NetMAC
