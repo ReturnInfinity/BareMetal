@@ -9,7 +9,7 @@
 USE64
 ORG 0x0000000000100000
 
-%DEFINE BAREMETAL_VER 'v0.1 (August 5, 2014)', 13, 'Copyright (C) 2008-2014 Return Infinity', 13, 0
+%DEFINE BAREMETAL_VER 'v0.1 (January 26, 2015)', 13, 'Copyright (C) 2008-2015 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 
 kernel_start:
@@ -31,7 +31,7 @@ kernel_start:
 	dq os_net_tx			; 0x0060
 	dq os_net_rx			; 0x0068
 	dq os_disk_read			; 0x0070
-	dq os_disk_write			; 0x0078
+	dq os_disk_write		; 0x0078
 	dq os_system_config		; 0x0080
 	dq os_system_misc		; 0x0088
 	align 16
@@ -91,13 +91,13 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	sti				; Enable interrupts on this core
 
 	; Clear registers. Gives us a clean slate to work with
-	xor rax, rax			; aka r0
-	xor rcx, rcx			; aka r1
-	xor rdx, rdx			; aka r2
-	xor rbx, rbx			; aka r3
-	xor rbp, rbp			; aka r5, We skip RSP (aka r4) as it was previously set
-	xor rsi, rsi			; aka r6
-	xor rdi, rdi			; aka r7
+	xor eax, eax			; aka r0
+	xor ecx, ecx			; aka r1
+	xor edx, edx			; aka r2
+	xor ebx, ebx			; aka r3
+	xor ebp, ebp			; aka r5, We skip RSP (aka r4) as it was previously set
+	xor esi, esi			; aka r6
+	xor edi, edi			; aka r7
 	xor r8, r8
 	xor r9, r9
 	xor r10, r10
