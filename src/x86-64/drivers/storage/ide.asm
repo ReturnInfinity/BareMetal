@@ -5,10 +5,6 @@
 ; IDE Driver
 ; =============================================================================
 
-align 16
-db 'DEBUG: IDE      '
-align 16
-
 
 ; NOTE:	These functions use LBA28. Maximum visible drive size is 128GiB
 ;	LBA48 would be needed to access sectors over 128GiB (up to 128PiB)

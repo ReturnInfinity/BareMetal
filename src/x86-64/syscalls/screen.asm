@@ -5,10 +5,6 @@
 ; Screen Output Functions
 ; =============================================================================
 
-align 16
-db 'DEBUG: SCREEN   '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 ; os_inc_cursor -- Increment the cursor by one, scroll if needed
@@ -85,12 +81,24 @@ os_print_newline_done:
 ;  IN:	RSI = message location (zero-terminated string)
 ; OUT:	All registers preserved
 os_output:
+	push rdi
 	push rcx
+	push rax
 
-	call os_string_length
+	xor ecx, ecx
+	xor eax, eax
+	mov rdi, rsi
+	not rcx
+	cld
+	repne scasb			; compare byte at RDI to value in AL
+	not rcx
+	dec rcx
+
 	call os_output_chars
 
+	pop rax
 	pop rcx
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 

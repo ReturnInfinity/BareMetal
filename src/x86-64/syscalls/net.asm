@@ -5,10 +5,6 @@
 ; Network Functions
 ; =============================================================================
 
-align 16
-db 'DEBUG: NETWORK  '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 ; os_net_status -- Check if network access is available

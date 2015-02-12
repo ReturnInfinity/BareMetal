@@ -5,10 +5,6 @@
 ; PCI Functions. http://wiki.osdev.org/PCI
 ; =============================================================================
 
-align 16
-db 'DEBUG: PCI      '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 ; os_pci_read_reg -- Read a register from a PCI device

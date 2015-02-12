@@ -51,11 +51,11 @@ Assembly Example:
 	...
 	Message: db 'This is a test', 0
 
-C/C++ Example:
+C Example:
 
 	char Message[] = "This is a test";
 	b_output(Message);
-	...
+	
 	b_output("This is a another test");
 
 
@@ -77,9 +77,12 @@ Assembly Example:
 	...
 	Message: db 'This is a test', 0
 
-C/C++ Example:
+C Example:
 
 	b_output_chars("This is a test", 4);	// Output 'This'
+	
+	char Message[] = "Hello, world!";
+	b_output_chars(Message, 5);				// Output 'Hello'
 
 
 ## Input
@@ -104,7 +107,7 @@ Assembly Example:
 	...
 	Input: db 0 times 21
 
-C/C++ Example:
+C Example:
 
 	char Input[21];
 	b_input(Input, 20);
@@ -127,7 +130,7 @@ Assembly Example:
 	...
 	KeyChar: db 0
 
-C/C++ Example:
+C Example:
 
 	char KeyChar;
 	KeyChar = b_input_key();

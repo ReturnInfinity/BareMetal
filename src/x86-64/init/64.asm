@@ -5,10 +5,6 @@
 ; INIT_64
 ; =============================================================================
 
-align 16
-db 'DEBUG: INIT_64  '
-align 16
-
 
 init_64:
 	; Make sure that memory range 0x110000 - 0x200000 is cleared
@@ -22,31 +18,6 @@ init_64:
 	mov word [os_Screen_Cursor_Row], 0
 	mov word [os_Screen_Cursor_Col], 0
 	call os_screen_clear		; Clear screen and display cursor
-
-	; Display CPU information
-	mov ax, [os_Screen_Rows]
-	sub ax, 5
-	mov word [os_Screen_Cursor_Row], ax
-	mov word [os_Screen_Cursor_Col], 0
-	mov rsi, cpumsg
-	call os_output
-	xor eax, eax
-	mov rsi, 0x5012
-	lodsw
-	mov rdi, os_temp_string
-	mov rsi, rdi
-	call os_int_to_string
-	call os_output
-	mov rsi, coresmsg
-	call os_output
-	mov rsi, 0x5010
-	lodsw
-	mov rdi, os_temp_string
-	mov rsi, rdi
-	call os_int_to_string
-	call os_output
-	mov rsi, mhzmsg
-	call os_output
 
 	xor rdi, rdi 			; Create the 64-bit IDT (at linear address 0x0000000000000000) as defined by Pure64
 
@@ -206,17 +177,6 @@ skip_ap:
 
 no_more_aps:
 
-	; Display memory information
-	mov rsi, memmsg
-	call os_output
-	mov eax, [os_MemAmount]		; In MiB's
-	mov rdi, os_temp_string
-	mov rsi, rdi
-	call os_int_to_string
-	call os_output
-	mov rsi, mibmsg
-	call os_output
-
 	; Enable specific interrupts
 	mov al, 0x01			; Keyboard IRQ
 	call os_pic_mask_clear
@@ -263,7 +223,6 @@ init_memory_map:			; Build the OS memory table
 	pop rdi
 	mov al, 2
 	stosb				; Mark the first 2 MiB as in use (by Kernel and system buffers)
-;	stosb				; As well as the second 2 MiB (by loaded application)
 	; The CLI should take care of the Application memory
 
 	; Allocate memory for CPU stacks (2 MiB's for each core)

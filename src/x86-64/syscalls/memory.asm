@@ -5,10 +5,6 @@
 ; Memory functions
 ; =============================================================================
 
-align 16
-db 'DEBUG: MEMORY   '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 ; os_mem_allocate -- Allocates the requested number of 2 MiB pages

@@ -5,10 +5,6 @@
 ; System Call Section -- Accessible to user programs
 ; =============================================================================
 
-align 16
-db 'DEBUG: SYSCALLS '
-align 16
-
 
 %include "syscalls/debug.asm"
 %include "syscalls/disk.asm"
@@ -18,7 +14,6 @@ align 16
 %include "syscalls/net.asm"
 %include "syscalls/screen.asm"
 %include "syscalls/smp.asm"
-%include "syscalls/string.asm"
 
 
 ; =============================================================================

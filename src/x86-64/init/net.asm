@@ -5,15 +5,8 @@
 ; INIT_NET
 ; =============================================================================
 
-align 16
-db 'DEBUG: INIT_NET '
-align 16
-
 
 init_net:
-	mov rsi, networkmsg
-	call os_output
-
 	; Search for a supported NIC
 	xor ebx, ebx			; Clear the Bus number
 	xor ecx, ecx			; Clear the Device/Slot number
@@ -99,23 +92,8 @@ init_net_probe_found_finish:
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
 	call os_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
-	mov cl, 6
-	mov rsi, os_NetMAC
-nextbyte:
-	lodsb
-	call os_debug_dump_al
-	sub cl, 1
-	cmp cl, 0
-	jne nextbyte
-	mov rsi, closebracketmsg
-	call os_output
-	ret
-	
 init_net_probe_not_found:
-	mov rsi, namsg
-	call os_output
-	mov rsi, closebracketmsg
-	call os_output
+
 	ret
 
 

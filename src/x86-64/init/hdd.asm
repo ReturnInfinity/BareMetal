@@ -5,10 +5,6 @@
 ; INIT HDD
 ; =============================================================================
 
-align 16
-db 'DEBUG: INIT_HDD '
-align 16
-
 
 init_hdd:
 	call init_ahci

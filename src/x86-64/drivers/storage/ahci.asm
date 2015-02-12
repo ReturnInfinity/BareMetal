@@ -5,16 +5,9 @@
 ; AHCI Driver
 ; =============================================================================
 
-align 16
-db 'DEBUG: AHCI     '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 init_ahci:
-	mov rsi, diskmsg
-	call os_output
-
 ; Probe for an AHCI hard drive controller
 	xor ebx, ebx			; Clear the Bus number
 	xor ecx, ecx			; Clear the Device/Slot number
@@ -96,23 +89,12 @@ founddrive:
 	shr rax, 11			; rax = rax * 512 / 1048576	MiB
 ;	shr rax, 21			; rax = rax * 512 / 1073741824	GiB
 	mov [hd1_size], eax		; in mebibytes (MiB)
-	mov rdi, os_temp_string
-	mov rsi, rdi
-	call os_int_to_string
-	call os_output
-	mov rsi, mibmsg
-	call os_output
 
 	; Found a bootable drive
 	mov byte [os_DiskEnabled], 0x01
 
-	ret
-
 init_ahci_err_noahci:
 hdd_setup_err_nodisk:
-	mov rsi, namsg
-	call os_output
-
 	ret
 ; -----------------------------------------------------------------------------
 

@@ -9,7 +9,11 @@
 USE64
 ORG 0x0000000000100000
 
-%DEFINE BAREMETAL_VER 'v0.1 (August 5, 2014)', 13, 'Copyright (C) 2008-2014 Return Infinity', 13, 0
+<<<<<<< HEAD
+%DEFINE BAREMETAL_VER 'v1.0.0 (January 26, 2015)', 13, 'Copyright (C) 2008-2015 Return Infinity', 13, 0
+=======
+%DEFINE BAREMETAL_VER 'v0.1 (January 26, 2015)', 13, 'Copyright (C) 2008-2015 Return Infinity', 13, 0
+>>>>>>> FETCH_HEAD
 %DEFINE BAREMETAL_API_VER 1
 
 kernel_start:
@@ -31,7 +35,7 @@ kernel_start:
 	dq os_net_tx			; 0x0060
 	dq os_net_rx			; 0x0068
 	dq os_disk_read			; 0x0070
-	dq os_disk_write			; 0x0078
+	dq os_disk_write		; 0x0078
 	dq os_system_config		; 0x0080
 	dq os_system_misc		; 0x0088
 	align 16
@@ -43,19 +47,11 @@ start:
 	call init_net			; Initialize the network
 
 	mov ax, [os_Screen_Rows]	; Display the "ready" message and reset cursor to bottom left
-	push ax
-	sub ax, 3
+	sub ax, 1
 	mov word [os_Screen_Cursor_Row], ax
 	mov word [os_Screen_Cursor_Col], 0
 	mov rsi, readymsg
 	call os_output
-	pop ax
-	sub ax, 1
-	mov word [os_Screen_Cursor_Row], ax
-	mov word [os_Screen_Cursor_Col], 0
-
-;	mov rax, os_command_line	; Start the CLI
-;	call os_smp_enqueue
 
 	; Fall through to ap_clear as align fills the space with No-Ops
 	; At this point the BSP is just like one of the AP's
@@ -91,13 +87,13 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	sti				; Enable interrupts on this core
 
 	; Clear registers. Gives us a clean slate to work with
-	xor rax, rax			; aka r0
-	xor rcx, rcx			; aka r1
-	xor rdx, rdx			; aka r2
-	xor rbx, rbx			; aka r3
-	xor rbp, rbp			; aka r5, We skip RSP (aka r4) as it was previously set
-	xor rsi, rsi			; aka r6
-	xor rdi, rdi			; aka r7
+	xor eax, eax			; aka r0
+	xor ecx, ecx			; aka r1
+	xor edx, edx			; aka r2
+	xor ebx, ebx			; aka r3
+	xor ebp, ebp			; aka r5, We skip RSP (aka r4) as it was previously set
+	xor esi, esi			; aka r6
+	xor edi, edi			; aka r7
 	xor r8, r8
 	xor r9, r9
 	xor r10, r10

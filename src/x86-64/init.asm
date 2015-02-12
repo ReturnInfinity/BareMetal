@@ -5,10 +5,6 @@
 ; Initialization Includes
 ; =============================================================================
 
-align 16
-db 'DEBUG: INIT     '
-align 16
-
 
 %include "init/64.asm"
 %include "init/hdd.asm"

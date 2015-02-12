@@ -5,10 +5,6 @@
 ; Driver Includes
 ; =============================================================================
 
-align 16
-db 'DEBUG: DRIVERS  '
-align 16
-
 
 %include "drivers/pci.asm"
 

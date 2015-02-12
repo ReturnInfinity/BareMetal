@@ -5,25 +5,29 @@
 ; Disk Block Storage Functions
 ; =============================================================================
 
-align 16
-db 'DEBUG: DISK     '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 ; os_disk_read -- 
-; IN:	
+; IN:	RAX = Starting block
+;	RCX = Number of blocks
+;	RDX = Disk 
+;	RDI = Memory location to store data
 ; OUT:	
 os_disk_read:
+
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
 ; os_disk_write -- 
-; IN:	
+; IN:	RAX = Starting block
+;	RCX = Number of blocks
+;	RDX = Disk 
+;	RSI = Memory location of data
 ; OUT:	
 os_disk_write:
+
 	ret
 ; -----------------------------------------------------------------------------
 

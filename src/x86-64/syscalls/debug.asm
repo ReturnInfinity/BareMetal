@@ -5,10 +5,6 @@
 ; Debug functions
 ; =============================================================================
 
-align 16
-db 'DEBUG: DEBUG    '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 ; os_debug_dump_reg -- Dump the values on the registers to the screen (For debug purposes)

@@ -5,10 +5,6 @@
 ; Interrupts
 ; =============================================================================
 
-align 16
-db 'DEBUG: INTERRUPT'
-align 16
-
 
 ; -----------------------------------------------------------------------------
 ; Default exception handler
@@ -438,17 +434,14 @@ exception_gate_main:
 	mov rsi, int_string00
 	call os_output
 	call os_smp_get_id		; Get the local CPU ID and print it
-	mov rdi, os_temp_string
-	mov rsi, rdi
-	call os_int_to_string
-	call os_output
+	call os_debug_dump_ax
 	mov rsi, int_string01
 	call os_output
 	mov rsi, exc_string00
 	pop rax
 	and rax, 0x00000000000000FF	; Clear out everything in RAX except for AL
 	push rax
-	mov bl, 32			; Length of each message
+	mov bl, 8			; Length of each message
 	mul bl				; AX = AL x BL
 	add rsi, rax			; Use the value in RAX as an offset to get to the right message
 	pop rax
@@ -491,30 +484,30 @@ next_stack:
 	jmp ap_clear			; jump to AP clear code
 
 
-int_string00 db 'BareMetal OS - CPU ', 0
+int_string00 db 'BareMetal OS - CPU 0x', 0
 int_string01 db ' - Interrupt ', 0
 ; Strings for the error messages
 exc_string db 'Unknown Fatal Exception!', 0
-exc_string00 db '00 - Divide Error (#DE)        ', 0
-exc_string01 db '01 - Debug (#DB)               ', 0
-exc_string02 db '02 - NMI Interrupt             ', 0
-exc_string03 db '03 - Breakpoint (#BP)          ', 0
-exc_string04 db '04 - Overflow (#OF)            ', 0
-exc_string05 db '05 - BOUND Range Exceeded (#BR)', 0
-exc_string06 db '06 - Invalid Opcode (#UD)      ', 0
-exc_string07 db '07 - Device Not Available (#NM)', 0
-exc_string08 db '08 - Double Fault (#DF)        ', 0
-exc_string09 db '09 - Coprocessor Segment Over  ', 0	; No longer generated on new CPU's
-exc_string10 db '10 - Invalid TSS (#TS)         ', 0
-exc_string11 db '11 - Segment Not Present (#NP) ', 0
-exc_string12 db '12 - Stack Fault (#SS)         ', 0
-exc_string13 db '13 - General Protection (#GP)  ', 0
-exc_string14 db '14 - Page-Fault (#PF)          ', 0
-exc_string15 db '15 - Undefined                 ', 0
-exc_string16 db '16 - x87 FPU Error (#MF)       ', 0
-exc_string17 db '17 - Alignment Check (#AC)     ', 0
-exc_string18 db '18 - Machine-Check (#MC)       ', 0
-exc_string19 db '19 - SIMD Floating-Point (#XM) ', 0
+exc_string00 db '00 (DE)', 0
+exc_string01 db '01 (DB)', 0
+exc_string02 db '02     ', 0
+exc_string03 db '03 (BP)', 0
+exc_string04 db '04 (OF)', 0
+exc_string05 db '05 (BR)', 0
+exc_string06 db '06 (UD)', 0
+exc_string07 db '07 (NM)', 0
+exc_string08 db '08 (DF)', 0
+exc_string09 db '09     ', 0	; No longer generated on new CPU's
+exc_string10 db '10 (TS)', 0
+exc_string11 db '11 (NP)', 0
+exc_string12 db '12 (SS)', 0
+exc_string13 db '13 (GP)', 0
+exc_string14 db '14 (PF)', 0
+exc_string15 db '15     ', 0
+exc_string16 db '16 (MF)', 0
+exc_string17 db '17 (AC)', 0
+exc_string18 db '18 (MC)', 0
+exc_string19 db '19 (XM)', 0
 rip_string db ' IP:', 0
 stack_string db ' ST:', 0
 
