@@ -187,7 +187,7 @@ os_output_chars_newline_skip_LF:
 os_output_chars_newline_skip_LF_nosub:
 	add rsi, 1
 	call os_print_newline
-	jmp os_output_chars_nextchar	
+	jmp os_output_chars_nextchar
 
 os_output_chars_tab:
 	push rcx
@@ -232,10 +232,11 @@ os_screen_scroll:
 	xor ecx, ecx
 
 	mov rsi, os_screen 		; Start of video text memory for row 2
-	add rsi, 0xA0	
+	add rsi, 0xA0
 	mov rdi, os_screen 		; Start of video text memory for row 1
 	mov cx, 1920			; 80 x 24
 	rep movsw			; Copy the Character and Attribute
+
 	; Clear the last line in video memory
 	mov ax, 0x0720			; 0x07 for black background/white foreground, 0x20 for space (black) character
 	mov cx, 80

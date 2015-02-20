@@ -66,7 +66,7 @@ founddrive:
 	mov [ahci_port], ecx
 	mov rdi, rsi
 	add rdi, 0x100			; Offset to port 0
-	push rcx				; Save port number
+	push rcx			; Save port number
 	shl rcx, 7			; Quick multiply by 0x80
 	add rdi, rcx
 	pop rcx				; Restore port number
@@ -113,7 +113,7 @@ iddrive:
 	shl rcx, 7			; Quick multiply by 0x80
 	add rcx, 0x100			; Offset to port 0
 
-	push rdi				; Save the destination memory address
+	push rdi			; Save the destination memory address
 
 	mov rsi, [ahci_base]
 
@@ -187,7 +187,7 @@ iddrive_poll:
 	pop rcx
 	pop rsi
 	pop rdi
-ret
+	ret
 ; -----------------------------------------------------------------------------
 
 
@@ -209,9 +209,9 @@ readsectors:
 	push rcx
 	push rax
 
-	push rcx				; Save the sector count
-	push rdi				; Save the destination memory address
-	push rax				; Save the block number
+	push rcx			; Save the sector count
+	push rdi			; Save the destination memory address
+	push rax			; Save the block number
 	push rax
 
 	shl rdx, 7			; Quick multiply by 0x80
@@ -306,7 +306,7 @@ readsectors_poll:
 	add rdi, rbx
 	pop rbx
 	pop rdx
-ret
+	ret
 ; -----------------------------------------------------------------------------
 
 
@@ -328,9 +328,9 @@ writesectors:
 	push rcx
 	push rax
 
-	push rcx				; Save the sector count
-	push rsi				; Save the source memory address
-	push rax				; Save the block number
+	push rcx			; Save the sector count
+	push rsi			; Save the source memory address
+	push rax			; Save the block number
 	push rax
 
 	shl rdx, 7			; Quick multiply by 0x80
@@ -426,7 +426,7 @@ writesectors_poll:
 	add rdi, rbx
 	pop rbx
 	pop rdx
-ret
+	ret
 ; -----------------------------------------------------------------------------
 
 
