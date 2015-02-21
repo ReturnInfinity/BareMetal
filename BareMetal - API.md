@@ -163,6 +163,7 @@ Wait until all other CPU Cores are finished processing
 
 ## Memory
 
+Memory is allocated in 2MiB pages.
 
 ### b\_mem\_allocate
 
