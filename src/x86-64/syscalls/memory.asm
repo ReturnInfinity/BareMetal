@@ -25,7 +25,7 @@ os_mem_allocate:
 	xor rax, rax
 	mov rsi, os_MemoryMap		; First available memory block
 	mov eax, [os_MemAmount]		; Total memory in MiB from a double-word
-	mov rdx, rsi			; Keep os_MemoryMap unmodified for later in RDX					
+	mov rdx, rsi			; Keep os_MemoryMap unmodified for later in RDX
 	shr eax, 1			; Divide actual memory by 2
 
 	sub rsi, 1
@@ -52,8 +52,8 @@ os_mem_allocate_mark:			; We have a suitable free series of pages. Allocate them
 	xor rdi, rsi			; We swap rdi and rsi to keep rdi contents.
 	xor rsi, rdi
 	xor rdi, rsi
-	
-	; Instructions are purposefully swapped at some places here to avoid 
+
+	; Instructions are purposefully swapped at some places here to avoid
 	; direct dependencies line after line.
 	push rcx			; Keep RCX as is for the 'rep stosb' to come
 	add rdi, 1
@@ -133,26 +133,6 @@ os_mem_get_free_end:
 	pop rax
 	pop rbx
 	pop rsi
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; os_mem_copy -- Copy a number of bytes
-;  IN:	RSI = Source address
-;	RDI = Destination address
-;	RCX = Number of bytes to copy
-; OUT:	Nothing, all registers preserved
-os_mem_copy:
-	push rdi
-	push rsi
-	push rcx
-
-	rep movsb			; Optimize this!
-
-	pop rcx
-	pop rsi
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
