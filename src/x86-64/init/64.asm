@@ -7,19 +7,21 @@
 
 
 init_64:
-	; Make sure that memory range 0x110000 - 0x200000 is cleared
+	; Clear system variables area
 	mov rdi, os_SystemVariables
 	mov rcx, 122880            ; Clear 960 KiB
 	xor rax, rax
 	rep stosq                  ; Store rax to [rdi], rcx - 1, rdi + 8, if rcx > 0 then do it again
 
+	; Set screen variables and clear screen
 	mov word [os_Screen_Rows], 25
 	mov word [os_Screen_Cols], 80
 	mov word [os_Screen_Cursor_Row], 0
 	mov word [os_Screen_Cursor_Col], 0
-	call os_screen_clear		; Clear screen and display cursor
+	call os_screen_clear
 
-	xor rdi, rdi 			; Create the 64-bit IDT (at linear address 0x0000000000000000) as defined by Pure64
+	; Create the 64-bit IDT (at linear address 0x0000000000000000) as defined by Pure64
+	xor rdi, rdi
 
 	; Create exception gate stubs (Pure64 has already set the correct gate markers)
 	mov rcx, 32
@@ -130,10 +132,10 @@ nexttritone:
 	lodsb
 	out dx, al
 
+	; Grab data from Pure64's infomap
 	xor eax, eax
 	xor ebx, ebx
 	xor ecx, ecx
-	; Grab data from Pure64's infomap
 	mov rsi, 0x5008
 	lodsd				; Load the BSP ID
 	mov ebx, eax			; Save it to EBX
@@ -145,15 +147,12 @@ nexttritone:
 	mov [os_LocalAPICAddress], rax
 	lodsq
 	mov [os_IOAPICAddress], rax
-
 	mov rsi, 0x5012
 	lodsw
 	mov [os_NumCores], ax
-
 	mov rsi, 0x5020
 	lodsd
 	mov [os_MemAmount], eax		; In MiB's
-
 	mov rsi, 0x5040
 	lodsq
 	mov [os_HPETAddress], rax
@@ -174,7 +173,6 @@ next_ap:
 skip_ap:
 	sub cx, 1
 	jmp next_ap
-
 no_more_aps:
 
 	; Enable specific interrupts
