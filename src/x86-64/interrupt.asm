@@ -8,6 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Default exception handler
+align 16
 exception_gate:
 	mov rsi, int_string00
 	call os_output
