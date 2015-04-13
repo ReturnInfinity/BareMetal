@@ -6,60 +6,69 @@
 ; =============================================================================
 
 
+; NOTE: BareMetal uses 4096 byte sectors.
+
+
 ; -----------------------------------------------------------------------------
-; os_disk_read --
+; os_disk_read -- Read sectors from the disk
 ; IN:	RAX = Starting sector
 ;	RCX = Number of sectors
 ;	RDX = Disk
 ;	RDI = Memory location to store data
-; OUT:
+; OUT:	Nothing, all registers preserved
 os_disk_read:
+	push rdi
+	push rcx
+	push rax
+
 	cmp rcx, 0
 	je os_disk_read_done		; Bail out if instructed to read nothing
+	shl rax, 8			; Convert to 512B starting sector
 
-	; Calculate the starting sector
-	shl rax, 12			; Multiply block start count by 4096 to get sector start count
-
-	; Calculate sectors to read
-	shl rcx, 12			; Multiply block count by 4096 to get number of sectors to read
-	mov rbx, rcx
-
-os_disk_read_loop:
-	mov rcx, 4096			; Read 2MiB at a time (4096 512-byte sectors = 2MiB)
-	call readsectors
-	sub rbx, 4096
+os_disk_read_loop:			; Read one sector at a time
+	push rcx
+	mov rcx, 8			; 8 512B sectors = 1 4K sector
+	call readsectors		; Driver deals with 512B sectors
+	pop rcx
+	sub rcx, 1
 	jnz os_disk_read_loop
 
 os_disk_read_done:
+	pop rax
+	pop rcx
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; os_disk_write --
+; os_disk_write -- Write sectors to the disk
 ; IN:	RAX = Starting sector
 ;	RCX = Number of sector
 ;	RDX = Disk
 ;	RSI = Memory location of data
-; OUT:
+; OUT:	Nothing, all registers preserved
 os_disk_write:
+	push rsi
+	push rcx
+	push rax
+
 	cmp rcx, 0
 	je os_disk_write_done		; Bail out if instructed to write nothing
+	shl rax, 8			; Convert to 512B starting sector
 
-	; Calculate the starting sector
-	shl rax, 12			; Multiply block start count by 4096 to get sector start count
-
-	; Calculate sectors to write
-	shl rcx, 12			; Multiply block count by 4096 to get number of sectors to write
-	mov rbx, rcx
-
-os_disk_write_loop:
-	mov rcx, 4096			; Write 2MiB at a time (4096 512-byte sectors = 2MiB)
-	call writesectors
-	sub rbx, 4096
+os_disk_write_loop:			; Write one sector at a time
+	push rcx
+	mov rcx, 8			; 8 512B sectors = 1 4K sector
+	call writesectors		; Driver deals with 512B sectors
+	pop rcx
+	sub rcx, 1
 	jnz os_disk_write_loop
 
 os_disk_write_done:
+	pop rax
+	pop rcx
+	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
