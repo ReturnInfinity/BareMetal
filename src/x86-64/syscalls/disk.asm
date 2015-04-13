@@ -8,8 +8,8 @@
 
 ; -----------------------------------------------------------------------------
 ; os_disk_read --
-; IN:	RAX = Starting block
-;	RCX = Number of blocks
+; IN:	RAX = Starting sector
+;	RCX = Number of sectors
 ;	RDX = Disk
 ;	RDI = Memory location to store data
 ; OUT:
@@ -37,8 +37,8 @@ os_disk_read_done:
 
 ; -----------------------------------------------------------------------------
 ; os_disk_write --
-; IN:	RAX = Starting block
-;	RCX = Number of blocks
+; IN:	RAX = Starting sector
+;	RCX = Number of sector
 ;	RDX = Disk
 ;	RSI = Memory location of data
 ; OUT:

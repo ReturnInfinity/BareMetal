@@ -140,25 +140,77 @@ C Example:
 
 ## SMP
 
+BareMetal uses a queue for tasks. Tasks are automatically pulled out of the queue by available CPU cores.
 
 ### b\_smp\_enqueue
 
-Add a workload to the processing queue
+Add a workload to the processing queue.
 
+Assembly Registers:
+
+	 IN:	RAX = Address of code to execute
+			RSI = Variable
+	OUT:	Nothing
+
+Assembly Example:
+
+		mov rax, ap_code	; Our code to run on an available core
+		xor rsi, rsi		; Clear RSI as there is no argument
+		call [b_smp_enqueue]
+		ret
+		
+	ap_code:
+		...
+		ret
+
+C Example:
+
+	
 
 ### b\_smp\_dequeue
 
-Dequeue a workload from the processing queue
+Dequeue a workload from the processing queue.
+
+Assembly Registers:
+
+	 IN:	Nothing
+	OUT:	RAX = Address of code to execute (Set to 0 if queue is empty)
+			RDI = Variable
+
+Assembly Example:
+
+
+C Example:
 
 
 ### b\_smp\_run
 
-Call the code address stored in RAX
+Call the code address stored in RAX.
+
+Assembly Registers:
+
+	 IN:	RAX = Address of code to execute
+	OUT:	Nothing
+
+Assembly Example:
+
+
+C Example:
 
 
 ### b\_smp\_wait
 
-Wait until all other CPU Cores are finished processing
+Wait until all other CPU Cores are finished processing.
+
+Assembly Registers:
+
+	 IN:	Nothing
+	OUT:	Nothing. All registers preserved.
+
+Assembly Example:
+
+
+C Example:
 
 
 ## Memory
@@ -250,31 +302,33 @@ Notes: BareMetal OS does not keep a buffer of received packets. This means that 
 
 ## Disk
 
-BareMetal uses 4096 byte sectors for all disk access.
+BareMetal uses 4096 byte sectors for all disk access. Disk sectors start at 0.
 
 ### b\_disk\_read
 
-Read a number of bytes from disk to memory
+Read a number of sectors from disk to memory
 
 Assembly Registers:
 
-	 IN:	RCX = Number of bytes to read
-			RSI = Starting sector
+	 IN:	RAX = Starting sector #
+	 		RCX = Number of sectors to read
+	 		RDX = Disk #
 			RDI = Destination memory address
-	OUT:	RCX = Number of bytes read
+	OUT:	RCX = Number of sectors read
 			All other registers preserved
 
 
 ### b\_disk\_write
 
-Write a number of bytes from memory to disk
+Write a number of sectors from memory to disk
 
 Assembly Registers:
 
-	 IN:	RCX = Number of bytes to write
+	 IN:	RAX = Starting sector #
+	 		RCX = Number of sectors to write
+	 		RDX = Disk #
 			RSI = Source memory address
-			RDI = Starting sector
-	OUT:	RCX = Number of bytes written
+	OUT:	RCX = Number of sectors written
 			All other registers preserved
 
 
