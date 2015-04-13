@@ -4,7 +4,7 @@ Version 1 - January 9, 2015
 
 ### Notes
 
-BareMetal on x86-64 abides by the [System V AMD64 ABI](www.x86-64.org/documentation/abi.pdf). Therefore, register parameters are passed via RDI, RSI, RDX, RCX, R8, R9.
+This document details the API calls built into the BareMetal exokernel.
 
 ### Contents
 
@@ -31,6 +31,7 @@ BareMetal on x86-64 abides by the [System V AMD64 ABI](www.x86-64.org/documentat
 7. Misc
 	- b\_system\_config
 	- b\_system\_misc
+
 
 ## Output
 
@@ -317,6 +318,14 @@ Assembly Registers:
 	OUT:	RCX = Number of sectors read
 			All other registers preserved
 
+Assembly Example:
+
+	mov rax, 0		; Read sector 0
+	mov rcx, 1		; Read one sector
+	mov rdx, 0		; Read from Disk 0
+	mov rdi, diskbuffer	; Read disk to this memory address
+	call b_disk_read
+
 
 ### b\_disk\_write
 
@@ -330,6 +339,14 @@ Assembly Registers:
 			RSI = Source memory address
 	OUT:	RCX = Number of sectors written
 			All other registers preserved
+
+Assembly Example:
+
+	mov rax, 0		; Write to sector 0
+	mov rcx, 1		; Write one sector
+	mov rdx, 0		; Write to Disk 0
+	mov rsi, diskbuffer	; Write the contents from this memory address to disk
+	call b_disk_write
 
 
 ## Misc
