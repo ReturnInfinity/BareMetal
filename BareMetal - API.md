@@ -1,6 +1,6 @@
 # BareMetal x86-64 API #
 
-Version 1 - January 9, 2015
+Version 1 - June 19, 2015
 
 ### Notes
 
@@ -38,7 +38,7 @@ This document details the API calls built into the BareMetal exokernel.
 
 ### b\_output
 
-Output text to the screen or via serial depending on configuration (The string must be null-terminated - also known as ASCIIZ).
+Output text to the screen or via serial. The string must be null-terminated - also known as ASCIIZ.
 
 Assembly Registers:
 
@@ -62,7 +62,7 @@ C Example:
 
 ### b\_output\_chars
 
-Output a number of characters to the screen or via serial depending on configuration.
+Output a number of characters to the screen or via serial.
 
 Assembly Registers:
 
@@ -91,7 +91,7 @@ C Example:
 
 ### b\_input
 
-Accept a number of keys from the keyboard or via serial depending on configuration. The resulting string will automatically be null-terminated.
+Accept a number of keys from the keyboard or via serial. The resulting string will automatically be null-terminated.
 
 Assembly Registers:
 
@@ -116,7 +116,7 @@ C Example:
 
 ### b\_input\_key
 
-Scans for input from keyboard or serial depending on configuration.
+Scans for input from keyboard or serial.
 
 Assembly Registers:
 
@@ -265,12 +265,14 @@ Assembly Registers:
 
 	 IN:	RSI = memory location of packet
 			RCX = length of packet
+			RDX = Interface ID
 	OUT:	All registers preserved
 
 Assembly Example:
 
 	mov rsi, Packet
 	mov rcx, 1500
+	mod rdx, 0
 	call b_net_tx
 	...
 	Packet:
@@ -289,11 +291,13 @@ Receive data via Ethernet
 Assembly Registers:
 
 	 IN:	RDI = memory location to store packet
+			RDX = Interface ID
 	OUT:	RCX = length of packet, 0 if nothing to receive
 
 Assembly Example:
 
 	mov rdi, Packet
+	mov rdx, 0
 	call b_net_rx
 	...
 	Packet: times 1518 db 0
@@ -303,7 +307,7 @@ Notes: BareMetal OS does not keep a buffer of received packets. This means that 
 
 ## Disk
 
-BareMetal uses 4096 byte sectors for all disk access. Disk sectors start at 0.
+BareMetal uses 4096 byte sectors for all disk access. Disk sectors start at 0. Individual calls to disk read and write functions support up to 512 sectors being read/written (2MiB).
 
 ### b\_disk\_read
 
