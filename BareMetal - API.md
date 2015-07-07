@@ -368,6 +368,36 @@ Assembly Registers:
 
 Function numbers come in pairs (one for reading a parameter, and one for writing a parameter). `b_system_config` should be called with a function alias and not a direct function number.
 
+Currently the following functions are supported:
+
+ - 0: timecounter
+
+   get the timecounter, the timecounter increments 8 times a second
+ - 1: argc
+
+   get the argument count
+ - 2: argv
+
+   get the nth argument
+ - 3: networkcallback_get
+
+   get the current networkcallback entrypoint
+ - 4: networkcallback_set
+
+   set the current networkcallback entrypoint
+ - 5: clockcallback_get
+
+   get the current clockcallback entrypoint
+ - 6: clockcallback_set
+
+   set the current clockcallback entrypoint
+ - 30: mac
+
+   get the current mac address (or 0 if ethernet is down)
+
+every function that gets something sets RAX with the result
+
+every function that sets something gets the value from RAX
 
 ### b\_system\_misc
 
@@ -381,3 +411,37 @@ Assembly Registers:
 	OUT:	RAX = Result 1
 			RCX = Result 2
 
+Currently the following functions are supported:
+
+1. smp_get_id
+	- Returns the APIC ID of the CPU that ran this function
+	- out rax: The ID
+2. smp_lock
+	- Attempt to lock a mutex, this is a simple spinlock
+	- in rax: The address of the mutex (one word)
+3. smp_unlock
+	- Unlock a mutex
+	- in rax: The address of the mutex (one word)
+4. debug_dump_mem
+	- os_debug_dump_mem 
+	- in rax: The start of the memory to dump
+	- in rcx: Number of bytes to dump
+5. debug_dump_rax
+	- Dump rax in Hex
+	- in rax: The Content that gets printed to memory
+6. delay
+	- Delay by X eights of a second
+	- in rax: Time in eights of a second
+7. ethernet_status
+	- Get the current mac address (or 0 if ethernet is down)
+	- Same as system_config 30 (mac)
+	- out rax: The mac address
+8. mem_get_free
+	- Returns the number of 2 MiB pages that are available
+	- out rcx: Number of pages
+9. smp_numcores
+	- Returns the number of cores in this computer
+	- out rcx: The number of cores
+10. smp_queuelen
+	- Returns the number of items in the processing queue
+	- out rax: Number of items in processing queue
