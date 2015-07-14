@@ -12,6 +12,8 @@ ORG 0x0000000000100000
 %DEFINE BAREMETAL_VER 'v1.0.0 (January 26, 2015)', 13, 'Copyright (C) 2008-2015 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 
+
+; -----------------------------------------------------------------------------
 kernel_start:
 	jmp start			; Skip over the function call index
 	nop
@@ -51,10 +53,11 @@ start:
 
 	; Fall through to ap_clear as align fills the space with No-Ops
 	; At this point the BSP is just like one of the AP's
+; -----------------------------------------------------------------------------
 
 
 align 16
-
+; -----------------------------------------------------------------------------
 ap_clear:				; All cores start here on first start-up and after an exception
 
 	cli				; Disable interrupts on this core
@@ -123,6 +126,7 @@ ap_process:				; Set the status byte to "Busy" and run the code
 	call rax			; Run the code
 
 	jmp ap_clear			; Reset the stack, clear the registers, and wait for something else to work on
+; -----------------------------------------------------------------------------
 
 
 ; Includes
@@ -133,6 +137,7 @@ ap_process:				; Set the status byte to "Busy" and run the code
 %include "sysvar.asm"			; Include this last to keep the read/write variables away from the code
 
 times 10240-($-$$) db 0			; Set the compiled kernel binary to at least this size in bytes
+
 
 ; =============================================================================
 ; EOF
