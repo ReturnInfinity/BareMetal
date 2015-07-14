@@ -56,8 +56,8 @@ start:
 ; -----------------------------------------------------------------------------
 
 
-align 16
 ; -----------------------------------------------------------------------------
+align 16
 ap_clear:				; All cores start here on first start-up and after an exception
 
 	cli				; Disable interrupts on this core
