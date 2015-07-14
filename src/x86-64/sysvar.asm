@@ -113,8 +113,6 @@ os_EthernetBuffer_C2:	equ os_SystemVariables + 782	; Counter 2 for the Ethernet 
 os_DiskEnabled:		equ os_SystemVariables + 783
 os_DiskActivity:	equ os_SystemVariables + 784
 app_argc:		equ os_SystemVariables + 785
-os_VideoDepth:		equ os_SystemVariables + 786
-os_VideoEnabled:	equ os_SystemVariables + 787
 
 cpuqueuemax:		dw 256
 screen_rows: 		db 25 ; x
@@ -129,25 +127,6 @@ keylayoutupper:
 db 0x00, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0x0e, 0, 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0x1c, 0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', 0x22, '~', 0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0, ' ', 0
 ; 0e = backspace
 ; 1c = enter
-
-palette:		; These colors are in RGB format. Each color byte is actually 6 bits (0x00 - 0x3F)
-db 0x00, 0x00, 0x00	;  0 Black
-db 0x33, 0x00, 0x00	;  1 Red
-db 0x0F, 0x26, 0x01	;  2 Green
-db 0x0D, 0x19, 0x29	;  3 Blue
-db 0x31, 0x28, 0x00	;  4 Orange
-db 0x1D, 0x14, 0x1E	;  5 Purple
-db 0x01, 0x26, 0x26	;  6 Teal
-db 0x2A, 0x2A, 0x2A	;  7 Light Gray
-db 0x15, 0x15, 0x15	;  8 Dark Gray
-db 0x3B, 0x0A, 0x0A	;  9 Bright Red
-db 0x22, 0x38, 0x0D	; 10 Bright Green
-db 0x1C, 0x27, 0x33	; 11 Bright Blue
-db 0x3F, 0x3A, 0x13	; 12 Yellow
-db 0x2B, 0x1F, 0x2A	; 13 Bright Purple
-db 0x0D, 0x38, 0x38	; 14 Bright Teal
-db 0x3F, 0x3F, 0x3F	; 15 White
-
 
 os_debug_dump_reg_string00:	db '  A:', 0
 os_debug_dump_reg_string01:	db '  B:', 0

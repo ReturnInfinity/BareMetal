@@ -97,41 +97,6 @@ rtc_poll:
 	out 0x70, al
 	in al, 0x71
 
-	; Set color palette
-	xor eax, eax
-	mov dx, 0x03C8			; DAC Address Write Mode Register
-	out dx, al
-	mov dx, 0x03C9			; DAC Data Register
-	mov rbx, 16			; 16 lines
-nextline:
-	mov rcx, 16			; 16 colors
-	mov rsi, palette
-nexttritone:
-	lodsb
-	out dx, al
-	lodsb
-	out dx, al
-	lodsb
-	out dx, al
-	dec rcx
-	cmp rcx, 0
-	jne nexttritone
-	dec rbx
-	cmp rbx, 0
-	jne nextline			; Set the next 16 colors to the same
-	mov eax, 0x14			; Fix for color 6
-	mov dx, 0x03c8			; DAC Address Write Mode Register
-	out dx, al
-	mov dx, 0x03c9			; DAC Data Register
-	mov rsi, palette
-	add rsi, 18
-	lodsb
-	out dx, al
-	lodsb
-	out dx, al
-	lodsb
-	out dx, al
-
 	; Grab data from Pure64's infomap
 	xor eax, eax
 	xor ebx, ebx
