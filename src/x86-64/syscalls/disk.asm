@@ -23,7 +23,7 @@ os_disk_read:
 
 	cmp rcx, 0
 	je os_disk_read_done		; Bail out if instructed to read nothing
-	shl rax, 8			; Convert to 512B starting sector
+	shl rax, 3			; Convert to 512B starting sector
 
 os_disk_read_loop:			; Read one sector at a time
 	push rcx
@@ -55,7 +55,7 @@ os_disk_write:
 
 	cmp rcx, 0
 	je os_disk_write_done		; Bail out if instructed to write nothing
-	shl rax, 8			; Convert to 512B starting sector
+	shl rax, 3			; Convert to 512B starting sector
 
 os_disk_write_loop:			; Write one sector at a time
 	push rcx
