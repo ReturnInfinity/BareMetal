@@ -56,24 +56,24 @@ init_net_probe_found:
 	jmp init_net_probe_not_found
 
 init_net_probe_found_rtl8169:
-	call b_net_rtl8169_init
+	call net_rtl8169_init
 	mov rdi, os_net_transmit
-	mov rax, b_net_rtl8169_transmit
+	mov rax, net_rtl8169_transmit
 	stosq
-	mov rax, b_net_rtl8169_poll
+	mov rax, net_rtl8169_poll
 	stosq
-	mov rax, b_net_rtl8169_ack_int
+	mov rax, net_rtl8169_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_i8254x:
-	call b_net_i8254x_init
+	call net_i8254x_init
 	mov rdi, os_net_transmit
-	mov rax, b_net_i8254x_transmit
+	mov rax, net_i8254x_transmit
 	stosq
-	mov rax, b_net_i8254x_poll
+	mov rax, net_i8254x_poll
 	stosq
-	mov rax, b_net_i8254x_ack_int
+	mov rax, net_i8254x_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 

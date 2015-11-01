@@ -104,10 +104,10 @@ b_output:
 
 
 ; -----------------------------------------------------------------------------
-; b_output_char -- Displays a char
+; os_output_char -- Displays a char
 ;  IN:	AL  = char to display
 ; OUT:	All registers preserved
-b_output_char:
+os_output_char:
 	push rdi
 	push rdx
 	push rcx
@@ -133,7 +133,7 @@ b_output_char:
 	add rdi, rbx
 	stosw				; Write the character and attribute to screen
 
-b_output_char_done:
+os_output_char_done:
 	call os_inc_cursor
 
 	pop rax
@@ -170,7 +170,7 @@ b_output_chars_nextchar:
 	je b_output_chars_newline	; If so then we print a new line
 	cmp al, 9
 	je b_output_chars_tab
-	call b_output_char
+	call os_output_char
 	jmp b_output_chars_nextchar
 
 b_output_chars_newline:
@@ -200,7 +200,7 @@ b_output_chars_tab:
 	mov cx, ax
 	mov al, ' '
 b_output_chars_tab_next:
-	call b_output_char
+	call os_output_char
 	sub cx, 1
 	cmp cx, 0
 	jne b_output_chars_tab_next

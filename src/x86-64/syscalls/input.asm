@@ -22,7 +22,7 @@ b_input:
 
 b_input_more:
 	mov al, '_'
-	call b_output_char
+	call os_output_char
 	call os_dec_cursor
 	call b_input_key
 	jnc b_input_halt		; No key entered... halt until an interrupt is received
@@ -38,14 +38,14 @@ b_input_more:
 	je b_input_more		; Jump if we have (should beep as well)
 	stosb				; Store AL at RDI and increment RDI by 1
 	inc rcx				; Increment the counter
-	call b_output_char		; Display char
+	call os_output_char		; Display char
 	jmp b_input_more
 
 b_input_backspace:
 	cmp rcx, 0			; backspace at the beginning? get a new char
 	je b_input_more
 	mov al, ' '			; 0x20 is the character for a space
-	call b_output_char		; Write over the last typed character with the space
+	call os_output_char		; Write over the last typed character with the space
 	call os_dec_cursor		; Decrement the cursor again
 	call os_dec_cursor		; Decrement the cursor
 	dec rdi				; go back one in the string
@@ -61,7 +61,7 @@ b_input_done:
 	mov al, 0x00
 	stosb				; We NULL terminate the string
 	mov al, ' '
-	call b_output_char
+	call os_output_char
 	call os_print_newline
 
 	pop rax

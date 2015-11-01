@@ -474,7 +474,7 @@ next_stack:
 	lodsq
 	call os_debug_dump_rax
 	mov al, ' '
-	call b_output_char
+	call os_output_char
 	loop next_stack
 	call os_print_newline
 	pop rsi
@@ -485,7 +485,7 @@ next_stack:
 	jmp ap_clear			; jump to AP clear code
 
 
-int_string00 db 'BareMetal OS - CPU 0x', 0
+int_string00 db 'BareMetal - CPU 0x', 0
 int_string01 db ' - Interrupt ', 0
 ; Strings for the error messages
 exc_string db 'Unknown Fatal Exception!', 0

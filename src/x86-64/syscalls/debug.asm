@@ -116,7 +116,7 @@ os_debug_dump_mem_print_ascii:
 	xor rcx, rcx			; Clear the counter
 os_debug_dump_mem_print_ascii_next:
 	lodsb
-	call b_output_char
+	call os_output_char
 	add rcx, 1
 	cmp rcx, 16
 	jne os_debug_dump_mem_print_ascii_next
@@ -170,11 +170,11 @@ os_debug_dump_al:
 	push rax			; Save RAX since we work in 2 parts
 	shr al, 4			; Shift high 4 bits into low 4 bits
 	xlatb
-	call b_output_char
+	call os_output_char
 	pop rax
 	and al, 0x0f			; Clear the high 4 bits
 	xlatb
-	call b_output_char
+	call os_output_char
 	pop rax
 	pop rbx
 	ret
