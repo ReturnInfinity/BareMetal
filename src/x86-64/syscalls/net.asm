@@ -7,28 +7,28 @@
 
 
 ; -----------------------------------------------------------------------------
-; os_net_status -- Check if network access is available
+; b_net_status -- Check if network access is available
 ;  IN:	Nothing
 ; OUT:	RAX = MAC Address if net is enabled, otherwise 0
-os_net_status:
+b_net_status:
 	push rsi
 	push rcx
 
 	cld
 	xor eax, eax
 	cmp byte [os_NetEnabled], 0
-	je os_net_status_end
+	je b_net_status_end
 
 	mov ecx, 6
 	mov rsi, os_NetMAC
-os_net_status_loadMAC:
+b_net_status_loadMAC:
 	shl rax, 8
 	lodsb
 	sub ecx, 1
 	test ecx, ecx
-	jnz os_net_status_loadMAC
+	jnz b_net_status_loadMAC
 
-os_net_status_end:
+b_net_status_end:
 	pop rcx
 	pop rsi
 	ret
@@ -36,38 +36,38 @@ os_net_status_end:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_tx -- Transmit a packet via the network
+; b_net_tx -- Transmit a packet via the network
 ;  IN:	RSI = Memory location where packet is stored
 ;	RCX = Length of packet
 ; OUT:	Nothing. All registers preserved
-os_net_tx:
+b_net_tx:
 	push rsi
 	push rdi
 	push rcx
 	push rax
 
 	cmp byte [os_NetEnabled], 1		; Check if networking is enabled
-	jne os_net_tx_fail
+	jne b_net_tx_fail
 	cmp rcx, 64				; An net packet must be at least 64 bytes
-	jge os_net_tx_maxcheck
+	jge b_net_tx_maxcheck
 	mov rcx, 64				; If it was below 64 then set to 64
 	; FIXME - OS should pad the packet with 0's before sending if less than 64
 
-os_net_tx_maxcheck:	
+b_net_tx_maxcheck:	
 	cmp rcx, 1522				; Fail if more than 1522 bytes
-	jg os_net_tx_fail
+	jg b_net_tx_fail
 
 	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
-	call os_smp_lock
+	call b_smp_lock
 
 	add qword [os_net_TXPackets], 1
 	add qword [os_net_TXBytes], rcx
 	call qword [os_net_transmit]
 
 	mov rax, os_NetLock
-	call os_smp_unlock
+	call b_smp_unlock
 
-os_net_tx_fail:
+b_net_tx_fail:
 	pop rax
 	pop rcx
 	pop rdi
@@ -77,11 +77,11 @@ os_net_tx_fail:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_rx -- Polls the network for received data
+; b_net_rx -- Polls the network for received data
 ;  IN:	RDI = Memory location where packet will be stored
 ; OUT:	RCX = Length of packet, 0 if no data
 ;	All other registers preserved
-os_net_rx:
+b_net_rx:
 	push rdi
 	push rsi
 	push rdx
@@ -90,12 +90,12 @@ os_net_rx:
 	xor ecx, ecx
 
 	cmp byte [os_NetEnabled], 1
-	jne os_net_rx_fail
+	jne b_net_rx_fail
 
 	mov rsi, os_EthernetBuffer
 	mov ax, word [rsi]		; Grab the packet length
 	cmp ax, 0			; Anything there?
-	je os_net_rx_fail		; If not, bail out
+	je b_net_rx_fail		; If not, bail out
 	mov word [rsi], cx		; Clear the packet length
 	mov cx, ax			; Save the count
 	add rsi, 2			; Skip the packet length word
@@ -103,7 +103,7 @@ os_net_rx:
 	rep movsb
 	pop rcx
 
-os_net_rx_fail:
+b_net_rx_fail:
 
 	pop rax
 	pop rdx
@@ -114,11 +114,11 @@ os_net_rx_fail:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_ack_int -- Acknowledge an interrupt within the NIC
+; b_net_ack_int -- Acknowledge an interrupt within the NIC
 ;  IN:	Nothing
 ; OUT:	RAX = Type of interrupt trigger
 ;	All other registers preserved
-os_net_ack_int:
+b_net_ack_int:
 	call qword [os_net_ackint]
 
 	ret
@@ -126,11 +126,11 @@ os_net_ack_int:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_rx_from_interrupt -- Polls the network for received data
+; b_net_rx_from_interrupt -- Polls the network for received data
 ;  IN:	RDI = Memory location where packet will be stored
 ; OUT:	RCX = Length of packet
 ;	All other registers preserved
-os_net_rx_from_interrupt:
+b_net_rx_from_interrupt:
 	push rdi
 	push rsi
 	push rdx

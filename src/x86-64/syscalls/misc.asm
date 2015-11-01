@@ -57,163 +57,163 @@ os_get_argv_end:
 
 
 ; -----------------------------------------------------------------------------
-; os_system_config - View or modify system configuration options
+; b_system_config - View or modify system configuration options
 ; IN:	RDX = Function #
 ;	RAX = Variable
 ; OUT:	RAX = Result
 ;	All other registers preserved
-os_system_config:
+b_system_config:
 	cmp rdx, 0
-	je os_system_config_timecounter
+	je b_system_config_timecounter
 	cmp rdx, 1
-	je os_system_config_argc
+	je b_system_config_argc
 	cmp rdx, 2
-	je os_system_config_argv
+	je b_system_config_argv
 	cmp rdx, 3
-	je os_system_config_networkcallback_get
+	je b_system_config_networkcallback_get
 	cmp rdx, 4
-	je os_system_config_networkcallback_set
+	je b_system_config_networkcallback_set
 	cmp rdx, 5
-	je os_system_config_clockcallback_get
+	je b_system_config_clockcallback_get
 	cmp rdx, 6
-	je os_system_config_clockcallback_set
+	je b_system_config_clockcallback_set
 	cmp rdx, 30
-	je os_system_config_mac
+	je b_system_config_mac
 	ret
 
-os_system_config_timecounter:
+b_system_config_timecounter:
 	mov rax, [os_ClockCounter]	; Grab the timer counter value. It increments 8 times a second
 	ret
 
-os_system_config_argc:
+b_system_config_argc:
 	xor eax, eax
 	mov al, [app_argc]
 	ret
 
-os_system_config_argv:
+b_system_config_argv:
 	call os_get_argv
 	ret
 
-os_system_config_networkcallback_get:
+b_system_config_networkcallback_get:
 	mov rax, [os_NetworkCallback]
 	ret
 
-os_system_config_networkcallback_set:
+b_system_config_networkcallback_set:
 	mov qword [os_NetworkCallback], rax
 	ret
 
-os_system_config_clockcallback_get:
+b_system_config_clockcallback_get:
 	mov rax, [os_ClockCallback]
 	ret
 
-os_system_config_clockcallback_set:
+b_system_config_clockcallback_set:
 	mov qword [os_ClockCallback], rax
 	ret
 
-os_system_config_mac:
-	call os_net_status
+b_system_config_mac:
+	call b_net_status
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; os_system_misc - Call misc OS sub-functions
+; b_system_misc - Call misc OS sub-functions
 ; IN:	RDX = Function #
 ;	RAX = Variable 1
 ;	RCX = Variable 2
 ; OUT:	RAX = Result 1, dependant on system call
 ;	RCX = Result 2, dependant on system call
-os_system_misc:
+b_system_misc:
 ;	cmp rdx, X
-;	je os_system_misc_
+;	je b_system_misc_
 	cmp rdx, 1
-	je os_system_misc_smp_get_id
+	je b_system_misc_smp_get_id
 	cmp rdx, 2
-	je os_system_misc_smp_lock
+	je b_system_misc_smp_lock
 	cmp rdx, 3
-	je os_system_misc_smp_unlock
+	je b_system_misc_smp_unlock
 	cmp rdx, 4
-	je os_system_misc_debug_dump_mem
+	je b_system_misc_debug_dump_mem
 	cmp rdx, 5
-	je os_system_misc_debug_dump_rax
+	je b_system_misc_debug_dump_rax
 	cmp rdx, 6
-	je os_system_misc_delay
+	je b_system_misc_delay
 	cmp rdx, 7
-	je os_system_misc_ethernet_status
+	je b_system_misc_ethernet_status
 	cmp rdx, 8
-	je os_system_misc_mem_get_free
+	je b_system_misc_mem_get_free
 	cmp rdx, 9
-	je os_system_misc_smp_numcores
+	je b_system_misc_smp_numcores
 	cmp rdx, 10
-	je os_system_misc_smp_queuelen
+	je b_system_misc_smp_queuelen
 	cmp rdx, 256
-	je os_system_misc_reset
+	je b_system_misc_reset
 	ret
 
-os_system_misc_smp_get_id:
-	call os_smp_get_id
+b_system_misc_smp_get_id:
+	call b_smp_get_id
 	ret
 
-os_system_misc_smp_lock:
-	call os_smp_lock
+b_system_misc_smp_lock:
+	call b_smp_lock
 	ret
 
-os_system_misc_smp_unlock:
-	call os_smp_unlock
+b_system_misc_smp_unlock:
+	call b_smp_unlock
 	ret
 
-os_system_misc_debug_dump_mem:
+b_system_misc_debug_dump_mem:
 	push rsi
 	mov rsi, rax
 	call os_debug_dump_mem
 	pop rsi
 	ret
 
-os_system_misc_debug_dump_rax:
+b_system_misc_debug_dump_rax:
 	call os_debug_dump_rax
 	ret
 
-os_system_misc_delay:
+b_system_misc_delay:
 	call os_delay
 	ret
 
-os_system_misc_ethernet_status:
-	call os_net_status
+b_system_misc_ethernet_status:
+	call b_net_status
 	ret
 
-os_system_misc_mem_get_free:
-	call os_mem_get_free
+b_system_misc_mem_get_free:
+	call b_mem_get_free
 	ret
 
-os_system_misc_smp_numcores:
-	call os_smp_numcores
+b_system_misc_smp_numcores:
+	call b_smp_numcores
 	ret
 
-os_system_misc_smp_queuelen:
-	call os_smp_queuelen
+b_system_misc_smp_queuelen:
+	call b_smp_queuelen
 	ret
 
-os_system_misc_reset:
+b_system_misc_reset:
 	xor eax, eax
 	mov qword [os_NetworkCallback], rax	; clear callbacks
 	mov qword [os_ClockCallback], rax
 	mov rdi, cpuqueue		; Clear SMP queue
 	mov rcx, 512
 	stosq
-	call os_smp_get_id		; Reset all other cpu cores
+	call b_smp_get_id		; Reset all other cpu cores
 	mov rbx, rax
 	mov rsi, 0x0000000000005100	; Location in memory of the Pure64 CPU data
-os_system_misc_reset_next_ap:
+b_system_misc_reset_next_ap:
 	cmp cx, 0
-	je os_system_misc_reset_no_more_aps
+	je b_system_misc_reset_no_more_aps
 	lodsb				; Load the CPU APIC ID
 	cmp al, bl
-	je os_system_misc_reset_skip_ap
-	call os_smp_reset		; Reset the CPU
-os_system_misc_reset_skip_ap:
+	je b_system_misc_reset_skip_ap
+	call b_smp_reset		; Reset the CPU
+b_system_misc_reset_skip_ap:
 	sub cx, 1
-	jmp os_system_misc_reset_next_ap
-os_system_misc_reset_no_more_aps:
+	jmp b_system_misc_reset_next_ap
+b_system_misc_reset_no_more_aps:
 	call init_memory_map		; Clear memory table
 	int 0x81			; Reset this core
 ; -----------------------------------------------------------------------------

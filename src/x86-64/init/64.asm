@@ -135,7 +135,7 @@ next_ap:
 	lodsb				; Load the CPU APIC ID
 	cmp al, bl
 	je skip_ap
-	call os_smp_reset		; Reset the CPU
+	call b_smp_reset		; Reset the CPU
 skip_ap:
 	sub cx, 1
 	jmp next_ap
@@ -197,8 +197,8 @@ init_memory_map:			; Build the OS memory table
 	; Allocate memory for CPU stacks (2 MiB's for each core)
 	xor rcx, rcx
 	mov cx, [os_NumCores]		; Get the amount of cores in the system
-	call os_mem_allocate		; Allocate a page for each core
-	cmp rcx, 0			; os_mem_allocate returns 0 on failure
+	call b_mem_allocate		; Allocate a page for each core
+	cmp rcx, 0			; b_mem_allocate returns 0 on failure
 	je system_failure
 	add rax, 2097152
 	mov [os_StackBase], rax		; Store the Stack base address
@@ -213,7 +213,7 @@ init_memory_map:			; Build the OS memory table
 ; -----------------------------------------------------------------------------
 system_failure:
 	mov rsi, memory_message
-	call os_output
+	call b_output
 system_failure_hang:
 	hlt
 	jmp system_failure_hang

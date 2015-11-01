@@ -7,12 +7,12 @@
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_reset -- Resets a CPU Core
+; b_smp_reset -- Resets a CPU Core
 ;  IN:	AL = CPU #
 ; OUT:	Nothing. All registers preserved.
 ; Note:	This code resets an AP
 ;	For set-up use only.
-os_smp_reset:
+b_smp_reset:
 	push rdi
 	push rax
 
@@ -30,10 +30,10 @@ os_smp_reset:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_wakeup -- Wake up a CPU Core
+; b_smp_wakeup -- Wake up a CPU Core
 ;  IN:	AL = CPU #
 ; OUT:	Nothing. All registers preserved.
-os_smp_wakeup:
+b_smp_wakeup:
 	push rdi
 	push rax
 
@@ -51,10 +51,10 @@ os_smp_wakeup:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_wakeup_all -- Wake up all CPU Cores
+; b_smp_wakeup_all -- Wake up all CPU Cores
 ;  IN:	Nothing.
 ; OUT:	Nothing. All registers preserved.
-os_smp_wakeup_all:
+b_smp_wakeup_all:
 	push rdi
 	push rax
 
@@ -71,10 +71,10 @@ os_smp_wakeup_all:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_get_id -- Returns the APIC ID of the CPU that ran this function
+; b_smp_get_id -- Returns the APIC ID of the CPU that ran this function
 ;  IN:	Nothing
 ; OUT:	RAX = CPU's APIC ID number, All other registers preserved.
-os_smp_get_id:
+b_smp_get_id:
 	push rsi
 
 	xor eax, eax
@@ -89,24 +89,24 @@ os_smp_get_id:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_enqueue -- Add a workload to the processing queue
+; b_smp_enqueue -- Add a workload to the processing queue
 ;  IN:	RAX = Address of code to execute
 ;	RSI = Variable
 ; OUT:	Nothing
-os_smp_enqueue:
+b_smp_enqueue:
 	push rdi
 	push rsi
 	push rcx
 	push rax
 
-os_smp_enqueue_spin:
+b_smp_enqueue_spin:
 	bt word [os_QueueLock], 0	; Check if the mutex is free
-	jc os_smp_enqueue_spin		; If not check it again
+	jc b_smp_enqueue_spin		; If not check it again
 	lock bts word [os_QueueLock], 0	; The mutex was free, lock the bus. Try to grab the mutex
-	jc os_smp_enqueue_spin		; Jump if we were unsuccessful
+	jc b_smp_enqueue_spin		; Jump if we were unsuccessful
 
 	cmp word [os_QueueLen], 256	; aka cpuqueuemax
-	je os_smp_enqueue_fail
+	je b_smp_enqueue_fail
 
 	xor ecx, ecx
 	mov rdi, cpuqueue
@@ -122,21 +122,21 @@ os_smp_enqueue_spin:
 	shr rcx, 4			; Quickly divide RCX by 16
 	add cx, 1
 	cmp cx, [cpuqueuemax]
-	jne os_smp_enqueue_end
+	jne b_smp_enqueue_end
 	xor cx, cx			; We wrap around
 
-os_smp_enqueue_end:
+b_smp_enqueue_end:
 	mov [cpuqueuefinish], cx
 	pop rax
 	pop rcx
 	pop rsi
 	pop rdi
 	btr word [os_QueueLock], 0	; Release the lock
-	call os_smp_wakeup_all
+	call b_smp_wakeup_all
 	clc				; Carry clear for success
 	ret
 
-os_smp_enqueue_fail:
+b_smp_enqueue_fail:
 	pop rax
 	pop rcx
 	pop rsi
@@ -148,22 +148,22 @@ os_smp_enqueue_fail:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_dequeue -- Dequeue a workload from the processing queue
+; b_smp_dequeue -- Dequeue a workload from the processing queue
 ;  IN:	Nothing
 ; OUT:	RAX = Address of code to execute (Set to 0 if queue is empty)
 ;	RDI = Variable
-os_smp_dequeue:
+b_smp_dequeue:
 	push rsi
 	push rcx
 
-os_smp_dequeue_spin:
+b_smp_dequeue_spin:
 	bt word [os_QueueLock], 0	; Check if the mutex is free
-	jc os_smp_dequeue_spin		; If not check it again
+	jc b_smp_dequeue_spin		; If not check it again
 	lock bts word [os_QueueLock], 0	; The mutex was free, lock the bus. Try to grab the mutex
-	jc os_smp_dequeue_spin		; Jump if we were unsuccessful
+	jc b_smp_dequeue_spin		; Jump if we were unsuccessful
 
 	cmp word [os_QueueLen], 0
-	je os_smp_dequeue_fail
+	je b_smp_dequeue_fail
 
 	xor ecx, ecx
 	mov rsi, cpuqueue
@@ -181,10 +181,10 @@ os_smp_dequeue_spin:
 	shr rcx, 4			; Quickly divide RCX by 16
 	add cx, 1
 	cmp cx, [cpuqueuemax]
-	jne os_smp_dequeue_end
+	jne b_smp_dequeue_end
 	xor cx, cx			; We wrap around
 
-os_smp_dequeue_end:
+b_smp_dequeue_end:
 	mov word [cpuqueuestart], cx
 	pop rcx
 	pop rsi
@@ -192,7 +192,7 @@ os_smp_dequeue_end:
 	clc				; If we got here then ok
 	ret
 
-os_smp_dequeue_fail:
+b_smp_dequeue_fail:
 	xor rax, rax
 	pop rcx
 	pop rsi
@@ -203,20 +203,20 @@ os_smp_dequeue_fail:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_run -- Call the code address stored in RAX
+; b_smp_run -- Call the code address stored in RAX
 ;  IN:	RAX = Address of code to execute
 ; OUT:	Nothing
-os_smp_run:
+b_smp_run:
 	call rax			; Run the code
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_queuelen -- Returns the number of items in the processing queue
+; b_smp_queuelen -- Returns the number of items in the processing queue
 ;  IN:	Nothing
 ; OUT:	RAX = number of items in processing queue
-os_smp_queuelen:
+b_smp_queuelen:
 	xor eax, eax
 	mov ax, [os_QueueLen]
 	ret
@@ -224,10 +224,10 @@ os_smp_queuelen:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_numcores -- Returns the number of cores in this computer
+; b_smp_numcores -- Returns the number of cores in this computer
 ;  IN:	Nothing
 ; OUT:	RAX = number of cores in this computer
-os_smp_numcores:
+b_smp_numcores:
 	xor eax, eax
 	mov ax, [os_NumCores]
 	ret
@@ -235,16 +235,16 @@ os_smp_numcores:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_wait -- Wait until all other CPU Cores are finished processing
+; b_smp_wait -- Wait until all other CPU Cores are finished processing
 ;  IN:	Nothing
 ; OUT:	Nothing. All registers preserved.
-os_smp_wait:
+b_smp_wait:
 	push rsi
 	push rcx
 	push rbx
 	push rax
 
-	call os_smp_get_id
+	call b_smp_get_id
 	mov rbx, rax
 
 	xor eax, eax
@@ -275,23 +275,23 @@ skipit:
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_lock -- Attempt to lock a mutex
+; b_smp_lock -- Attempt to lock a mutex
 ;  IN:	RAX = Address of lock variable
 ; OUT:	Nothing. All registers preserved.
-os_smp_lock:
+b_smp_lock:
 	bt word [rax], 0	; Check if the mutex is free (Bit 0 cleared to 0)
-	jc os_smp_lock		; If not check it again
+	jc b_smp_lock		; If not check it again
 	lock bts word [rax], 0	; The mutex was free, lock the bus. Try to grab the mutex
-	jc os_smp_lock		; Jump if we were unsuccessful
+	jc b_smp_lock		; Jump if we were unsuccessful
 	ret			; Lock acquired. Return to the caller
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; os_smp_unlock -- Unlock a mutex
+; b_smp_unlock -- Unlock a mutex
 ;  IN:	RAX = Address of lock variable
 ; OUT:	Nothing. All registers preserved.
-os_smp_unlock:
+b_smp_unlock:
 	btr word [rax], 0	; Release the lock (Bit 0 cleared to 0)
 	ret			; Lock released. Return to the caller
 ; -----------------------------------------------------------------------------

@@ -20,22 +20,22 @@ kernel_start:
 	db 'BAREMETAL'
 
 	align 16
-	dq os_output			; 0x0010
-	dq os_output_chars		; 0x0018
-	dq os_input			; 0x0020
-	dq os_input_key			; 0x0028
-	dq os_smp_enqueue		; 0x0030
-	dq os_smp_dequeue		; 0x0038
-	dq os_smp_run			; 0x0040
-	dq os_smp_wait			; 0x0048
-	dq os_mem_allocate		; 0x0050
-	dq os_mem_release		; 0x0058
-	dq os_net_tx			; 0x0060
-	dq os_net_rx			; 0x0068
-	dq os_disk_read			; 0x0070
-	dq os_disk_write		; 0x0078
-	dq os_system_config		; 0x0080
-	dq os_system_misc		; 0x0088
+	dq b_output			; 0x0010
+	dq b_output_chars		; 0x0018
+	dq b_input			; 0x0020
+	dq b_input_key			; 0x0028
+	dq b_smp_enqueue		; 0x0030
+	dq b_smp_dequeue		; 0x0038
+	dq b_smp_run			; 0x0040
+	dq b_smp_wait			; 0x0048
+	dq b_mem_allocate		; 0x0050
+	dq b_mem_release		; 0x0058
+	dq b_net_tx			; 0x0060
+	dq b_net_rx			; 0x0068
+	dq b_disk_read			; 0x0070
+	dq b_disk_write			; 0x0078
+	dq b_system_config		; 0x0080
+	dq b_system_misc		; 0x0088
 	align 16
 
 start:
@@ -49,7 +49,7 @@ start:
 	mov word [os_Screen_Cursor_Row], ax
 	mov word [os_Screen_Cursor_Col], 0
 	mov rsi, readymsg
-	call os_output
+	call b_output
 
 	; Fall through to ap_clear as align fills the space with No-Ops
 	; At this point the BSP is just like one of the AP's
@@ -63,7 +63,7 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	cli				; Disable interrupts on this core
 
 	; Get local ID of the core
-	mov rsi, [os_LocalAPICAddress]	; We can't use os_smp_get_id as no configured stack yet
+	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
 	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
 	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
 	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
@@ -105,7 +105,7 @@ ap_clear:				; All cores start here on first start-up and after an exception
 ap_spin:				; Spin until there is a workload in the queue
 	cmp word [os_QueueLen], 0	; Check the length of the queue
 	je ap_halt			; If the queue was empty then jump to the HLT
-	call os_smp_dequeue		; Try to pull a workload out of the queue
+	call b_smp_dequeue		; Try to pull a workload out of the queue
 	jnc ap_process			; Carry clear if successful, jump to ap_process
 
 ap_halt:				; Halt until a wakeup call is received
@@ -114,9 +114,9 @@ ap_halt:				; Halt until a wakeup call is received
 
 ap_process:				; Set the status byte to "Busy" and run the code
 	push rdi			; Push RDI since it is used temporarily
-	push rax			; Push RAX since os_smp_get_id uses it
+	push rax			; Push RAX since b_smp_get_id uses it
 	mov rdi, cpustatus
-	call os_smp_get_id		; Set RAX to the APIC ID
+	call b_smp_get_id		; Set RAX to the APIC ID
 	add rdi, rax
 	mov al, 00000011b		; Bit 0 set for "Present", Bit 1 set for "Busy"
 	stosb

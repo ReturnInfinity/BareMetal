@@ -56,24 +56,24 @@ init_net_probe_found:
 	jmp init_net_probe_not_found
 
 init_net_probe_found_rtl8169:
-	call os_net_rtl8169_init
+	call b_net_rtl8169_init
 	mov rdi, os_net_transmit
-	mov rax, os_net_rtl8169_transmit
+	mov rax, b_net_rtl8169_transmit
 	stosq
-	mov rax, os_net_rtl8169_poll
+	mov rax, b_net_rtl8169_poll
 	stosq
-	mov rax, os_net_rtl8169_ack_int
+	mov rax, b_net_rtl8169_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_i8254x:
-	call os_net_i8254x_init
+	call b_net_i8254x_init
 	mov rdi, os_net_transmit
-	mov rax, os_net_i8254x_transmit
+	mov rax, b_net_i8254x_transmit
 	stosq
-	mov rax, os_net_i8254x_poll
+	mov rax, b_net_i8254x_poll
 	stosq
-	mov rax, os_net_i8254x_ack_int
+	mov rax, b_net_i8254x_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 
@@ -91,7 +91,7 @@ init_net_probe_found_finish:
 	call os_pic_mask_clear
 
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
-	call os_net_ack_int		; Call the driver function to acknowledge the interrupt internally
+	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 init_net_probe_not_found:
 

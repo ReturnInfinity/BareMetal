@@ -10,7 +10,7 @@
 ; Initialize an Intel 8254x NIC
 ;  IN:	BL  = Bus number of the Intel device
 ;	CL  = Device/Slot number of the Intel device
-os_net_i8254x_init:
+b_net_i8254x_init:
 	push rsi
 	push rdx
 	push rcx
@@ -33,7 +33,7 @@ os_net_i8254x_init:
 	mov rsi, [os_NetIOBaseMem]
 	mov eax, [rsi+0x5400]				; RAL
 	cmp eax, 0x00000000
-	je os_net_i8254x_init_get_MAC_via_EPROM
+	je b_net_i8254x_init_get_MAC_via_EPROM
 	mov [os_NetMAC], al
 	shr eax, 8
 	mov [os_NetMAC+1], al
@@ -45,9 +45,9 @@ os_net_i8254x_init:
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
-	jmp os_net_i8254x_init_done_MAC
+	jmp b_net_i8254x_init_done_MAC
 
-os_net_i8254x_init_get_MAC_via_EPROM:
+b_net_i8254x_init_get_MAC_via_EPROM:
 	mov rsi, [os_NetIOBaseMem]
 	mov eax, 0x00000001
 	mov [rsi+0x14], eax
@@ -70,10 +70,10 @@ os_net_i8254x_init_get_MAC_via_EPROM:
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
-os_net_i8254x_init_done_MAC:
+b_net_i8254x_init_done_MAC:
 
 	; Reset the device
-	call os_net_i8254x_reset
+	call b_net_i8254x_reset
 
 	pop rax
 	pop rcx
@@ -84,10 +84,10 @@ os_net_i8254x_init_done_MAC:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_i8254x_reset - Reset an Intel 8254x NIC
+; b_net_i8254x_reset - Reset an Intel 8254x NIC
 ;  IN:	Nothing
 ; OUT:	Nothing, all registers preserved
-os_net_i8254x_reset:
+b_net_i8254x_reset:
 	mov rsi, [os_NetIOBaseMem]
 	mov rdi, rsi
 
@@ -168,12 +168,12 @@ os_net_i8254x_reset:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_i8254x_transmit - Transmit a packet via an Intel 8254x NIC
+; b_net_i8254x_transmit - Transmit a packet via an Intel 8254x NIC
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
 ;	Uses RAX, RCX, RSI, RDI
-os_net_i8254x_transmit:
+b_net_i8254x_transmit:
 	mov rdi, os_eth_tx_buffer		; Transmit Descriptor Base Address
 	mov rax, rsi
 	stosq					; Store the data location
@@ -192,11 +192,11 @@ os_net_i8254x_transmit:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
+; b_net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
 ;	Uses RAX, RCX, RDX, RSI, RDI
-os_net_i8254x_poll:
+b_net_i8254x_poll:
 	xor ecx, ecx
 
 	mov cx, [os_eth_rx_buffer+8]		; Get the packet length
@@ -221,11 +221,11 @@ os_net_i8254x_poll:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_i8254x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
+; b_net_i8254x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
 ;  IN:	Nothing
 ; OUT:	RAX = Ethernet status
 ;	Uses RDI
-os_net_i8254x_ack_int:
+b_net_i8254x_ack_int:
 	push rdi
 	xor eax, eax
 	mov rdi, [os_NetIOBaseMem]

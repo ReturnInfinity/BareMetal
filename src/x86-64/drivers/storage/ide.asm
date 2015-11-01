@@ -14,7 +14,7 @@
 ; -----------------------------------------------------------------------------
 init_ide:
 	mov rsi, diskmsg
-	call os_output
+	call b_output
 
 	; Query drive
 	mov rdi, 0x200000
@@ -27,9 +27,9 @@ init_ide:
 	mov rdi, os_temp_string
 	mov rsi, rdi
 	call os_int_to_string
-	call os_output
+	call b_output
 	mov rsi, mibmsg
-	call os_output
+	call b_output
 
 	; Found a bootable drive
 	mov byte [os_DiskEnabled], 0x01
@@ -39,7 +39,7 @@ init_ide:
 init_ide_err_noide:
 hdd_setup_err_nodisk:
 	mov rsi, namsg
-	call os_output
+	call b_output
 
 	ret
 ; -----------------------------------------------------------------------------

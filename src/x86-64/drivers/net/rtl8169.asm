@@ -10,7 +10,7 @@
 ; Initialize a Realtek 8169 NIC
 ;  IN:	BL  = Bus number of the Realtek device
 ;	CL  = Device/Slot number of the Realtek device
-os_net_rtl8169_init:
+b_net_rtl8169_init:
 	push rsi
 	push rdx
 	push rcx
@@ -48,7 +48,7 @@ os_net_rtl8169_init:
 	mov [os_NetMAC+5], al
 
 	; Reset the device
-	call os_net_rtl8169_reset
+	call b_net_rtl8169_reset
 
 	pop rax
 	pop rcx
@@ -59,10 +59,10 @@ os_net_rtl8169_init:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_rtl8136_reset - Reset a Realtek 8169 NIC
+; b_net_rtl8136_reset - Reset a Realtek 8169 NIC
 ;  IN:	Nothing
 ; OUT:	Nothing, all registers preserved
-os_net_rtl8169_reset:
+b_net_rtl8169_reset:
 	push rdx
 	push rcx
 	push rax
@@ -182,13 +182,13 @@ reset_8169_completed:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_rtl8169_transmit - Transmit a packet via a Realtek 8169 NIC
+; b_net_rtl8169_transmit - Transmit a packet via a Realtek 8169 NIC
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
 ;	Uses RAX, RCX, RDX, RSI, RDI
 ; ToDo:	Check for proper timeout
-os_net_rtl8169_transmit:
+b_net_rtl8169_transmit:
 	mov rdi, os_eth_tx_buffer
 	mov rax, rcx
 	stosw					; Store the frame length
@@ -200,29 +200,29 @@ os_net_rtl8169_transmit:
 	add dx, RTL8169_REG_TPPOLL
 	mov al, 0x40
 	out dx, al				; Set up TX Polling
-os_net_rtl8169_transmit_sendloop:
+b_net_rtl8169_transmit_sendloop:
 	mov eax, [os_eth_tx_buffer]
 	and eax, 0x80000000			; Check the ownership bit (BT command instead?)
 	cmp eax, 0x80000000			; If the ownership bit is clear then the NIC sent the packet
-	je os_net_rtl8169_transmit_sendloop
+	je b_net_rtl8169_transmit_sendloop
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; os_net_rtl8169_poll - Polls the Realtek 8169 NIC for a received packet
+; b_net_rtl8169_poll - Polls the Realtek 8169 NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
 ;	Uses RAX, RCX, RDX, RSI, RDI
-os_net_rtl8169_poll:
+b_net_rtl8169_poll:
 	xor ecx, ecx
 	mov cx, [os_eth_rx_buffer]
 	and cx, 0x3FFF				; Clear the two high bits as length is bits 13-0
 	cmp cx, 0x1FF8
-	jne os_net_rtl8169_poll_first_descriptor
+	jne b_net_rtl8169_poll_first_descriptor
 	mov cx, [os_eth_rx_buffer+16]
 	and cx, 0x3FFF				; Clear the two high bits as length is bits 13-0
-os_net_rtl8169_poll_first_descriptor:
+b_net_rtl8169_poll_first_descriptor:
 	mov rsi, os_ethernet_rx_buffer
 	push rcx
 	rep movsb				; Copy the packet to the lacation stored in RDI
@@ -240,11 +240,11 @@ os_net_rtl8169_poll_first_descriptor:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_rtl8169_ack_int - Acknowledge an internal interrupt of the Realtek 8169 NIC
+; b_net_rtl8169_ack_int - Acknowledge an internal interrupt of the Realtek 8169 NIC
 ;  IN:	Nothing
 ; OUT:	RAX = Ethernet status
 ;	Uses RDI
-os_net_rtl8169_ack_int:
+b_net_rtl8169_ack_int:
 	push rdx
 	mov dx, word [os_NetIOAddress]		; Clear active interrupt sources
 	add dx, RTL8169_REG_ISR

@@ -77,10 +77,10 @@ os_print_newline_done:
 
 
 ; -----------------------------------------------------------------------------
-; os_output -- Displays text
+; b_output -- Displays text
 ;  IN:	RSI = message location (zero-terminated string)
 ; OUT:	All registers preserved
-os_output:
+b_output:
 	push rdi
 	push rcx
 	push rax
@@ -94,7 +94,7 @@ os_output:
 	not rcx
 	dec rcx
 
-	call os_output_chars
+	call b_output_chars
 
 	pop rax
 	pop rcx
@@ -104,10 +104,10 @@ os_output:
 
 
 ; -----------------------------------------------------------------------------
-; os_output_char -- Displays a char
+; b_output_char -- Displays a char
 ;  IN:	AL  = char to display
 ; OUT:	All registers preserved
-os_output_char:
+b_output_char:
 	push rdi
 	push rdx
 	push rcx
@@ -133,7 +133,7 @@ os_output_char:
 	add rdi, rbx
 	stosw				; Write the character and attribute to screen
 
-os_output_char_done:
+b_output_char_done:
 	call os_inc_cursor
 
 	pop rax
@@ -146,11 +146,11 @@ os_output_char_done:
 
 
 ; -----------------------------------------------------------------------------
-; os_output_chars -- Displays text
+; b_output_chars -- Displays text
 ;  IN:	RSI = message location (A string, not zero-terminated)
 ;	RCX = number of chars to print
 ; OUT:	All registers preserved
-os_output_chars:
+b_output_chars:
 	push rdi
 	push rsi
 	push rcx
@@ -159,37 +159,37 @@ os_output_chars:
 	cld				; Clear the direction flag.. we want to increment through the string
 	mov ah, 0x07			; Store the attribute into AH so STOSW can be used later on
 
-os_output_chars_nextchar:
+b_output_chars_nextchar:
 	cmp rcx, 0
-	je os_output_chars_done
+	je b_output_chars_done
 	sub rcx, 1
 	lodsb				; Get char from string and store in AL
 	cmp al, 13			; Check if there was a newline character in the string
-	je os_output_chars_newline	; If so then we print a new line
+	je b_output_chars_newline	; If so then we print a new line
 	cmp al, 10			; Check if there was a newline character in the string
-	je os_output_chars_newline	; If so then we print a new line
+	je b_output_chars_newline	; If so then we print a new line
 	cmp al, 9
-	je os_output_chars_tab
-	call os_output_char
-	jmp os_output_chars_nextchar
+	je b_output_chars_tab
+	call b_output_char
+	jmp b_output_chars_nextchar
 
-os_output_chars_newline:
+b_output_chars_newline:
 	mov al, [rsi]
 	cmp al, 10
-	je os_output_chars_newline_skip_LF
+	je b_output_chars_newline_skip_LF
 	call os_print_newline
-	jmp os_output_chars_nextchar
+	jmp b_output_chars_nextchar
 
-os_output_chars_newline_skip_LF:
+b_output_chars_newline_skip_LF:
 	cmp rcx, 0
-	je os_output_chars_newline_skip_LF_nosub
+	je b_output_chars_newline_skip_LF_nosub
 	sub rcx, 1
-os_output_chars_newline_skip_LF_nosub:
+b_output_chars_newline_skip_LF_nosub:
 	add rsi, 1
 	call os_print_newline
-	jmp os_output_chars_nextchar
+	jmp b_output_chars_nextchar
 
-os_output_chars_tab:
+b_output_chars_tab:
 	push rcx
 	mov ax, [os_Screen_Cursor_Col]	; Grab the current cursor X value (ex 7)
 	mov cx, ax
@@ -199,15 +199,15 @@ os_output_chars_tab:
 	sub ax, cx			; (ex 8 - 7 = 1)
 	mov cx, ax
 	mov al, ' '
-os_output_chars_tab_next:
-	call os_output_char
+b_output_chars_tab_next:
+	call b_output_char
 	sub cx, 1
 	cmp cx, 0
-	jne os_output_chars_tab_next
+	jne b_output_chars_tab_next
 	pop rcx
-	jmp os_output_chars_nextchar
+	jmp b_output_chars_nextchar
 
-os_output_chars_done:
+b_output_chars_done:
 	pop rax
 	pop rcx
 	pop rsi

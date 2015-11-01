@@ -11,9 +11,9 @@
 align 16
 exception_gate:
 	mov rsi, int_string00
-	call os_output
+	call b_output
 	mov rsi, exc_string
-	call os_output
+	call b_output
 	jmp $				; Hang
 ; -----------------------------------------------------------------------------
 
@@ -87,7 +87,7 @@ keyboard_noshift:
 keyboard_done:
 	mov al, 0x20			; Acknowledge the IRQ
 	out 0x20, al
-	call os_smp_wakeup_all		; A terrible hack
+	call b_smp_wakeup_all		; A terrible hack
 
 	popfq
 	pop rax
@@ -182,7 +182,7 @@ network:
 	pushfq
 
 	cld				; Clear direction flag
-	call os_net_ack_int		; Call the driver function to acknowledge the interrupt internally
+	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 	bt ax, 0			; TX bit set (caused the IRQ?)
 	jc network_tx			; If so then jump past RX section
@@ -193,7 +193,7 @@ network_rx_as_well:
 	mov rdi, os_EthernetBuffer	; Raw packet is copied here
 	push rdi
 	add rdi, 2
-	call os_net_rx_from_interrupt
+	call b_net_rx_from_interrupt
 	pop rdi
 	mov rax, rcx
 	stosw				; Store the size of the packet
@@ -430,14 +430,14 @@ exception_gate_main:
 	push rbx
 	push rdi
 	push rsi
-	push rax			; Save RAX since os_smp_get_id clobbers it
+	push rax			; Save RAX since b_smp_get_id clobbers it
 	call os_print_newline
 	mov rsi, int_string00
-	call os_output
-	call os_smp_get_id		; Get the local CPU ID and print it
+	call b_output
+	call b_smp_get_id		; Get the local CPU ID and print it
 	call os_debug_dump_ax
 	mov rsi, int_string01
-	call os_output
+	call b_output
 	mov rsi, exc_string00
 	pop rax
 	and rax, 0x00000000000000FF	; Clear out everything in RAX except for AL
@@ -447,7 +447,7 @@ exception_gate_main:
 	add rsi, rax			; Use the value in RAX as an offset to get to the right message
 	pop rax
 	mov bl, 0x0F
-	call os_output
+	call b_output
 	call os_print_newline
 	pop rsi
 	pop rdi
@@ -456,7 +456,7 @@ exception_gate_main:
 	call os_print_newline
 	call os_debug_dump_reg
 	mov rsi, rip_string
-	call os_output
+	call b_output
 	push rax
 	mov rax, [rsp+0x08] 		; RIP of caller
 	call os_debug_dump_rax
@@ -466,7 +466,7 @@ exception_gate_main:
 	push rcx
 	push rsi
 	mov rsi, stack_string
-	call os_output
+	call b_output
 	mov rsi, rsp
 	add rsi, 0x18
 	mov rcx, 4
@@ -474,7 +474,7 @@ next_stack:
 	lodsq
 	call os_debug_dump_rax
 	mov al, ' '
-	call os_output_char
+	call b_output_char
 	loop next_stack
 	call os_print_newline
 	pop rsi

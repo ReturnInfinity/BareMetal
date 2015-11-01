@@ -43,7 +43,7 @@ os_debug_dump_reg_next:
 	mov bl, 5					; Each string is 5 bytes
 	mul bl						; AX = BL x AL
 	add rsi, rax					; Add the offset to get to the correct string
-	call os_output					; Print the register name
+	call b_output					; Print the register name
 	pop rax						; Pop the register from the stack
 	call os_debug_dump_rax				; Print the hex string value of RAX
 	inc byte [os_debug_dump_reg_stage]
@@ -91,7 +91,7 @@ os_debug_dump_mem_print_address:
 
 	push rsi
 	mov rsi, divider4
-	call os_output
+	call b_output
 	pop rsi
 
 os_debug_dump_mem_print_contents:
@@ -100,7 +100,7 @@ os_debug_dump_mem_print_contents:
 	call os_debug_dump_rax
 	push rsi
 	mov rsi, divider2
-	call os_output
+	call b_output
 	pop rsi
 	lodsq
 	bswap rax			; Switch Endianness
@@ -108,7 +108,7 @@ os_debug_dump_mem_print_contents:
 
 	push rsi
 	mov rsi, divider4
-	call os_output
+	call b_output
 	pop rsi
 
 os_debug_dump_mem_print_ascii:
@@ -116,7 +116,7 @@ os_debug_dump_mem_print_ascii:
 	xor rcx, rcx			; Clear the counter
 os_debug_dump_mem_print_ascii_next:
 	lodsb
-	call os_output_char
+	call b_output_char
 	add rcx, 1
 	cmp rcx, 16
 	jne os_debug_dump_mem_print_ascii_next
@@ -170,11 +170,11 @@ os_debug_dump_al:
 	push rax			; Save RAX since we work in 2 parts
 	shr al, 4			; Shift high 4 bits into low 4 bits
 	xlatb
-	call os_output_char
+	call b_output_char
 	pop rax
 	and al, 0x0f			; Clear the high 4 bits
 	xlatb
-	call os_output_char
+	call b_output_char
 	pop rax
 	pop rbx
 	ret
