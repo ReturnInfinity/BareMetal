@@ -12,9 +12,6 @@ hextable: 		db '0123456789ABCDEF'
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
 readymsg:		db 'BareMetal is ready', 13, 0
-space:			db ' ', 0
-newline:		db 13, 0
-tab:			db 9, 0
 memory_message:		db 'Not enough system memory for CPU stacks! System halted.', 0
 
 ; Memory addresses
@@ -48,8 +45,6 @@ programlocation:	equ 0x0000000000200000	; Location in memory where programs are 
 os_LocalAPICAddress:	equ os_SystemVariables + 0
 os_IOAPICAddress:	equ os_SystemVariables + 8
 os_ClockCounter:	equ os_SystemVariables + 16
-os_VideoBase:		equ os_SystemVariables + 24
-screen_cursor_offset:	equ os_SystemVariables + 32
 os_StackBase:		equ os_SystemVariables + 40
 os_net_transmit:	equ os_SystemVariables + 48
 os_net_poll:		equ os_SystemVariables + 56
@@ -75,10 +70,6 @@ os_HPETRate:		equ os_SystemVariables + 260
 os_MemAmount:		equ os_SystemVariables + 264	; in MiB
 ahci_port:		equ os_SystemVariables + 268
 hd1_size:		equ os_SystemVariables + 272	; in MiB
-os_Screen_Pixels:	equ os_SystemVariables + 276
-os_Screen_Bytes:	equ os_SystemVariables + 280
-os_Screen_Row_2:	equ os_SystemVariables + 284
-os_Font_Color:		equ os_SystemVariables + 288
 
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 512
@@ -88,21 +79,15 @@ os_QueueLen:		equ os_SystemVariables + 518
 os_QueueLock:		equ os_SystemVariables + 520	; Bit 0 clear for unlocked, set for locked.
 os_NetIOAddress:	equ os_SystemVariables + 522
 os_NetLock:		equ os_SystemVariables + 524
-os_VideoX:		equ os_SystemVariables + 526
-os_VideoY:		equ os_SystemVariables + 528
 os_Screen_Rows:		equ os_SystemVariables + 530
 os_Screen_Cols:		equ os_SystemVariables + 532
 os_Screen_Cursor_Row:	equ os_SystemVariables + 534
 os_Screen_Cursor_Col:	equ os_SystemVariables + 536
 
 ; DB - Starting at offset 768, increments by 1
-cursorx:		equ os_SystemVariables + 768	; cursor row location
-cursory:		equ os_SystemVariables + 769	; cursor column location
 scancode:		equ os_SystemVariables + 770
 key:			equ os_SystemVariables + 771
 key_shift:		equ os_SystemVariables + 772
-screen_cursor_x:	equ os_SystemVariables + 773
-screen_cursor_y:	equ os_SystemVariables + 774
 os_PCIEnabled:		equ os_SystemVariables + 775	; 1 if PCI is detected
 os_NetEnabled:		equ os_SystemVariables + 776	; 1 if a supported network card was enabled
 os_NetIRQ:		equ os_SystemVariables + 778	; Set to Interrupt line that NIC is connected to
@@ -115,8 +100,6 @@ os_DiskActivity:	equ os_SystemVariables + 784
 app_argc:		equ os_SystemVariables + 785
 
 cpuqueuemax:		dw 256
-screen_rows: 		db 25 ; x
-screen_cols: 		db 80 ; y
 
 ; Function variables
 os_debug_dump_reg_stage:	db 0x00
@@ -127,6 +110,7 @@ keylayoutupper:
 db 0x00, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0x0e, 0, 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0x1c, 0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', 0x22, '~', 0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0, ' ', 0
 ; 0e = backspace
 ; 1c = enter
+
 
 os_debug_dump_reg_string00:	db '  A:', 0
 os_debug_dump_reg_string01:	db '  B:', 0
