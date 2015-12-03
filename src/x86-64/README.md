@@ -33,6 +33,7 @@ Start the GNU debugger
 Set our parameters and connect to the local QEMU instance
 
 	set arch i386:x86-64
+	set disassembly-flavor intel
 	layout asm
 	layout regs
 	target remote localhost:1234
