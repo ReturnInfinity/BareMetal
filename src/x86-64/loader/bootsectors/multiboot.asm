@@ -46,6 +46,18 @@ multiboot_entry:
 	push 0
 	popf
 
+; Copy memory map
+	mov esi, ebx		; GRUB stores the memory map at the address in EBX
+	mov edi, 0x4000		; We want it stored here
+	sub esi, 4
+	lodsd			; Grab the size in bytes
+	mov ecx, eax
+	rep movsb
+	xor eax, eax
+	mov ecx, 8
+	rep stosd
+
+; Copy loader and kernel to expected location
 	mov esi, multiboot_end
 	mov edi, 0x00008000
 	mov ecx, 8192		; Copy 32K
