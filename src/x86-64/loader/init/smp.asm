@@ -137,17 +137,6 @@ speedtest:
 	div rcx
 	mov [cpu_speed], ax
 
-; Clear the periodic flag in the RTC
-	mov al, 0x0B			; Status Register B
-	out 0x70, al			; Select the address
-	in al, 0x71			; Read the current settings
-	push rax
-	mov al, 0x0B			; Status Register B
-	out 0x70, al			; Select the address
-	pop rax
-	btc ax, 6			; Set Periodic(6)
-	out 0x71, al			; Write the new settings
-
 	mov al, 'E'
 	mov [0x000B809E], al
 
