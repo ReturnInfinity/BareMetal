@@ -47,12 +47,30 @@ multiboot_entry:
 	popf
 
 ; Copy memory map
-	mov esi, ebx		; GRUB stores the memory map at the address in EBX
-	mov edi, 0x4000		; We want it stored here
-	sub esi, 4
-	lodsd			; Grab the size in bytes
+	mov esi, ebx		; GRUB stores the Multiboot info table at the address in EBX
+	mov edi, 0x4000		; We want the memory map stored here
+	add esi, 44		; Memory map address at this offset in the Mutliboot table
+	lodsd			; Grab the memory map size in bytes
 	mov ecx, eax
-	rep movsb
+	lodsd			; Grab the memory map address
+	mov esi, eax
+
+memmap_entry:
+	lodsd			; Size of entry
+	cmp eax, 0
+	je memmap_end
+	movsd			; base_addr_low
+	movsd			; base_addr_high
+	movsd			; length_low
+	movsd			; length_high
+	movsd			; type
+	xor eax, eax
+	stosd			; padding
+	stosd
+	stosd
+	jmp memmap_entry
+
+memmap_end:
 	xor eax, eax
 	mov ecx, 8
 	rep stosd

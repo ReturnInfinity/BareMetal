@@ -44,3 +44,7 @@ Execution will be stopped where you put the 'jmp $' in the code. Take a look at 
 	jump *0xXXXXXXX
 
 	stepi
+
+Dump some memory
+
+	x 0xXXXXX

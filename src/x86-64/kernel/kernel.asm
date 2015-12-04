@@ -50,7 +50,7 @@ start:
 	mov word [os_Screen_Cursor_Col], 0
 	mov rsi, readymsg
 	call b_output
-jmp $
+
 	; Fall through to ap_clear as align fills the space with No-Ops
 	; At this point the BSP is just like one of the AP's
 ; -----------------------------------------------------------------------------
