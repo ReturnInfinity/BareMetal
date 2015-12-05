@@ -11,7 +11,7 @@ BareMetal is a _very_ lean kernel. The name is a play on the phrase "bare metal"
 
 BareMetal provides basic hardware support for network and disk access via a low-level abstraction layer.
 
-[BareMetal Model](./doc/BareMetal-Model.png)
+![BareMetal Model](./doc/BareMetal-Model.png)
 
 ### Key features
 * **Extremely tiny memory footprint**: A minimal bootable image, including bootloader and operating system components, is currently 16K.
