@@ -112,6 +112,43 @@ rtc_poll:
 	out 0x21, al
 	out 0xA1, al
 
+; Hide VGA hardware cursor
+	mov al, 0x0F		; Cursor Low Port
+	mov dx, 0x03D4
+	out dx, al
+	mov al, 0xFF
+	mov dx, 0x03D5
+	out dx, al
+	mov al, 0x0E		; Cursor High Port
+	mov dx, 0x03D4
+	out dx, al
+	mov al, 0xFF
+	mov dx, 0x03D5
+	out dx, al
+
+; Configure serial port
+	mov dx, 0x03F9
+	mov al, 0x00
+	out dx, al
+	mov al, 0x80
+	add dx, 2
+	out dx, al
+	mov al, 0x01		; Set divisor to 1 for 115200 baud
+	sub dx, 4
+	out dx, al
+	mov al, 0x00
+	add dx, 1
+	out dx, al
+	mov al, 0x03
+	add dx, 2
+	out dx, al
+	mov al, 0xC7
+	sub dx, 1
+	out dx, al
+	mov al, 0x0B
+	add dx, 2
+	out dx, al
+
 ; Clear out the first 4096 bytes of memory. This will store the 64-bit IDT, GDT, PML4, and PDP
 	mov ecx, 1024
 	xor eax, eax
