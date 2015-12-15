@@ -53,6 +53,8 @@ init_net_probe_found:
 	je init_net_probe_found_rtl8169
 	cmp edx, 0x8254FFFF
 	je init_net_probe_found_i8254x
+	cmp edx, 0x1AF4FFFF
+	je init_net_probe_found_virtio
 	jmp init_net_probe_not_found
 
 init_net_probe_found_rtl8169:
@@ -74,6 +76,17 @@ init_net_probe_found_i8254x:
 	mov rax, net_i8254x_poll
 	stosq
 	mov rax, net_i8254x_ack_int
+	stosq
+	jmp init_net_probe_found_finish
+
+init_net_probe_found_virtio:
+	call net_virtio_init
+	mov rdi, os_net_transmit
+	mov rax, net_virtio_transmit
+	stosq
+	mov rax, net_virtio_poll
+	stosq
+	mov rax, net_virtio_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 

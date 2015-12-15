@@ -13,12 +13,17 @@
 %include "drivers/storage/ahci.asm"
 ; %include "drivers/storage/ide.asm"
 
-%include "drivers/net/rtl8169.asm"
 %include "drivers/net/i8254x.asm"
+%include "drivers/net/rtl8169.asm"
+%include "drivers/net/virtio.asm"
 
 
 NIC_DeviceVendor_ID:			; The supported list of NICs
 ; The ID's are Device/Vendor
+
+; Virtio
+dd 0x1AF4FFFF
+dd 0x10001AF4
 
 ; Realtek 816x/811x Gigabit Ethernet
 dd 0x8169FFFF
