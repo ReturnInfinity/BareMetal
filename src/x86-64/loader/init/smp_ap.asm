@@ -38,17 +38,6 @@ check_A20_ap:
 
 align 16
 
-GDTR32:					; Global Descriptors Table Register
-dw gdt32_end - gdt32 - 1		; limit of GDT (size minus one)
-dq gdt32				; linear address of GDT
-
-align 16
-gdt32:
-dw 0x0000, 0x0000, 0x0000, 0x0000	; Null desciptor
-dw 0xFFFF, 0x0000, 0x9A00, 0x00CF	; 32-bit code descriptor
-dw 0xFFFF, 0x0000, 0x9200, 0x00CF	; 32-bit data descriptor
-gdt32_end:
-
 ; =============================================================================
 ; 32-bit mode
 USE32

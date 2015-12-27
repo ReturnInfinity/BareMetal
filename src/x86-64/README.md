@@ -3,9 +3,14 @@ x86-64
 
 Targeting x86-64 based systems (Intel and AMD)
 
+Building
+--------
 
-QEMU
-----
+	./build_x86-64.sh
+
+
+Running in QEMU
+---------------
 
 	qemu-system-x86_64 -machine q35 -cpu core2duo -smp 2 -m 1024 -kernel ./boot.bin
 
@@ -13,12 +18,15 @@ QEMU
 Debugging
 ---------
 
+This short segment deals with debugging in GDB.
+
+
 Terminal 1
 ==========
 
 Set a 'jmp $' somewhere in the source code.
 
-	./build
+	./build_x86-64.sh
 
 	qemu-system-x86_64 -machine q35 -cpu core2duo -smp 2 -m 1024 -kernel ./boot.bin -s
 

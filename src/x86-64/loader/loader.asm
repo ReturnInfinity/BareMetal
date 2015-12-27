@@ -50,13 +50,6 @@ align 16
 ; 32-bit mode
 USE32
 start32:
-;	mov eax, 16			; load 4 GB data descriptor
-;	mov ds, ax			; to all data segment registers
-;	mov es, ax
-;	mov fs, ax
-;	mov gs, ax
-;	mov ss, ax
-
 	mov edi, 0xb8000		; Clear the screen
 	mov ax, 0x0720
 	mov cx, 2000
@@ -537,14 +530,6 @@ nextIOAPIC:
 	sub cl, 1
 	cmp cl, 0
 	jne nextIOAPIC
-
-	mov di, 0x5080
-	mov eax, [VBEModeInfoBlock.PhysBasePtr]		; Base address of video memory (if graphics mode is set)
-	stosd
-	mov eax, [VBEModeInfoBlock.XResolution]		; X and Y resolution (16-bits each)
-	stosd
-	mov al, [VBEModeInfoBlock.BitsPerPixel]		; Color depth
-	stosb
 
 ; Initialization is now complete... write a message to the screen
 ;	mov rsi, msg_done
