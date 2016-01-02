@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2015 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
 ;
 ; The BareMetal exokernel. Assemble with NASM
 ; =============================================================================
@@ -9,7 +9,7 @@
 USE64
 ORG 0x0000000000100000
 
-%DEFINE BAREMETAL_VER 'v1.0.0 (January 26, 2015)', 13, 'Copyright (C) 2008-2015 Return Infinity', 13, 0
+%DEFINE BAREMETAL_VER 'v1.0.0 (January 26, 2015)', 13, 'Copyright (C) 2008-2016 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 
 
