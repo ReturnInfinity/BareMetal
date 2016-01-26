@@ -5,16 +5,9 @@
 ; AHCI Driver
 ; =============================================================================
 
-align 16
-db 'DEBUG: AHCI     '
-align 16
-
 
 ; -----------------------------------------------------------------------------
 init_ahci:
-	mov rsi, diskmsg
-	call os_output
-
 ; Probe for an AHCI hard drive controller
 	xor ebx, ebx			; Clear the Bus number
 	xor ecx, ecx			; Clear the Device/Slot number
@@ -71,7 +64,7 @@ founddrive:
 	mov [ahci_port], ecx
 	mov rdi, rsi
 	add rdi, 0x100			; Offset to port 0
-	push rcx				; Save port number
+	push rcx			; Save port number
 	shl rcx, 7			; Quick multiply by 0x80
 	add rdi, rcx
 	pop rcx				; Restore port number
@@ -79,7 +72,7 @@ founddrive:
 	stosd				; Offset 00h: PxCLB – Port x Command List Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; Offset 04h: PxCLBU – Port x Command List Base Address Upper 32-bits
-	mov rax, ahci_receivedfis	; 256 or 4096 bytes per port
+	mov rax, ahci_cmdlist + 0x1000	; 256 or 4096 bytes per port
 	stosd				; Offset 08h: PxFB – Port x FIS Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; Offset 0Ch: PxFBU – Port x FIS Base Address Upper 32-bits
@@ -94,22 +87,12 @@ founddrive:
 	shr rax, 11			; rax = rax * 512 / 1048576	MiB
 ;	shr rax, 21			; rax = rax * 512 / 1073741824	GiB
 	mov [hd1_size], eax		; in mebibytes (MiB)
-	mov rdi, os_temp_string
-	mov rsi, rdi
-	call os_int_to_string
-	call os_output
-	mov rsi, mibmsg
-	call os_output
 
 	; Found a bootable drive
 	mov byte [os_DiskEnabled], 0x01
 
-	ret
-
 init_ahci_err_noahci:
 hdd_setup_err_nodisk:
-	mov rsi, namsg
-	call os_output
 
 	ret
 ; -----------------------------------------------------------------------------
@@ -129,7 +112,7 @@ iddrive:
 	shl rcx, 7			; Quick multiply by 0x80
 	add rcx, 0x100			; Offset to port 0
 
-	push rdi				; Save the destination memory address
+	push rdi			; Save the destination memory address
 
 	mov rsi, [ahci_base]
 
@@ -203,7 +186,7 @@ iddrive_poll:
 	pop rcx
 	pop rsi
 	pop rdi
-ret
+	ret
 ; -----------------------------------------------------------------------------
 
 
@@ -225,9 +208,9 @@ readsectors:
 	push rcx
 	push rax
 
-	push rcx				; Save the sector count
-	push rdi				; Save the destination memory address
-	push rax				; Save the block number
+	push rcx			; Save the sector count
+	push rdi			; Save the destination memory address
+	push rax			; Save the block number
 	push rax
 
 	shl rdx, 7			; Quick multiply by 0x80
@@ -322,7 +305,7 @@ readsectors_poll:
 	add rdi, rbx
 	pop rbx
 	pop rdx
-ret
+	ret
 ; -----------------------------------------------------------------------------
 
 
@@ -344,9 +327,9 @@ writesectors:
 	push rcx
 	push rax
 
-	push rcx				; Save the sector count
-	push rsi				; Save the source memory address
-	push rax				; Save the block number
+	push rcx			; Save the sector count
+	push rsi			; Save the source memory address
+	push rax			; Save the block number
 	push rax
 
 	shl rdx, 7			; Quick multiply by 0x80
@@ -442,7 +425,7 @@ writesectors_poll:
 	add rdi, rbx
 	pop rbx
 	pop rdx
-ret
+	ret
 ; -----------------------------------------------------------------------------
 
 
