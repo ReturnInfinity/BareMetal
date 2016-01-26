@@ -29,6 +29,11 @@ Prerequisites for building BareMetal
  * [NASM](http://www.nasm.us/) (The Netwide Assembler) - At least version 2.07
  * That's it!
 
+Editing BareMetal
+-----------------
+
+[ATOM](https://atom.io/) is highly recommended. Make sure to install the [language-x86-64-assembly](https://atom.io/packages/language-x86-64-assembly) package for proper syntax highlighting.
+
 Building BareMetal
 ------------------
 
