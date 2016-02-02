@@ -44,11 +44,10 @@ start:
 	call init_hdd			; Initialize the disk
 	call init_net			; Initialize the network
 
-	mov ax, [os_Screen_Rows]	; Display the "ready" message and reset cursor to bottom left
-	sub ax, 1
-	mov word [os_Screen_Cursor_Row], ax
-	mov word [os_Screen_Cursor_Col], 0
-	mov rsi, readymsg
+	movzx eax, word [os_Screen_Rows]; Display the "ready" message and reset cursor to bottom left
+	sub eax, 1
+	mov word [os_Screen_Cursor_Row], eax ; zero extended to set os_Screen_Cursor_Col=1
+	mov esi, readymsg
 	call b_output
 
 	; Fall through to ap_clear as align fills the space with No-Ops
@@ -67,21 +66,21 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
 	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
 	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
-	shr rax, 24			; Shift to the right and AL now holds the CPU's APIC ID
+	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
 
 	; Calculate offset into CPU status table
-	mov rdi, cpustatus
-	add rdi, rax			; RDI points to this cores status byte (we will clear it later)
+	mov edi, cpustatus
+	add edi, eax			; RDI points to this cores status byte (we will clear it later)
 
 	; Set up the stack
-	shl rax, 21			; Shift left 21 bits for a 2 MiB stack
+	shl eax, 21			; Shift left 21 bits for a 2 MiB stack
 	add rax, [os_StackBase]		; The stack decrements when you "push", start at 2 MiB in
 	sub rax, 8
 	mov rsp, rax
 
 	; Set the CPU status to "Present" and "Ready"
-	mov al, 00000001b		; Bit 0 set for "Present", Bit 1 clear for "Ready"
-	stosb				; Set status to Ready for this CPU
+					; Bit 0 set for "Present", Bit 1 clear for "Ready"
+	mov byte [rdi], 1		; Set status to Ready for this CPU
 
 	sti				; Enable interrupts on this core
 
@@ -103,8 +102,9 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	xor r15, r15
 
 ap_spin:				; Spin until there is a workload in the queue
-	cmp word [os_QueueLen], 0	; Check the length of the queue
-	je ap_halt			; If the queue was empty then jump to the HLT
+	movzx eax, word [os_QueueLen]
+	test eax, eax			; Check the length of the queue
+	jz ap_halt			; If the queue was empty then jump to the HLT
 	call b_smp_dequeue		; Try to pull a workload out of the queue
 	jnc ap_process			; Carry clear if successful, jump to ap_process
 
@@ -115,11 +115,10 @@ ap_halt:				; Halt until a wakeup call is received
 ap_process:				; Set the status byte to "Busy" and run the code
 	push rdi			; Push RDI since it is used temporarily
 	push rax			; Push RAX since b_smp_get_id uses it
-	mov rdi, cpustatus
+	mov edi, cpustatus
 	call b_smp_get_id		; Set RAX to the APIC ID
-	add rdi, rax
-	mov al, 00000011b		; Bit 0 set for "Present", Bit 1 set for "Busy"
-	stosb
+	add edi, eax
+	mov byte [rdi], 0011b		; Bit 0 set for "Present", Bit 1 set for "Busy"
 	pop rax				; Pop RAX (holds the workload code address)
 	pop rdi				; Pop RDI (holds the variable/variable address)
 
