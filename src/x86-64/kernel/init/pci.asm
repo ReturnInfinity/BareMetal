@@ -12,10 +12,9 @@ init_pci:
 	mov dx, PCI_CONFIG_ADDRESS
 	out dx, eax
 	in eax, dx
-	xor edx, edx
 	cmp eax, 0x80000000
-	sete dl 
-	mov byte [os_PCIEnabled], dl
+	jne init_pci_not_found
+	mov byte [os_PCIEnabled], 1
 
 init_pci_not_found:
 	ret

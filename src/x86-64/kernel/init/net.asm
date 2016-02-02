@@ -16,11 +16,12 @@ init_net:
 init_net_probe_next:
 	call os_pci_read_reg
 	shr eax, 16			; Move the Class/Subclass code to AX
-	cmp eax, 0x0200			; Network Controller (02) / Ethernet (00)
+	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver	; Found a Network Controller... now search for a driver
 	add ecx, 1
 	cmp ecx, 256			; Maximum 256 devices/functions per bus
-	jne init_net_probe_next
+	je init_net_probe_next_bus
+	jmp init_net_probe_next
 
 init_net_probe_next_bus:
 	xor ecx, ecx
@@ -33,20 +34,19 @@ init_net_probe_find_driver:
 	xor edx, edx				; Register 0 for Device/Vendor ID
 	call os_pci_read_reg			; Read the Device/Vendor ID from the PCI device
 	mov r8d, eax				; Save the Device/Vendor ID in R8D
-	mov esi, NIC_DeviceVendor_ID
+	mov rsi, NIC_DeviceVendor_ID
 	lodsd					; Load a driver ID - Low half must be 0xFFFF
 init_net_probe_find_next_driver:
-	mov edx, eax				; Save the driver ID
+	mov rdx, rax				; Save the driver ID
 init_net_probe_find_next_device:
 	lodsd					; Load a device and vendor ID from our list of supported NICs
-	test eax, eax				; 0x00000000 means we have reached the end of the list
-	jz init_net_probe_not_found		; No supported NIC found
-	movzx ebx, ax
-	cmp ebx, 0xFFFF				; New driver ID?
+	cmp eax, 0x00000000			; 0x00000000 means we have reached the end of the list
+	je init_net_probe_not_found		; No supported NIC found
+	cmp ax, 0xFFFF				; New driver ID?
 	je init_net_probe_find_next_driver	; We found the next driver type
 	cmp eax, r8d
-						; If Carry is clear then we found a supported NIC
-	jne init_net_probe_find_next_device	; Else, check the next device
+	je init_net_probe_found			; If Carry is clear then we found a supported NIC
+	jmp init_net_probe_find_next_device	; Check the next device
 
 init_net_probe_found:
 	cmp edx, 0x8169FFFF
@@ -91,14 +91,16 @@ init_net_probe_found_virtio:
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_finish:
-	movzx eax, byte [os_NetIRQ]
+	xor eax, eax
+	mov al, [os_NetIRQ]
 
-	lea edi, [rax+0x20]
+	add al, 0x20
+	mov rdi, rax
 	mov rax, network
 	call create_gate
 
 	; Enable the Network IRQ
-	movzx eax, byte [os_NetIRQ]
+	mov al, [os_NetIRQ]
 	call os_pic_mask_clear
 
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
