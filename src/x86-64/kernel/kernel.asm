@@ -46,7 +46,7 @@ start:
 
 	movzx eax, word [os_Screen_Rows]; Display the "ready" message and reset cursor to bottom left
 	sub eax, 1
-	mov word [os_Screen_Cursor_Row], eax ; zero extended to set os_Screen_Cursor_Col=1
+	mov [os_Screen_Cursor_Row], eax ; zero extended to set os_Screen_Cursor_Col=1
 	mov esi, readymsg
 	call b_output
 
