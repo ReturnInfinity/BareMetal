@@ -21,15 +21,16 @@ b_disk_read:
 	push rcx
 	push rax
 
-	cmp rcx, 0
-	je b_disk_read_done		; Bail out if instructed to read nothing
+	test rcx, rcx
+	jz b_disk_read_done		; Bail out if instructed to read nothing
 	shl rax, 3			; Convert to 512B starting sector
 
 b_disk_read_loop:			; Read one sector at a time
-	push rcx
-	mov rcx, 8			; 8 512B sectors = 1 4K sector
+	mov r8, rcx
+	xor ecx, ecx
+	mov cl, 8			; 8 512B sectors = 1 4K sector
 	call readsectors		; Driver deals with 512B sectors
-	pop rcx
+	mov rcx, r8
 	sub rcx, 1
 	jnz b_disk_read_loop
 
@@ -53,15 +54,16 @@ b_disk_write:
 	push rcx
 	push rax
 
-	cmp rcx, 0
+	test rcx, rcx
 	je b_disk_write_done		; Bail out if instructed to write nothing
 	shl rax, 3			; Convert to 512B starting sector
 
 b_disk_write_loop:			; Write one sector at a time
-	push rcx
-	mov rcx, 8			; 8 512B sectors = 1 4K sector
+	mov r8, rcx
+	xor ecx, ecx
+	mov cl, 8			; 8 512B sectors = 1 4K sector
 	call writesectors		; Driver deals with 512B sectors
-	pop rcx
+	mov rcx, r8
 	sub rcx, 1
 	jnz b_disk_write_loop
 
