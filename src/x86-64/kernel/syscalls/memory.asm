@@ -16,24 +16,23 @@ b_mem_allocate:
 	push rdx
 	push rbx
 
-	cmp rcx, 0
-	je b_mem_allocate_fail		; At least 1 page must be allocated
+	test ecx, ecx
+	jz b_mem_allocate_fail		; At least 1 page must be allocated
 
 	; Here, we'll load the last existing page of memory in RSI.
 	; RAX and RSI instructions are purposefully interleaved.
 
-	xor rax, rax
-	mov rsi, os_MemoryMap		; First available memory block
+	mov esi, os_MemoryMap		; First available memory block
 	mov eax, [os_MemAmount]		; Total memory in MiB from a double-word
-	mov rdx, rsi			; Keep os_MemoryMap unmodified for later in RDX
+	mov edx, esi			; Keep os_MemoryMap unmodified for later in RDX
 	shr eax, 1			; Divide actual memory by 2
 
-	sub rsi, 1
+	sub esi, 1
 	std				; Set direction flag to backward
 	add rsi, rax			; RSI now points to the last page
 
 b_mem_allocate_start:			; Find a free page of memory, from the end.
-	mov rbx, rcx			; RBX is our temporary counter
+	mov ebx, ecx			; RBX is our temporary counter
 
 b_mem_allocate_nextpage:
 	lodsb
@@ -43,26 +42,26 @@ b_mem_allocate_nextpage:
 	cmp al, 1
 	jne b_mem_allocate_start	; Page is taken, start counting from scratch
 
-	dec rbx				; We found a page! Any page left to find?
+	dec ebx				; We found a page! Any page left to find?
 	jnz b_mem_allocate_nextpage
 
 b_mem_allocate_mark:			; We have a suitable free series of pages. Allocate them.
 	cld				; Set direction flag to forward
 
-	xor rdi, rsi			; We swap rdi and rsi to keep rdi contents.
-	xor rsi, rdi
-	xor rdi, rsi
+	xchg rdi, rsi			; We swap rdi and rsi to keep rdi contents.
+	
 
 	; Instructions are purposefully swapped at some places here to avoid
 	; direct dependencies line after line.
-	push rcx			; Keep RCX as is for the 'rep stosb' to come
+	mov r8, rcx			; Keep RCX as is for the 'rep stosb' to come
 	add rdi, 1
+	xor eax, eax
 	mov al, 2
 	mov rbx, rdi			; RBX points to the starting page
 	rep stosb
 	mov rdi, rsi			; Restoring RDI
 	sub rbx, rdx			; RBX now contains the memory page number
-	pop rcx 			; Restore RCX
+	mov rcx, r8 			; Restore RCX
 
 	; Only dependency left is between the two next lines.
 	shl rbx, 21			; Quick multiply by 2097152 (2 MiB) to get the starting memory address
@@ -71,7 +70,7 @@ b_mem_allocate_mark:			; We have a suitable free series of pages. Allocate them.
 
 b_mem_allocate_fail:
 	cld				; Set direction flag to forward
-	xor rax, rax			; Failure so set RAX to 0 (No pages allocated)
+	xor eax, eax			; Failure so set RAX to 0 (No pages allocated)
 
 b_mem_allocate_end:
 	pop rbx
@@ -92,8 +91,9 @@ b_mem_release:
 	push rax
 
 	shr rax, 21			; Quick divide by 2097152 (2 MiB) to get the starting page number
-	add rax, os_MemoryMap
-	mov rdi, rax
+	
+	lea edi, [rax+os_MemoryMap]
+	xor eax, eax
 	mov al, 1
 	rep stosb
 
@@ -112,24 +112,58 @@ b_mem_get_free:
 	push rsi
 	push rbx
 	push rax
-
-	mov rsi, os_MemoryMap
-	xor rcx, rcx
-	xor rbx, rbx
-
+	push rdi
+	
+	mov esi, os_MemoryMap
+	mov rax, [rsi]
+	add esi, 8
+	xor ecx, ecx
+	mov ebx, 8192	; 65536/8
+	xor edx, edx
 b_mem_get_free_next:
-	lodsb
-	inc rcx
-	cmp rcx, 65536
-	je b_mem_get_free_end
+	mov rdi, [rsi] ; next chunk
+	
+	add esi, 8
+	cmp al, 1	; 1° byte
+	sete dl
+	add ecx, edx
+
+	shr rax, 8	; 2° byte
 	cmp al, 1
-	jne b_mem_get_free_next
-	inc rbx
-	jmp b_mem_get_free_next
+	sete dl
+	add ecx, edx	
+	
+	shr rax, 8	; 3° byte
+	cmp al, 1
+	sete dl
+	add ecx, edx
+	
+	shr eax, 8	; 4° byte
+	cmp al, 1
+	sete dl
+	add ecx, edx	
+	
+	shr eax, 8	; 5° byte
+	cmp al, 1
+	sete dl
+	add ecx, edx
+	
+	shr eax, 8	; 6° byte
+	cmp al, 1
+	sete dl
+	add ecx, edx
+	
+	shr eax, 8	; 7° byte
+	cmp al, 1
+	sete dl
+	add ecx, edx
+	
+	mov rax, rdi	; put next chuck to rax
+	sub ebx, 1
+	jnz b_mem_get_free_next
 
 b_mem_get_free_end:
-	mov rcx, rbx
-
+	pop rdi
 	pop rax
 	pop rbx
 	pop rsi
