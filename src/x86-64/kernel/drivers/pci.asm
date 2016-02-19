@@ -20,9 +20,9 @@ os_pci_read_reg:
 
 	shl ebx, 16			; Move Bus number to bits 23 - 16
 	shl ecx, 8			; Move Device/Slot/Fuction number to bits 15 - 8
-	mov bx, cx
+	or ebx, ecx
 	shl edx, 2
-	mov bl, dl
+	or ebx, edx
 	and ebx, 0x00ffffff		; Clear bits 31 - 24
 	or ebx, 0x80000000		; Set bit 31
 	mov eax, ebx
@@ -53,9 +53,9 @@ os_pci_write_reg:
 
 	shl ebx, 16			; Move Bus number to bits 23 - 16
 	shl ecx, 8			; Move Device/Slot/Fuction number to bits 15 - 8
-	mov bx, cx
+	or ebx, ecx
 	shl edx, 2
-	mov bl, dl
+	or ebx, edx
 	and ebx, 0x00ffffff		; Clear bits 31 - 24
 	or ebx, 0x80000000		; Set bit 31
 	mov eax, ebx
