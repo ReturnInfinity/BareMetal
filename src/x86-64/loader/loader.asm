@@ -51,9 +51,9 @@ align 16
 USE32
 start32:
 	mov edi, 0xb8000		; Clear the screen
-	mov ax, 0x0720
-	mov cx, 2000
-	rep stosw
+	mov eax, 0x07200720
+	mov ecx, 1000
+	rep stosd
 
 	xor eax, eax
 	xor ebx, ebx
@@ -86,7 +86,6 @@ rtc_poll:
 	; Remap PIC IRQ's
 	mov al, 00010001b		; begin PIC 1 initialization
 	out 0x20, al
-	mov al, 00010001b		; begin PIC 2 initialization
 	out 0xA0, al
 	mov al, 0x20			; IRQ 0-7: interrupts 20h-27h
 	out 0x21, al
@@ -107,23 +106,23 @@ rtc_poll:
 
 ; Hide VGA hardware cursor
 	mov al, 0x0F		; Cursor Low Port
-	mov dx, 0x03D4
+	mov edx, 0x03D4
 	out dx, al
 	mov al, 0xFF
-	mov dx, 0x03D5
+	inc edx 
 	out dx, al
 	mov al, 0x0E		; Cursor High Port
-	mov dx, 0x03D4
+	dec edx 
 	out dx, al
 	mov al, 0xFF
-	mov dx, 0x03D5
+	inc edx
 	out dx, al
 
 ; Configure serial port
 	mov dx, 0x03F9
-	mov al, 0x00
+	xor eax, eax
 	out dx, al
-	mov al, 0x80
+	mov al, 08xfa	
 	add dx, 2
 	out dx, al
 	mov al, 0x01		; Set divisor to 1 for 115200 baud
@@ -145,7 +144,7 @@ rtc_poll:
 ; Clear out the first 4096 bytes of memory. This will store the 64-bit IDT, GDT, PML4, and PDP
 	mov ecx, 1024
 	xor eax, eax
-	mov edi, eax
+	xor edi, edi
 	rep stosd
 
 ; Clear memory for the Page Descriptor Entries (0x10000 - 0x4FFFF)
@@ -164,50 +163,43 @@ rtc_poll:
 ; PML4 is stored at 0x0000000000002000, create the first entry there
 ; A single PML4 entry can map 512GB with 2MB pages.
 	cld
+	xor ebx, ebx
 	mov edi, 0x00002000		; Create a PML4 entry for the first 4GB of RAM
 	mov eax, 0x00003007
-	stosd
-	xor eax, eax
-	stosd
+	mov [edi], eax
+	mov [edi+4], ebx
 
 	mov edi, 0x00002800		; Create a PML4 entry for higher half (starting at 0xFFFF800000000000)
-	mov eax, 0x00003007		; The higher half is identity mapped to the lower half
-	stosd
-	xor eax, eax
-	stosd
-
+	mov [edi], eax
+	mov [edi+4], ebx
+	
 ; Create the PDP entries.
 ; The first PDP is stored at 0x0000000000003000, create the first entries there
 ; A single PDP entry can map 1GB with 2MB pages
-	mov ecx, 64			; number of PDPE's to make.. each PDPE maps 1GB of physical memory
+; ebx is still zero
+	lea ecx, [ebx+64]			; number of PDPE's to make.. each PDPE maps 1GB of physical memory
 	mov edi, 0x00003000
 	mov eax, 0x00010007		; location of first PD
 create_pdpe:
-	stosd
-	push eax
-	xor eax, eax
-	stosd
-	pop eax
-	add eax, 0x00001000		; 4K later (512 records x 8 bytes)
+	mov [edi], eax
+	mov [edi+4], ebx
+	add eax, 0x1000		; 4K later (512 records x 8 bytes)
+	add edi, 8
 	dec ecx
-	cmp ecx, 0
-	jne create_pdpe
+	jnz create_pdpe
 
 ; Create the PD entries.
 ; PD entries are stored starting at 0x0000000000010000 and ending at 0x000000000004FFFF (256 KiB)
 ; This gives us room to map 64 GiB with 2 MiB pages
 	mov edi, 0x00010000
-	mov eax, 0x0000008F		; Bit 7 must be set to 1 as we have 2 MiB pages
-	xor ecx, ecx
+	lea eax, [ebx+8F]     ; Bit 7 must be set to 1 as we have 2 MiB pages
+	mov ecx, 2048
 pd_again:				; Create a 2 MiB page
-	stosd
-	push eax
-	xor eax, eax
-	stosd
-	pop eax
+	mov [edi], eax
+	mov [edi+4], ebx
 	add eax, 0x00200000
-	inc ecx
-	cmp ecx, 2048
+	add edi, 8
+	dec ecx
 	jne pd_again			; Create 2048 2 MiB page maps.
 
 ; Load the GDT
