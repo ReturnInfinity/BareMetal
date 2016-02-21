@@ -16,18 +16,19 @@ os_move_cursor:
 	push rax
 
 	xor ebx, ebx
-	mov [screen_cursor_x], ah
+	movzx ebx, ah
+	mov [screen_cursor_x], bl
 	mov [screen_cursor_y], al
-	mov bl, ah
 
 	; Calculate the new offset
-	and rax, 0x00000000000000FF	; only keep the low 8 bits
-	mov cl, 80
-	mul cl				; AX = AL * CL
-	add ax, bx
-	shl ax, 1			; multiply by 2
+	movzx eax, al	; only keep the low 8 bits
+	movzx ecx, al
+	shl eax, 7	; al*128
+	shl ecx, 5	; al*32				; 
+	add eax, ecx			; AX = (AL* 80 + BL)*2
+	lea eax, [rax+rbx*2]		; =160*AL+2*BL
 
-	add rax, 0x00000000000B8000
+	add eax, 0xB8000
 	mov [screen_cursor_offset], rax
 
 	pop rax
@@ -43,21 +44,18 @@ os_move_cursor:
 ; OUT:	Nothing, all registers perserved
 os_print_newline:
 	push rax
-
-	mov ah, 0			; Set the cursor x value to 0
-	mov al, [screen_cursor_y]	; Grab the cursor y value
-	cmp al, 24			; Compare to see if we are on the last line
-	je os_print_newline_scroll	; If so then we need to scroll the sreen
-
-	inc al				; If not then we can go ahead an increment the y value
-	jmp os_print_newline_done
-
-os_print_newline_scroll:
-	mov ax, 0x0000			; If we have reached the end then wrap back to the front
+	push rbx
+	xor ebx, ebx
+					; Set the cursor x value to 0
+	movzx eax, byte [screen_cursor_y]	; Grab the cursor y value
+	add eax, 1			
+	cmp eax, 25
+	cmove eax, ebx			; If we have reached the end then wrap back to the front
 
 os_print_newline_done:
 	call os_move_cursor		; update the cursor
-
+	
+	pop rbx
 	pop rax
 	ret
 ; -----------------------------------------------------------------------------
@@ -105,7 +103,8 @@ os_print_char:
 
 	mov rdi, [screen_cursor_offset]
 	stosb
-	add qword [screen_cursor_offset], 2	; Add 2 (1 byte for char and 1 byte for attribute)
+	add rdi, 2
+	mov [screen_cursor_offset], rdi	; Add 2 (1 byte for char and 1 byte for attribute)
 
 	pop rdi
 	ret
@@ -120,7 +119,7 @@ os_print_char_hex:
 	push rbx
 	push rax
 
-	mov rbx, hextable
+	mov ebx, hextable
 
 	push rax			; save rax for the next part
 	shr al, 4			; we want to work on the high part so shift right by 4 bits
@@ -194,12 +193,9 @@ os_dump_regs:
 	call os_print_newline
 
 os_dump_regs_again:
-	mov rsi, os_dump_reg_string00
-	xor rax, rax
-	xor rbx, rbx
-	mov al, [os_dump_reg_stage]
-	mov bl, 5				; each string is 5 bytes
-	mul bl					; ax = bl x al
+	mov esi, os_dump_reg_string00
+	movzx eax, byte [os_dump_reg_stage]
+	lea eax,[rax+rax*4]			; each string is 5 bytes
 	add rsi, rax
 	call os_print_string			; Print the register name
 
@@ -263,13 +259,13 @@ os_dump_mem:
 
 	push rsi
 
-	mov rcx, 512
+	mov ecx, 512
 dumpit:
-	lodsb
+	movzx eax, [rsi]
+	add rsi, 1
 	call os_print_char_hex
-	dec rcx
-	cmp rcx, 0
-	jne dumpit
+	dec ecx
+	jnz dumpit
 
 	pop rsi
 
@@ -299,22 +295,22 @@ os_int_to_string:
 	push rbx
 	push rax
 
-	mov rbx, 10				; base of the decimal system
-	xor rcx, rcx				; number of digits generated
+	mov ebx, 10				; base of the decimal system
+	xor ecx, ecx				; number of digits generated
 os_int_to_string_next_divide:
-	xor rdx, rdx				; RAX extended to (RDX,RAX)
-	div rbx					; divide by the number-base
-	push rdx				; save remainder on the stack
-	inc rcx					; and count this remainder
-	cmp rax, 0x0				; was the quotient zero?
+	xor edx, edx				; RAX extended to (RDX,RAX)
+	div ebx					; divide by the number-base
+	push edx				; save remainder on the stack
+	inc ecx					; and count this remainder
+	test eax, eax				; was the quotient zero?
 	jne os_int_to_string_next_divide	; no, do another division
 os_int_to_string_next_digit:
 	pop rdx					; else pop recent remainder
 	add dl, '0'				; and convert to a numeral
 	mov [rdi], dl				; store to memory-buffer
-	inc rdi
+	inc edi
 	loop os_int_to_string_next_digit	; again for other remainders
-	mov al, 0x00
+	xor eax, eax
 	stosb					; Store the null terminator at the end of the string
 
 	pop rax
