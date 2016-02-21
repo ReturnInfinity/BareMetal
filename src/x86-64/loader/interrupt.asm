@@ -32,7 +32,6 @@ interrupt_gate:				; handler for all other interrupts
 ; This IRQ runs whenever there is input on the keyboard
 align 16
 keyboard:
-	push rdi
 	push rax
 
 	xor eax, eax
@@ -42,9 +41,8 @@ keyboard:
 	jnz keyboard_done
 
 	mov [0x000B8088], al		; Dump the scancode to the screen
-
-	mov rax, [os_Counter_RTC]
-	add rax, 10
+	mov al, 10
+	add rax, [os_Counter_RTC]
 	mov [os_Counter_RTC], rax
 
 keyboard_done:
@@ -52,7 +50,6 @@ keyboard_done:
 	out 0x20, al
 
 	pop rax
-	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
 
@@ -76,15 +73,17 @@ align 16
 rtc:
 	push rdi
 	push rax
-
-	add qword [os_Counter_RTC], 1	; 64-bit counter started at bootup
-
+	mov edi, os_Counter_RTC
+	xor eax, eax
 	mov al, 'R'
 	mov [0x000B8092], al
-	mov rax, [os_Counter_RTC]
-	and al, 1			; Clear all but lowest bit (Can only be 0 or 1)
-	add al, 48
+	mov al, 1
+	add rax, [rdi]
+	mov [rdi], rax
+	and eax, 1			; Clear all but lowest bit (Can only be 0 or 1)
+	add eax, 48
 	mov [0x000B8094], al
+	xor eax, eax
 	mov al, 0x0C			; Select RTC register C
 	out 0x70, al			; Port 0x70 is the RTC index, and 0x71 is the RTC data
 	in al, 0x71			; Read the value in register C
@@ -112,7 +111,7 @@ spurious:				; handler for spurious interrupts
 ; -----------------------------------------------------------------------------
 ; CPU Exception Gates
 exception_gate_00:
-	mov al, 0x00
+	xor eax, eax
 	jmp exception_gate_main
 
 exception_gate_01:
@@ -193,14 +192,13 @@ exception_gate_19:
 
 exception_gate_main:
 	call os_print_newline
-	mov rsi, int_string
+	mov esi, int_string
 	call os_print_string
-	mov rsi, exc_string00
-	and rax, 0xFF			; Clear out everything in RAX except for AL
-	shl eax, 3				; Quick multiply by 3
-	add rsi, rax				; Use the value in RAX as an offset to get to the right message
+	mov esi, exc_string00
+	movzx eax, al			; Clear out everything in RAX except for AL
+	lea rsi, [rsi+rax*8]			; Use the value in RAX as an offset to get to the right message
 	call os_print_string
-	mov rsi, adr_string
+	mov esi, adr_string
 	call os_print_string
 	mov rax, [rsp]
 	call os_debug_dump_rax
