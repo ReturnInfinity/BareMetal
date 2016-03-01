@@ -16,12 +16,13 @@ b_smp_reset:
 	push rdi
 	push rax
 
-	mov rdi, [os_LocalAPICAddress]
+	mov edi, 0x0300
+	add rdi, [os_LocalAPICAddress]
 	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
-	mov [rdi+0x0310], eax	; Write to the high bits first
+	mov [rdi+0x10], eax	; Write to the high bits first
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x81		; Execute interrupt 0x81
-	mov [rdi+0x0300], eax	; Then write to the low bits
+	mov [rdi], eax		; Then write to the low bits
 
 	pop rax
 	pop rdi
@@ -37,12 +38,13 @@ b_smp_wakeup:
 	push rdi
 	push rax
 
-	mov rdi, [os_LocalAPICAddress]
+	mov edi, 0x0300
+	add rdi, [os_LocalAPICAddress]
 	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
-	mov [rdi+0x0310], eax	; Write to the high bits first
+	mov [rdi+0x10], eax	; Write to the high bits first
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x80		; Execute interrupt 0x80
-	mov [rdi+0x0300], eax	; Then write to the low bits
+	mov [rdi], eax		; Then write to the low bits
 
 	pop rax
 	pop rdi
@@ -57,12 +59,13 @@ b_smp_wakeup:
 b_smp_wakeup_all:
 	push rdi
 	push rax
-
-	mov rdi, [os_LocalAPICAddress]
+	
+	mov edi, 0x0310
+	add rdi, [os_LocalAPICAddress]
 	xor eax, eax
-	mov [rdi+0x0310], eax	; Write to the high bits first
+	mov [rdi+0x10], eax	; Write to the high bits first
 	mov eax, 0x000C0080	; Execute interrupt 0x80
-	mov [rdi+0x0300], eax	; Then write to the low bits
+	mov [rdi], eax	; Then write to the low bits
 
 	pop rax
 	pop rdi
@@ -75,15 +78,10 @@ b_smp_wakeup_all:
 ;  IN:	Nothing
 ; OUT:	RAX = CPU's APIC ID number, All other registers preserved.
 b_smp_get_id:
-	push rsi
-
-	xor eax, eax
-	mov rsi, [os_LocalAPICAddress]
-	add rsi, 0x20		; Add the offset for the APIC ID location
-	lodsd			; APIC ID is stored in bits 31:24
-	shr rax, 24		; AL now holds the CPU's APIC ID (0 - 255)
-
-	pop rsi
+	mov rax, [os_LocalAPICAddress]
+	mov eax, [rax+0x20]	; Add the offset for the APIC ID location
+				; APIC ID is stored in bits 31:24
+	shr eax, 24		; AL now holds the CPU's APIC ID (0 - 255)
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -108,10 +106,9 @@ b_smp_enqueue_spin:
 	cmp word [os_QueueLen], 256	; aka cpuqueuemax
 	je b_smp_enqueue_fail
 
-	xor ecx, ecx
-	mov rdi, cpuqueue
-	mov cx, [cpuqueuefinish]
-	shl rcx, 4			; Quickly multiply RCX by 16
+	mov edi, cpuqueue
+	movzx ecx, word [cpuqueuefinish]
+	shl ecx, 4			; Quickly multiply RCX by 16
 	add rdi, rcx
 
 	stosq				; Store the code address from RAX
@@ -119,14 +116,15 @@ b_smp_enqueue_spin:
 	stosq				; Store the variable
 
 	add word [os_QueueLen], 1
-	shr rcx, 4			; Quickly divide RCX by 16
-	add cx, 1
-	cmp cx, [cpuqueuemax]
-	jne b_smp_enqueue_end
-	xor cx, cx			; We wrap around
+	movxz ebx, word [cpuqueuemax]
+	xor edi, edi
+	shr ecx, 4			; Quickly divide RCX by 16
+	add ecx, 1
+	cmp ecx, ebx
+	cmove ecx, edi			; We wrap around
 
 b_smp_enqueue_end:
-	mov [cpuqueuefinish], cx
+	mov [cpuqueuefinish], ecx
 	pop rax
 	pop rcx
 	pop rsi
@@ -165,24 +163,24 @@ b_smp_dequeue_spin:
 	cmp word [os_QueueLen], 0
 	je b_smp_dequeue_fail
 
-	xor ecx, ecx
-	mov rsi, cpuqueue
-	mov cx, [cpuqueuestart]
-	shl rcx, 4			; Quickly multiply RCX by 16
+	mov esi, cpuqueue
+	movzx ecx, word [cpuqueuestart]
+	shl ecx, 4			; Quickly multiply RCX by 16
 	add rsi, rcx
 
 	lodsq				; Load the code address into RAX
-	push rax
+	mov r9, rax
 	lodsq				; Load the variable
 	mov rdi, rax
-	pop rax
+	mov rax, r9
 
 	sub word [os_QueueLen], 1
-	shr rcx, 4			; Quickly divide RCX by 16
-	add cx, 1
-	cmp cx, [cpuqueuemax]
-	jne b_smp_dequeue_end
-	xor cx, cx			; We wrap around
+	movzx esi, word [cpuqueuemax]
+	xor eax, eax
+	shr ecx, 4			; Quickly divide RCX by 16
+	add ecx, 1
+	cmp ecx, esi
+	cmove ecx, eax			; We wrap around
 
 b_smp_dequeue_end:
 	mov word [cpuqueuestart], cx
@@ -193,7 +191,7 @@ b_smp_dequeue_end:
 	ret
 
 b_smp_dequeue_fail:
-	xor rax, rax
+	xor eax, eax
 	pop rcx
 	pop rsi
 	btr word [os_QueueLock], 0	; Release the lock
@@ -217,8 +215,7 @@ b_smp_run:
 ;  IN:	Nothing
 ; OUT:	RAX = number of items in processing queue
 b_smp_queuelen:
-	xor eax, eax
-	mov ax, [os_QueueLen]
+	movzx eax, word [os_QueueLen]
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -228,8 +225,7 @@ b_smp_queuelen:
 ;  IN:	Nothing
 ; OUT:	RAX = number of cores in this computer
 b_smp_numcores:
-	xor eax, eax
-	mov ax, [os_NumCores]
+	movzx eax, word [os_NumCores]
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -245,7 +241,7 @@ b_smp_wait:
 	push rax
 
 	call b_smp_get_id
-	mov rbx, rax
+	mov ebx, eax
 
 	xor eax, eax
 	xor ecx, ecx
@@ -253,17 +249,17 @@ b_smp_wait:
 
 checkit:
 	lodsb
-	cmp rbx, rcx		; Check to see if it is looking at itself
+	cmp ebx, ecx		; Check to see if it is looking at itself
 	je skipit		; If so then skip as it should be marked as busy
-	bt ax, 0		; Check the Present bit
+	bt eax, 0		; Check the Present bit
 	jnc skipit		; If carry is not set then the CPU does not exist
-	bt ax, 1		; Check the Ready/Busy bit
+	bt eax, 1		; Check the Ready/Busy bit
 	jnc skipit		; If carry is not set then the CPU is Ready
 	sub rsi, 1
 	jmp checkit		; Core is marked as Busy, check it again
 skipit:
-	add rcx, 1
-	cmp rcx, 256
+	add ecx, 1
+	cmp ecx, 256
 	jne checkit
 
 	pop rax
