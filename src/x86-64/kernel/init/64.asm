@@ -106,7 +106,7 @@ rtc_poll:
 	mov esi, 0x5008
 	mov ebx, [rsi]			; Load the BSP ID
 					; Save it to EBX
-	movzx ecx, word [rsi+x0a]	; Load the number of activated cores
+	movzx ecx, word [rsi+0xa]	; Load the number of activated cores
 					; Save it to ECX
 	add esi, 0x58			; esi=0x5060
 	mov rax, [rsi]

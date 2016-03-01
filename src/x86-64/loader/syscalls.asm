@@ -261,7 +261,7 @@ os_dump_mem:
 
 	mov ecx, 512
 dumpit:
-	movzx eax, [rsi]
+	movzx eax, byte [rsi]
 	add rsi, 1
 	call os_print_char_hex
 	dec ecx
@@ -300,7 +300,7 @@ os_int_to_string:
 os_int_to_string_next_divide:
 	xor edx, edx				; RAX extended to (RDX,RAX)
 	div ebx					; divide by the number-base
-	push edx				; save remainder on the stack
+	push rdx				; save remainder on the stack
 	inc ecx					; and count this remainder
 	test eax, eax				; was the quotient zero?
 	jne os_int_to_string_next_divide	; no, do another division

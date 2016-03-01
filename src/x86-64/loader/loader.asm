@@ -122,7 +122,7 @@ rtc_poll:
 	mov dx, 0x03F9
 	xor eax, eax
 	out dx, al
-	mov al, 08xfa	
+	mov al, 0xfa	
 	add dx, 2
 	out dx, al
 	mov al, 0x01		; Set divisor to 1 for 115200 baud
@@ -192,7 +192,7 @@ create_pdpe:
 ; PD entries are stored starting at 0x0000000000010000 and ending at 0x000000000004FFFF (256 KiB)
 ; This gives us room to map 64 GiB with 2 MiB pages
 	mov edi, 0x00010000
-	lea eax, [ebx+8F]     ; Bit 7 must be set to 1 as we have 2 MiB pages
+	lea eax, [ebx+0x8F]     ; Bit 7 must be set to 1 as we have 2 MiB pages
 	mov ecx, 2048
 pd_again:				; Create a 2 MiB page
 	mov [edi], eax

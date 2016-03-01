@@ -116,7 +116,7 @@ b_smp_enqueue_spin:
 	stosq				; Store the variable
 
 	add word [os_QueueLen], 1
-	movxz ebx, word [cpuqueuemax]
+	movzx ebx, word [cpuqueuemax]
 	xor edi, edi
 	shr ecx, 4			; Quickly divide RCX by 16
 	add ecx, 1
