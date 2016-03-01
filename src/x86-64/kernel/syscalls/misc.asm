@@ -13,17 +13,14 @@
 ; A value of 8 in RAX will delay 1 second and a value of 1 will delay 1/8 of a second
 ; This function depends on the RTC (IRQ 8) so interrupts must be enabled.
 os_delay:
-	push rcx
 	push rax
 
-	mov rcx, [os_ClockCounter]	; Grab the initial timer counter. It increments 8 times a second
-	add rax, rcx			; Add RCX so we get the end time we want
+	add rax, [os_ClockCounter]	; Add RCX so we get the end time we want
 os_delay_loop:
-	cmp qword [os_ClockCounter], rax	; Compare it against our end time
+	cmp rax, [os_ClockCounter]	; Compare it against our end time
 	jle os_delay_loop		; Loop if RAX is still lower
 
 	pop rax
-	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -35,18 +32,18 @@ os_delay_loop:
 os_get_argv:
 	push rsi
 	push rcx
-	mov rsi, os_args
-	cmp al, 0x00
-	je os_get_argv_end
-	mov cl, al
+	mov esi, os_args
+	test al, al
+	jz os_get_argv_end
+	movzx ecx, al
 
 os_get_argv_nextchar:
-	lodsb
-	cmp al, 0x00
-	jne os_get_argv_nextchar
-	dec cl
-	cmp cl, 0
-	jne os_get_argv_nextchar
+	movzx eax, byte [rsi]
+	add esi, 1
+	test eax, eax
+	setz al		; if char=0 ecx:= ecx-1, else ecx
+	sub ecx, eax
+	jnz os_get_argv_nextchar
 
 os_get_argv_end:
 	mov rax, rsi
@@ -63,21 +60,21 @@ os_get_argv_end:
 ; OUT:	RAX = Result
 ;	All other registers preserved
 b_system_config:
-	cmp rdx, 0
+	test edx, edx
 	je b_system_config_timecounter
-	cmp rdx, 1
+	cmp edx, 1
 	je b_system_config_argc
-	cmp rdx, 2
+	cmp edx, 2
 	je b_system_config_argv
-	cmp rdx, 3
+	cmp edx, 3
 	je b_system_config_networkcallback_get
-	cmp rdx, 4
+	cmp edx, 4
 	je b_system_config_networkcallback_set
-	cmp rdx, 5
+	cmp edx, 5
 	je b_system_config_clockcallback_get
-	cmp rdx, 6
+	cmp edx, 6
 	je b_system_config_clockcallback_set
-	cmp rdx, 30
+	cmp edx, 30
 	je b_system_config_mac
 	ret
 
@@ -86,8 +83,7 @@ b_system_config_timecounter:
 	ret
 
 b_system_config_argc:
-	xor eax, eax
-	mov al, [app_argc]
+	movzx eax, byte [app_argc]
 	ret
 
 b_system_config_argv:
@@ -126,27 +122,27 @@ b_system_config_mac:
 b_system_misc:
 ;	cmp rdx, X
 ;	je b_system_misc_
-	cmp rdx, 1
+	cmp edx, 1
 	je b_system_misc_smp_get_id
-	cmp rdx, 2
+	cmp edx, 2
 	je b_system_misc_smp_lock
-	cmp rdx, 3
+	cmp edx, 3
 	je b_system_misc_smp_unlock
-	cmp rdx, 4
+	cmp edx, 4
 	je b_system_misc_debug_dump_mem
-	cmp rdx, 5
+	cmp edx, 5
 	je b_system_misc_debug_dump_rax
-	cmp rdx, 6
+	cmp edx, 6
 	je b_system_misc_delay
-	cmp rdx, 7
+	cmp edx, 7
 	je b_system_misc_ethernet_status
-	cmp rdx, 8
+	cmp edx, 8
 	je b_system_misc_mem_get_free
-	cmp rdx, 9
+	cmp edx, 9
 	je b_system_misc_smp_numcores
-	cmp rdx, 10
+	cmp edx, 10
 	je b_system_misc_smp_queuelen
-	cmp rdx, 256
+	cmp edx, 256
 	je b_system_misc_reset
 	ret
 
@@ -197,21 +193,21 @@ b_system_misc_reset:
 	xor eax, eax
 	mov qword [os_NetworkCallback], rax	; clear callbacks
 	mov qword [os_ClockCallback], rax
-	mov rdi, cpuqueue		; Clear SMP queue
-	mov rcx, 512
-	stosq
+	mov edi, cpuqueue		; Clear SMP queue
+	mov ecx, 512
+	mov [rdi], rax
 	call b_smp_get_id		; Reset all other cpu cores
 	mov rbx, rax
 	mov rsi, 0x0000000000005100	; Location in memory of the Pure64 CPU data
 b_system_misc_reset_next_ap:
-	cmp cx, 0
-	je b_system_misc_reset_no_more_aps
+	test ecx, ecx
+	jz b_system_misc_reset_no_more_aps
 	lodsb				; Load the CPU APIC ID
 	cmp al, bl
 	je b_system_misc_reset_skip_ap
 	call b_smp_reset		; Reset the CPU
 b_system_misc_reset_skip_ap:
-	sub cx, 1
+	sub ecx, 1
 	jmp b_system_misc_reset_next_ap
 b_system_misc_reset_no_more_aps:
 	call init_memory_map		; Clear memory table
