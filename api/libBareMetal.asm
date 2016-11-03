@@ -38,7 +38,6 @@ networkcallback_get	equ 3
 networkcallback_set	equ 4
 clockcallback_get	equ 5
 clockcallback_set	equ 6
-statusbar		equ 10
 
 
 ; Index for b_system_misc calls
