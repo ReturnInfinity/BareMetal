@@ -36,17 +36,16 @@ os_get_argv:
 	push rsi
 	push rcx
 	mov rsi, os_args
-	cmp al, 0x00
-	je os_get_argv_end
+	test al, al
+	jz os_get_argv_end
 	mov cl, al
 
 os_get_argv_nextchar:
 	lodsb
-	cmp al, 0x00
-	jne os_get_argv_nextchar
+	test al, al
+	jnz os_get_argv_nextchar
 	dec cl
-	cmp cl, 0
-	jne os_get_argv_nextchar
+	jnz os_get_argv_nextchar
 
 os_get_argv_end:
 	mov rax, rsi
@@ -204,14 +203,14 @@ b_system_misc_reset:
 	mov rbx, rax
 	mov rsi, 0x0000000000005100	; Location in memory of the Pure64 CPU data
 b_system_misc_reset_next_ap:
-	cmp cx, 0
-	je b_system_misc_reset_no_more_aps
+	test cx, cx
+	jz b_system_misc_reset_no_more_aps
 	lodsb				; Load the CPU APIC ID
 	cmp al, bl
 	je b_system_misc_reset_skip_ap
 	call b_smp_reset		; Reset the CPU
 b_system_misc_reset_skip_ap:
-	sub cx, 1
+	dec cx
 	jmp b_system_misc_reset_next_ap
 b_system_misc_reset_no_more_aps:
 	call init_memory_map		; Clear memory table

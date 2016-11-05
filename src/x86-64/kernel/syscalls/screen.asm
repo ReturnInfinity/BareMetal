@@ -13,17 +13,17 @@
 os_inc_cursor:
 	push rax
 
-	add word [os_Screen_Cursor_Col], 1
+	inc word [os_Screen_Cursor_Col]
 	mov ax, [os_Screen_Cursor_Col]
 	cmp ax, [os_Screen_Cols]
 	jne os_inc_cursor_done
 	mov word [os_Screen_Cursor_Col], 0
-	add word [os_Screen_Cursor_Row], 1
+	inc word [os_Screen_Cursor_Row]
 	mov ax, [os_Screen_Cursor_Row]
 	cmp ax, [os_Screen_Rows]
 	jne os_inc_cursor_done
 	call os_screen_scroll
-	sub word [os_Screen_Cursor_Row], 1
+	dec word [os_Screen_Cursor_Row]
 
 os_inc_cursor_done:
 	pop rax
@@ -40,12 +40,12 @@ os_dec_cursor:
 
 	cmp word [os_Screen_Cursor_Col], 0
 	jne os_dec_cursor_done
-	sub word [os_Screen_Cursor_Row], 1
+	dec word [os_Screen_Cursor_Row]
 	mov ax, [os_Screen_Cols]
 	mov word [os_Screen_Cursor_Col], ax
 
 os_dec_cursor_done:
-	sub word [os_Screen_Cursor_Col], 1
+	dec word [os_Screen_Cursor_Col]
 
 	pop rax
 	ret
@@ -61,10 +61,10 @@ os_print_newline:
 
 	mov word [os_Screen_Cursor_Col], 0	; Reset column to 0
 	mov ax, [os_Screen_Rows]		; Grab max rows on screen
-	sub ax, 1				; and subtract 1
+	dec ax					; and subtract 1
 	cmp ax, [os_Screen_Cursor_Row]		; Is the cursor already on the bottom row?
 	je os_print_newline_scroll		; If so, then scroll
-	add word [os_Screen_Cursor_Row], 1	; If not, increment the cursor to next row
+	inc word [os_Screen_Cursor_Row]		; If not, increment the cursor to next row
 	jmp os_print_newline_done
 
 os_print_newline_scroll:
@@ -160,9 +160,8 @@ b_output_chars:
 	mov ah, 0x07			; Store the attribute into AH so STOSW can be used later on
 
 b_output_chars_nextchar:
-	cmp rcx, 0
-	je b_output_chars_done
-	sub rcx, 1
+	jrcxz b_output_chars_done
+	dec rcx
 	lodsb				; Get char from string and store in AL
 	cmp al, 13			; Check if there was a newline character in the string
 	je b_output_chars_newline	; If so then we print a new line
@@ -181,11 +180,11 @@ b_output_chars_newline:
 	jmp b_output_chars_nextchar
 
 b_output_chars_newline_skip_LF:
-	cmp rcx, 0
-	je b_output_chars_newline_skip_LF_nosub
-	sub rcx, 1
+	test rcx, rcx
+	jz b_output_chars_newline_skip_LF_nosub
+	dec rcx
 b_output_chars_newline_skip_LF_nosub:
-	add rsi, 1
+	inc rsi
 	call os_print_newline
 	jmp b_output_chars_nextchar
 
@@ -201,9 +200,8 @@ b_output_chars_tab:
 	mov al, ' '
 b_output_chars_tab_next:
 	call os_output_char
-	sub cx, 1
-	cmp cx, 0
-	jne b_output_chars_tab_next
+	dec cx
+	jnz b_output_chars_tab_next
 	pop rcx
 	jmp b_output_chars_nextchar
 

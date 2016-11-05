@@ -40,8 +40,8 @@ init_net_probe_find_next_driver:
 	mov rdx, rax				; Save the driver ID
 init_net_probe_find_next_device:
 	lodsd					; Load a device and vendor ID from our list of supported NICs
-	cmp eax, 0x00000000			; 0x00000000 means we have reached the end of the list
-	je init_net_probe_not_found		; No supported NIC found
+	test eax, eax				; 0x00000000 means we have reached the end of the list
+	jz init_net_probe_not_found		; No supported NIC found
 	cmp ax, 0xFFFF				; New driver ID?
 	je init_net_probe_find_next_driver	; We found the next driver type
 	cmp eax, r8d

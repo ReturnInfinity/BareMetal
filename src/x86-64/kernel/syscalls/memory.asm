@@ -16,8 +16,8 @@ b_mem_allocate:
 	push rdx
 	push rbx
 
-	cmp rcx, 0
-	je b_mem_allocate_fail		; At least 1 page must be allocated
+	test rcx, rcx
+	jz b_mem_allocate_fail		; At least 1 page must be allocated
 
 	; Here, we'll load the last existing page of memory in RSI.
 	; RAX and RSI instructions are purposefully interleaved.
@@ -28,7 +28,7 @@ b_mem_allocate:
 	mov rdx, rsi			; Keep os_MemoryMap unmodified for later in RDX
 	shr eax, 1			; Divide actual memory by 2
 
-	sub rsi, 1
+	dec rsi
 	std				; Set direction flag to backward
 	add rsi, rax			; RSI now points to the last page
 
@@ -56,7 +56,7 @@ b_mem_allocate_mark:			; We have a suitable free series of pages. Allocate them.
 	; Instructions are purposefully swapped at some places here to avoid
 	; direct dependencies line after line.
 	push rcx			; Keep RCX as is for the 'rep stosb' to come
-	add rdi, 1
+	inc rdi
 	mov al, 2
 	mov rbx, rdi			; RBX points to the starting page
 	rep stosb

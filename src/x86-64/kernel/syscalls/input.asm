@@ -42,8 +42,8 @@ b_input_more:
 	jmp b_input_more
 
 b_input_backspace:
-	cmp rcx, 0			; backspace at the beginning? get a new char
-	je b_input_more
+	test rcx, rcx			; backspace at the beginning? get a new char
+	jz b_input_more
 	mov al, ' '			; 0x20 is the character for a space
 	call os_output_char		; Write over the last typed character with the space
 	call os_dec_cursor		; Decrement the cursor again
@@ -58,7 +58,7 @@ b_input_halt:
 	jmp b_input_more
 
 b_input_done:
-	mov al, 0x00
+	xor al, al
 	stosb				; We NULL terminate the string
 	mov al, ' '
 	call os_output_char
@@ -79,8 +79,8 @@ b_input_done:
 ;	All other registers preserved
 b_input_key:
 	mov al, [key]
-	cmp al, 0
-	je b_input_key_no_key
+	test al, al
+	jz b_input_key_no_key
 	mov byte [key], 0x00	; clear the variable as the keystroke is in AL now
 	stc			; set the carry flag
 	ret

@@ -53,14 +53,14 @@ b_net_tx:
 	mov rcx, 64				; If it was below 64 then set to 64
 	; FIXME - OS should pad the packet with 0's before sending if less than 64
 
-b_net_tx_maxcheck:	
+b_net_tx_maxcheck:
 	cmp rcx, 1522				; Fail if more than 1522 bytes
 	jg b_net_tx_fail
 
 	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
 	call b_smp_lock
 
-	add qword [os_net_TXPackets], 1
+	inc qword [os_net_TXPackets]
 	add qword [os_net_TXBytes], rcx
 	call qword [os_net_transmit]
 
@@ -94,8 +94,8 @@ b_net_rx:
 
 	mov rsi, os_EthernetBuffer
 	mov ax, word [rsi]		; Grab the packet length
-	cmp ax, 0			; Anything there?
-	je b_net_rx_fail		; If not, bail out
+	test ax, ax			; Anything there?
+	jz b_net_rx_fail		; If not, bail out
 	mov word [rsi], cx		; Clear the packet length
 	mov cx, ax			; Save the count
 	add rsi, 2			; Skip the packet length word

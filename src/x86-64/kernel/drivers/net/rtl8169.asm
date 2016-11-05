@@ -31,19 +31,19 @@ net_rtl8169_init:
 	mov dx, word [os_NetIOAddress]
 	in al, dx
 	mov [os_NetMAC], al
-	add dx, 1
+	inc dx
 	in al, dx
 	mov [os_NetMAC+1], al
-	add dx, 1
+	inc dx
 	in al, dx
 	mov [os_NetMAC+2], al
-	add dx, 1
+	inc dx
 	in al, dx
 	mov [os_NetMAC+3], al
-	add dx, 1
+	inc dx
 	in al, dx
 	mov [os_NetMAC+4], al
-	add dx, 1
+	inc dx
 	in al, dx
 	mov [os_NetMAC+5], al
 
@@ -171,7 +171,7 @@ reset_8169_completed:
 	; Lock config register
 	mov dx, word [os_NetIOAddress]
 	add dx, RTL8169_REG_9346CR
-	mov al, 0x00				; Lock
+	xor al, al				; Lock
 	out dx, al
 
 	pop rax
@@ -286,7 +286,7 @@ net_rtl8169_ack_int:
 	RTL8169_REG_CONFIG4	equ 0x55	; Configuration Register 4
 	RTL8169_REG_CONFIG5	equ 0x56	; Configuration Register 5
 	RTL8169_REG_PHYAR	equ 0x60	; PHY Access Register 
-	RTL8169_REG_PHYStatus	equ 0x6C	; PHY(GMII, MII, or TBI) Status Register 
+	RTL8169_REG_PHYStatus	equ 0x6C	; PHY(GMII, MII, or TBI) Status Register
 	RTL8169_REG_MAXRX	equ 0xDA	; Mac Receive Packet Size Register
 	RTL8169_REG_CCR		equ 0xE0	; C+ Command Register
 	RTL8169_REG_RDSAR	equ 0xE4	; Receive Descriptor Start Address Register (256-byte alignment)
@@ -306,7 +306,7 @@ net_rtl8169_ack_int:
 	RTL8169_BIT_AAP		equ 0		; Accept All Packets with Destination Address
 
 ; PHY Register Table
-; BMCR (address 0x00) 
+; BMCR (address 0x00)
 	RTL8169_BIT_ANE		equ 12		; Auto-Negotiation Enable
 
 

@@ -45,7 +45,7 @@ start:
 	call init_net			; Initialize the network
 
 	mov ax, [os_Screen_Rows]	; Display the "ready" message and reset cursor to bottom left
-	sub ax, 1
+	dec ax
 	mov word [os_Screen_Cursor_Row], ax
 	mov word [os_Screen_Cursor_Col], 0
 	mov rsi, readymsg
