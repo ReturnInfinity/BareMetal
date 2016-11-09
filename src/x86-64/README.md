@@ -32,7 +32,7 @@ Set a 'jmp $' somewhere in the source code.
 
 
 Terminal 2
-===========
+==========
 
 Start the GNU debugger
 
@@ -56,3 +56,11 @@ Execution will be stopped where you put the 'jmp $' in the code. Take a look at 
 Dump some memory
 
 	x 0xXXXXX
+
+
+Running via the terminal
+------------------------
+
+Start QEMU with the `-curses` option to disable QEMU screen output via SDL. This is useful for testing the VM via a shell session.
+
+Escape+2 will switch to the QEMU monitor console and Escape+1 will switch back to the VM. Enter `quit` on the QEMU monitor console to stop the VM.
