@@ -10,8 +10,7 @@
 ; b_smp_reset -- Resets a CPU Core
 ;  IN:	AL = CPU #
 ; OUT:	Nothing. All registers preserved.
-; Note:	This code resets an AP
-;	For set-up use only.
+; Note:	This code resets an AP for set-up use only.
 b_smp_reset:
 	push rdi
 	push rax
@@ -89,136 +88,70 @@ b_smp_get_id:
 
 
 ; -----------------------------------------------------------------------------
-; b_smp_enqueue -- Add a workload to the processing queue
-;  IN:	RAX = Address of code to execute
-;	RSI = Variable
-; OUT:	Nothing
-b_smp_enqueue:
+; b_smp_set -- Set a specific CPU to run code
+;  IN:	RAX = Code address
+;	RDX = Data address
+;	RCX = CPU APIC ID
+; OUT:	RAX = 0 on error
+b_smp_set:
 	push rdi
-	push rsi
 	push rcx
-	push rax
 
-b_smp_enqueue_spin:
-	bt word [os_QueueLock], 0	; Check if the mutex is free
-	jc b_smp_enqueue_spin		; If not check it again
-	lock bts word [os_QueueLock], 0	; The mutex was free, lock the bus. Try to grab the mutex
-	jc b_smp_enqueue_spin		; Jump if we were unsuccessful
-
-	cmp word [os_QueueLen], 256	; aka cpuqueuemax
-	je b_smp_enqueue_fail
-
-	xor ecx, ecx
-	mov rdi, cpuqueue
-	mov cx, [cpuqueuefinish]
-	shl rcx, 4			; Quickly multiply RCX by 16
+	mov rdi, os_cpu_work_table
+	shl rcx, 4
 	add rdi, rcx
 
-	stosq				; Store the code address from RAX
-	mov rax, rsi
-	stosq				; Store the variable
+	mov rcx, [rdi]
+	cmp rcx, 0
+	jne b_smp_set_error
 
-	add word [os_QueueLen], 1
-	shr rcx, 4			; Quickly divide RCX by 16
-	add cx, 1
-	cmp cx, [cpuqueuemax]
-	jne b_smp_enqueue_end
-	xor cx, cx			; We wrap around
+	stosq
+	xchg rax, rdx
+	stosq
+	xchg rax, rdx
+	call b_smp_wakeup
 
-b_smp_enqueue_end:
-	mov [cpuqueuefinish], cx
-	pop rax
+b_smp_set_end:
 	pop rcx
-	pop rsi
 	pop rdi
-	btr word [os_QueueLock], 0	; Release the lock
-	call b_smp_wakeup_all
-	clc				; Carry clear for success
 	ret
 
-b_smp_enqueue_fail:
-	pop rax
-	pop rcx
-	pop rsi
-	pop rdi
-	btr word [os_QueueLock], 0	; Release the lock
-	stc				; Carry set for failure (Queue full)
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; b_smp_dequeue -- Dequeue a workload from the processing queue
-;  IN:	Nothing
-; OUT:	RAX = Address of code to execute (Set to 0 if queue is empty)
-;	RDI = Variable
-b_smp_dequeue:
-	push rsi
-	push rcx
-
-b_smp_dequeue_spin:
-	bt word [os_QueueLock], 0	; Check if the mutex is free
-	jc b_smp_dequeue_spin		; If not check it again
-	lock bts word [os_QueueLock], 0	; The mutex was free, lock the bus. Try to grab the mutex
-	jc b_smp_dequeue_spin		; Jump if we were unsuccessful
-
-	cmp word [os_QueueLen], 0
-	je b_smp_dequeue_fail
-
-	xor ecx, ecx
-	mov rsi, cpuqueue
-	mov cx, [cpuqueuestart]
-	shl rcx, 4			; Quickly multiply RCX by 16
-	add rsi, rcx
-
-	lodsq				; Load the code address into RAX
-	push rax
-	lodsq				; Load the variable
-	mov rdi, rax
-	pop rax
-
-	sub word [os_QueueLen], 1
-	shr rcx, 4			; Quickly divide RCX by 16
-	add cx, 1
-	cmp cx, [cpuqueuemax]
-	jne b_smp_dequeue_end
-	xor cx, cx			; We wrap around
-
-b_smp_dequeue_end:
-	mov word [cpuqueuestart], cx
-	pop rcx
-	pop rsi
-	btr word [os_QueueLock], 0	; Release the lock
-	clc				; If we got here then ok
-	ret
-
-b_smp_dequeue_fail:
-	xor rax, rax
-	pop rcx
-	pop rsi
-	btr word [os_QueueLock], 0	; Release the lock
-	stc
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; b_smp_run -- Call the code address stored in RAX
-;  IN:	RAX = Address of code to execute
-; OUT:	Nothing
-b_smp_run:
-	call rax			; Run the code
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; b_smp_queuelen -- Returns the number of items in the processing queue
-;  IN:	Nothing
-; OUT:	RAX = number of items in processing queue
-b_smp_queuelen:
+b_smp_set_error:
 	xor eax, eax
-	mov ax, [os_QueueLen]
+	pop rcx
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; b_smp_get_work -- Returns a workload from the work table
+;  IN:	Nothing
+; OUT:	RAX = Code addresss
+;	RDX = Variable address
+b_smp_get_work:
+	push rsi
+
+	call b_smp_get_id
+
+	mov rsi, os_cpu_work_table
+	shl rax, 4
+	add rsi, rax
+	lodsq			; load code address
+	xchg rax, rdx
+	lodsq			; load data address
+	xchg rax, rdx
+
+	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; b_smp_config -- Just a stub for now
+;  IN:	Nothing
+; OUT:	Nothing. All registers preserved.
+b_smp_config:
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -230,46 +163,6 @@ b_smp_queuelen:
 b_smp_numcores:
 	xor eax, eax
 	mov ax, [os_NumCores]
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; b_smp_wait -- Wait until all other CPU Cores are finished processing
-;  IN:	Nothing
-; OUT:	Nothing. All registers preserved.
-b_smp_wait:
-	push rsi
-	push rcx
-	push rbx
-	push rax
-
-	call b_smp_get_id
-	mov rbx, rax
-
-	xor eax, eax
-	xor ecx, ecx
-	mov rsi, cpustatus
-
-checkit:
-	lodsb
-	cmp rbx, rcx		; Check to see if it is looking at itself
-	je skipit		; If so then skip as it should be marked as busy
-	bt ax, 0		; Check the Present bit
-	jnc skipit		; If carry is not set then the CPU does not exist
-	bt ax, 1		; Check the Ready/Busy bit
-	jnc skipit		; If carry is not set then the CPU is Ready
-	sub rsi, 1
-	jmp checkit		; Core is marked as Busy, check it again
-skipit:
-	add rcx, 1
-	cmp rcx, 256
-	jne checkit
-
-	pop rax
-	pop rbx
-	pop rcx
-	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 

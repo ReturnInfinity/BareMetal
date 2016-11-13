@@ -2,14 +2,14 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
 ;
-; The BareMetal exokernel. Assemble with NASM
+; The BareMetal exokernel.
 ; =============================================================================
 
 
 USE64
 ORG 0x0000000000100000
 
-%DEFINE BAREMETAL_VER 'v1.0.0 (January 26, 2015)', 13, 'Copyright (C) 2008-2016 Return Infinity', 13, 0
+%DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2016 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 
 
@@ -24,18 +24,16 @@ kernel_start:
 	dq b_output_chars		; 0x0018
 	dq b_input			; 0x0020
 	dq b_input_key			; 0x0028
-	dq b_smp_enqueue		; 0x0030
-	dq b_smp_dequeue		; 0x0038
-	dq b_smp_run			; 0x0040
-	dq b_smp_wait			; 0x0048
-	dq b_mem_allocate		; 0x0050
-	dq b_mem_release		; 0x0058
-	dq b_net_tx			; 0x0060
-	dq b_net_rx			; 0x0068
-	dq b_disk_read			; 0x0070
-	dq b_disk_write			; 0x0078
-	dq b_system_config		; 0x0080
-	dq b_system_misc		; 0x0088
+	dq b_smp_set			; 0x0030
+	dq b_smp_config			; 0x0038
+	dq b_mem_allocate		; 0x0040
+	dq b_mem_release		; 0x0048
+	dq b_net_tx			; 0x0050
+	dq b_net_rx			; 0x0058
+	dq b_disk_read			; 0x0060
+	dq b_disk_write			; 0x0068
+	dq b_system_config		; 0x0070
+	dq b_system_misc		; 0x0078
 	align 16
 
 start:
@@ -67,21 +65,23 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
 	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
 	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
-	shr rax, 24			; Shift to the right and AL now holds the CPU's APIC ID
+	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
+	mov ebx, eax
 
-	; Calculate offset into CPU status table
-	mov rdi, cpustatus
-	add rdi, rax			; RDI points to this cores status byte (we will clear it later)
+	; Clear the entry in the work table
+	mov rdi, os_cpu_work_table
+	shl rax, 4
+	add rdi, rax
+	xor eax, eax
+	stosq
+	stosq
+	mov eax, ebx
 
 	; Set up the stack
 	shl rax, 21			; Shift left 21 bits for a 2 MiB stack
 	add rax, [os_StackBase]		; The stack decrements when you "push", start at 2 MiB in
 	sub rax, 8
 	mov rsp, rax
-
-	; Set the CPU status to "Present" and "Ready"
-	mov al, 00000001b		; Bit 0 set for "Present", Bit 1 clear for "Ready"
-	stosb				; Set status to Ready for this CPU
 
 	sti				; Enable interrupts on this core
 
@@ -103,26 +103,19 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	xor r15, r15
 
 ap_spin:				; Spin until there is a workload in the queue
-	cmp word [os_QueueLen], 0	; Check the length of the queue
-	je ap_halt			; If the queue was empty then jump to the HLT
-	call b_smp_dequeue		; Try to pull a workload out of the queue
-	jnc ap_process			; Carry clear if successful, jump to ap_process
+;	cmp word [os_QueueLen], 0	; Check the length of the queue
+;	je ap_halt			; If the queue was empty then jump to the HLT
+;	call b_smp_dequeue		; Try to pull a workload out of the queue
+;	jnc ap_process			; Carry clear if successful, jump to ap_process
+	call b_smp_get_work
+	cmp rax, 0
+	jne ap_process
 
 ap_halt:				; Halt until a wakeup call is received
 	hlt				; If carry was set we fall through to the HLT
 	jmp ap_spin			; Try again
 
 ap_process:				; Set the status byte to "Busy" and run the code
-	push rdi			; Push RDI since it is used temporarily
-	push rax			; Push RAX since b_smp_get_id uses it
-	mov rdi, cpustatus
-	call b_smp_get_id		; Set RAX to the APIC ID
-	add rdi, rax
-	mov al, 00000011b		; Bit 0 set for "Present", Bit 1 set for "Busy"
-	stosb
-	pop rax				; Pop RAX (holds the workload code address)
-	pop rdi				; Pop RDI (holds the variable/variable address)
-
 	call rax			; Run the code
 
 	jmp ap_clear			; Reset the stack, clear the registers, and wait for something else to work on

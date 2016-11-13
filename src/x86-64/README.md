@@ -64,3 +64,12 @@ Running via the terminal
 Start QEMU with the `-curses` option to disable QEMU screen output via SDL. This is useful for testing the VM via a shell session.
 
 Escape+2 will switch to the QEMU monitor console and Escape+1 will switch back to the VM. Enter `quit` on the QEMU monitor console to stop the VM.
+
+Debugging via QEMU monitor
+==========================
+
+Some useful commands:
+
+	info registers
+	info cpus
+	info mem

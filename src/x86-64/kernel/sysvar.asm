@@ -37,8 +37,7 @@ os_ethernet_rx_buffer:	equ 0x00000000001C0000
 os_eth_rx_buffer:	equ 0x00000000001C8000
 os_ethernet_tx_buffer:	equ 0x00000000001D0000
 os_eth_tx_buffer:	equ 0x00000000001D8000
-cpustatus:		equ 0x00000000001FEF00	; Location of CPU status data (256 bytes) Bit 0 = Available, Bit 1 = Free/Busy
-cpuqueue:		equ 0x00000000001FF000	; Location of CPU Queue. Each queue item is 16 bytes. (4KiB before the 2MiB mark, Room for 256 entries)
+os_cpu_work_table:	equ 0x00000000001FF000	; Location of CPU Queue. Each queue item is 16 bytes. (4KiB before the 2MiB mark, Room for 256 entries)
 programlocation:	equ 0x0000000000200000	; Location in memory where programs are loaded (the start of 2MiB)
 
 ; DQ - Starting at offset 0, increments by 8
@@ -54,7 +53,6 @@ os_NetMAC:		equ os_SystemVariables + 80
 os_HPETAddress:		equ os_SystemVariables + 88
 ahci_base:		equ os_SystemVariables + 96
 os_NetworkCallback:	equ os_SystemVariables + 104
-bmfs_TotalBlocks:	equ os_SystemVariables + 112
 os_KeyboardCallback:	equ os_SystemVariables + 120
 os_ClockCallback:	equ os_SystemVariables + 128
 os_net_TXBytes:		equ os_SystemVariables + 136
@@ -73,10 +71,6 @@ hd1_size:		equ os_SystemVariables + 272	; in MiB
 
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 512
-cpuqueuestart:		equ os_SystemVariables + 514
-cpuqueuefinish:		equ os_SystemVariables + 516
-os_QueueLen:		equ os_SystemVariables + 518
-os_QueueLock:		equ os_SystemVariables + 520	; Bit 0 clear for unlocked, set for locked.
 os_NetIOAddress:	equ os_SystemVariables + 522
 os_NetLock:		equ os_SystemVariables + 524
 os_Screen_Rows:		equ os_SystemVariables + 530
@@ -98,8 +92,6 @@ os_EthernetBuffer_C2:	equ os_SystemVariables + 782	; Counter 2 for the Ethernet 
 os_DiskEnabled:		equ os_SystemVariables + 783
 os_DiskActivity:	equ os_SystemVariables + 784
 app_argc:		equ os_SystemVariables + 785
-
-cpuqueuemax:		dw 256
 
 ; Function variables
 os_debug_dump_reg_stage:	db 0x00
@@ -135,10 +127,6 @@ os_debug_dump_flag_string1:	db ' Z:', 0
 os_debug_dump_flag_string2:	db ' S:', 0
 os_debug_dump_flag_string3:	db ' D:', 0
 os_debug_dump_flag_string4:	db ' O:', 0
-
-
-align 16
-this_is_the_end:	db 'This is the end.'
 
 ;------------------------------------------------------------------------------
 

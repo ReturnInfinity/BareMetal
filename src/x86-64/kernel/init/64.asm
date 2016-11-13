@@ -11,8 +11,13 @@ init_64:
 	; Clear system variables area
 	mov rdi, os_SystemVariables
 	mov rcx, 122880            ; Clear 960 KiB
-	xor rax, rax
-	rep stosq                  ; Store rax to [rdi], rcx - 1, rdi + 8, if rcx > 0 then do it again
+	xor eax, eax
+	rep stosq
+	; Configure the CPU work table
+	mov rdi, os_cpu_work_table
+	mov rcx, 512
+	mov rax, 0xFFFFFFFFFFFFFFFF	; Value for a non-present CPU
+	rep stosq
 
 	; Set screen variables and clear screen
 	mov word [os_Screen_Rows], 25
@@ -22,7 +27,7 @@ init_64:
 	call os_screen_clear
 
 	; Create the 64-bit IDT (at linear address 0x0000000000000000) as defined by Pure64
-	xor rdi, rdi
+	xor edi, edi
 
 	; Create exception gate stubs (Pure64 has already set the correct gate markers)
 	mov rcx, 32
