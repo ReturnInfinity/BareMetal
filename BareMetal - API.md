@@ -15,10 +15,8 @@ This document details the API calls built into the BareMetal exokernel.
 	- b\_input
 	- b\_input\_key
 3. SMP
-	- b\_smp\_enqueue
-	- b\_smp\_dequeue
-	- b\_smp\_run
-	- b\_smp\_wait
+	- b\_smp\_set
+	- b\_smp\_config
 4. Memory
 	- b\_mem\_allocate
 	- b\_mem\_release
@@ -56,7 +54,7 @@ C Example:
 
 	char Message[] = "This is a test";
 	b_output(Message);
-	
+
 	b_output("This is a another test");
 
 
@@ -81,7 +79,7 @@ Assembly Example:
 C Example:
 
 	b_output_chars("This is a test", 4);	// Output 'This'
-	
+
 	char Message[] = "Hello, world!";
 	b_output_chars(Message, 5);				// Output 'Hello'
 
@@ -143,75 +141,36 @@ C Example:
 
 BareMetal uses a queue for tasks. Tasks are automatically pulled out of the queue by available CPU cores.
 
-### b\_smp\_enqueue
+### b\_smp\_set
 
 Add a workload to the processing queue.
 
 Assembly Registers:
 
-	 IN:	RAX = Address of code to execute
-			RSI = Variable
-	OUT:	Nothing
+	 IN:	RAX = Code address
+			RDX = Data address
+			RCX = CPU APIC ID
+	OUT:	RAX = 0 on error
 
 Assembly Example:
 
 		mov rax, ap_code	; Our code to run on an available core
-		xor rsi, rsi		; Clear RSI as there is no argument
-		call [b_smp_enqueue]
+		xor rdx, rdx		; Clear RDX as there is no argument
+		mov rcx, 1		; Set CPU with ID 1 to run code
+		call [b_smp_set]
 		ret
-		
+
 	ap_code:
 		...
 		ret
 
 C Example:
 
-	
-
-### b\_smp\_dequeue
-
-Dequeue a workload from the processing queue.
-
-Assembly Registers:
-
-	 IN:	Nothing
-	OUT:	RAX = Address of code to execute (Set to 0 if queue is empty)
-			RDI = Variable
-
-Assembly Example:
 
 
-C Example:
+### b\_smp\_config
 
-
-### b\_smp\_run
-
-Call the code address stored in RAX.
-
-Assembly Registers:
-
-	 IN:	RAX = Address of code to execute
-	OUT:	Nothing
-
-Assembly Example:
-
-
-C Example:
-
-
-### b\_smp\_wait
-
-Wait until all other CPU Cores are finished processing.
-
-Assembly Registers:
-
-	 IN:	Nothing
-	OUT:	Nothing. All registers preserved.
-
-Assembly Example:
-
-
-C Example:
+Just a stub fuction at the moment
 
 
 ## Memory
@@ -407,7 +366,7 @@ Assembly Registers:
 
 	 IN:	RDX = Function #
 			RAX = Variable 1
-			RCX = Variable 2 
+			RCX = Variable 2
 	OUT:	RAX = Result 1
 			RCX = Result 2
 
@@ -423,7 +382,7 @@ Currently the following functions are supported:
 	- Unlock a mutex
 	- in rax: The address of the mutex (one word)
 4. debug_dump_mem
-	- os_debug_dump_mem 
+	- os_debug_dump_mem
 	- in rax: The start of the memory to dump
 	- in rcx: Number of bytes to dump
 5. debug_dump_rax

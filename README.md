@@ -18,7 +18,7 @@ BareMetal provides basic support for symetric multiprocessing, network, and disk
 * **Mono-processing, multi-core**: The system is able to execute a single "program" but can spread the work load amongst available CPU cores.
 * **Extremely tiny memory footprint**: A minimal bootable image, including bootloader and operating system components, is currently 16K.
 * **Standard C library** using [newlib](https://sourceware.org/newlib/) from [Red Hat](http://www.redhat.com/)
-* **Real hardware and VirtualBox support** with full virtualization, using [x86 hardware virtualization](https://en.wikipedia.org/wiki/X86_virtualization) whenever available (it is on most modern x86-64 CPU's). In principle BareMetal should run on any x86-64 hardware platform, even on a physical x86-64 computer, given appropriate drivers. Officially, we develop on [QEMU](http://www.qemu.org) and [VirtualBox](https://www.virtualbox.org), which means that you can run BareMetal on both Linux, Microsoft Windows, and Apple OS X. 
+* **Physical and virtual hardware support** with full virtualization, using [x86 hardware virtualization](https://en.wikipedia.org/wiki/X86_virtualization) whenever available (it is on most modern x86-64 CPU's). In principle BareMetal should run on any x86-64 hardware platform, even on a physical x86-64 computer, given appropriate drivers. Officially, we develop on [QEMU](http://www.qemu.org) and [VirtualBox](https://www.virtualbox.org), which means that you can run BareMetal on both Linux, Microsoft Windows, and Apple macOS. 
 
 Try it out!
 ===========
@@ -44,9 +44,9 @@ Execute the build script:
 Running BareMetal
 -----------------
 
-The easiest way to get started is with QEMU:
+Execute the run script to start the kernel in QEMU:
 
-	qemu-system-x86_64 -machine q35 -cpu core2duo -smp 2 -m 1024 -kernel ./boot.bin -s
+	./run_x86.64.sh
 
 
 
