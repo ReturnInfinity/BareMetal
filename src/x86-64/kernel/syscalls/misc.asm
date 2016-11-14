@@ -164,7 +164,6 @@ b_system_misc_smp_unlock:
 b_system_misc_debug_dump_mem:
 	push rsi
 	mov rsi, rax
-	call os_debug_dump_mem
 	pop rsi
 	ret
 
@@ -212,6 +211,48 @@ b_system_misc_reset_skip_ap:
 b_system_misc_reset_no_more_aps:
 	call init_memory_map		; Clear memory table
 	int 0x81			; Reset this core
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_debug_dump_(rax|eax|ax|al) -- Dump content of RAX, EAX, AX, or AL to the screen in hex format
+;  IN:	RAX = content to dump
+; OUT:	Nothing, all registers preserved
+os_debug_dump_rax:
+	rol rax, 8
+	call os_debug_dump_al
+	rol rax, 8
+	call os_debug_dump_al
+	rol rax, 8
+	call os_debug_dump_al
+	rol rax, 8
+	call os_debug_dump_al
+	rol rax, 32
+os_debug_dump_eax:
+	rol eax, 8
+	call os_debug_dump_al
+	rol eax, 8
+	call os_debug_dump_al
+	rol eax, 16
+os_debug_dump_ax:
+	rol ax, 8
+	call os_debug_dump_al
+	rol ax, 8
+os_debug_dump_al:
+	push rbx
+	push rax
+	mov rbx, hextable
+	push rax			; Save RAX since we work in 2 parts
+	shr al, 4			; Shift high 4 bits into low 4 bits
+	xlatb
+	call os_output_char
+	pop rax
+	and al, 0x0f			; Clear the high 4 bits
+	xlatb
+	call os_output_char
+	pop rax
+	pop rbx
+	ret
 ; -----------------------------------------------------------------------------
 
 

@@ -6,7 +6,6 @@
 ; =============================================================================
 
 
-%include "syscalls/debug.asm"
 %include "syscalls/disk.asm"
 %include "syscalls/input.asm"
 %include "syscalls/memory.asm"

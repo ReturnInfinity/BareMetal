@@ -93,8 +93,6 @@ os_DiskEnabled:		equ os_SystemVariables + 783
 os_DiskActivity:	equ os_SystemVariables + 784
 app_argc:		equ os_SystemVariables + 785
 
-; Function variables
-os_debug_dump_reg_stage:	db 0x00
 
 keylayoutlower:
 db 0x00, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0x0e, 0, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0x1c, 0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', 0x27, '`', 0, '\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, 0, 0, ' ', 0
@@ -103,30 +101,6 @@ db 0x00, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0x0e, 0,
 ; 0e = backspace
 ; 1c = enter
 
-
-os_debug_dump_reg_string00:	db '  A:', 0
-os_debug_dump_reg_string01:	db '  B:', 0
-os_debug_dump_reg_string02:	db '  C:', 0
-os_debug_dump_reg_string03:	db '  D:', 0
-os_debug_dump_reg_string04:	db ' SI:', 0
-os_debug_dump_reg_string05:	db ' DI:', 0
-os_debug_dump_reg_string06:	db ' BP:', 0
-os_debug_dump_reg_string07:	db ' SP:', 0
-os_debug_dump_reg_string08:	db '  8:', 0
-os_debug_dump_reg_string09:	db '  9:', 0
-os_debug_dump_reg_string0A:	db ' 10:', 0
-os_debug_dump_reg_string0B:	db ' 11:', 0
-os_debug_dump_reg_string0C:	db ' 12:', 0
-os_debug_dump_reg_string0D:	db ' 13:', 0
-os_debug_dump_reg_string0E:	db ' 14:', 0
-os_debug_dump_reg_string0F:	db ' 15:', 0
-os_debug_dump_reg_string10:	db ' RF:', 0
-
-os_debug_dump_flag_string0:	db ' C:', 0
-os_debug_dump_flag_string1:	db ' Z:', 0
-os_debug_dump_flag_string2:	db ' S:', 0
-os_debug_dump_flag_string3:	db ' D:', 0
-os_debug_dump_flag_string4:	db ' O:', 0
 
 ;------------------------------------------------------------------------------
 

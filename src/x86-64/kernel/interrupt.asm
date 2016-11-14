@@ -61,7 +61,7 @@ keyboard_uppercase:
 	mov rbx, keylayoutupper
 	jmp keyboard_processkey
 
-keyboard_lowercase:	
+keyboard_lowercase:
 	mov rbx, keylayoutlower
 
 keyboard_processkey:			; Convert the scan code
@@ -454,45 +454,25 @@ exception_gate_main:
 	pop rax
 	mov bl, 0x0F
 	call b_output
-	call os_print_newline
 	pop rsi
 	pop rdi
 	pop rbx
 	pop rax
-	call os_print_newline
-	call os_debug_dump_reg
-	mov rsi, rip_string
+	mov rsi, int_string02
 	call b_output
 	push rax
 	mov rax, [rsp+0x08] 		; RIP of caller
 	call os_debug_dump_rax
 	pop rax
 	call os_print_newline
-	push rax
-	push rcx
-	push rsi
-	mov rsi, stack_string
-	call b_output
-	mov rsi, rsp
-	add rsi, 0x18
-	mov rcx, 4
-next_stack:
-	lodsq
-	call os_debug_dump_rax
-	mov al, ' '
-	call os_output_char
-	loop next_stack
-	call os_print_newline
-	pop rsi
-	pop rcx
-	pop rax
-;	jmp $				; For debugging
+	jmp $				; For debugging
 	call init_memory_map
 	jmp ap_clear			; jump to AP clear code
 
 
-int_string00 db 'BareMetal - CPU 0x', 0
+int_string00 db 'Fatal Exception - CPU 0x', 0
 int_string01 db ' - Interrupt ', 0
+int_string02 db ' @ 0x', 0
 ; Strings for the error messages
 exc_string db 'Unknown Fatal Exception!', 0
 exc_string00 db '00 (DE)', 0
@@ -515,9 +495,6 @@ exc_string16 db '16 (MF)', 0
 exc_string17 db '17 (AC)', 0
 exc_string18 db '18 (MC)', 0
 exc_string19 db '19 (XM)', 0
-rip_string db ' IP:', 0
-stack_string db ' ST:', 0
-
 
 
 ; =============================================================================
