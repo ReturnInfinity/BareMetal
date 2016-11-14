@@ -73,3 +73,9 @@ Some useful commands:
 	info registers
 	info cpus
 	info mem
+
+Dumping memory:
+
+	xp /2xg 0x100000
+
+Dump 2 items in hex (x) 64-bits each (g) starting at address 0x100000
