@@ -48,72 +48,62 @@ unsigned char b_input_key(void) {
 }
 
 
-unsigned long b_smp_enqueue(void *ptr, unsigned long var) {
+unsigned long b_smp_set(void *codeptr, void *dataptr, unsigned long cpu) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100030" : "=a"(tlong) : "a"(ptr), "S"(var));
+	asm volatile ("call *0x00100030" : "=a"(tlong) : "a"(codeptr), "d"(dataptr), "c"(cpu));
 	return tlong;
 }
 
-unsigned long b_smp_dequeue(unsigned long *var) {
-	unsigned long tlong;
-	asm volatile ("call *0x00100038" : "=a"(tlong), "=D"(*(var)));
-	return tlong;
-}
-
-void b_smp_run(unsigned long ptr, unsigned long var) {
-	asm volatile ("call *0x00100040" : : "a"(ptr), "D"(var));
-}
-
-void b_smp_wait(void) {
-	asm volatile ("call *0x00100048");
+unsigned long b_smp_config() {
+	return 0;
 }
 
 
 unsigned long b_mem_allocate(unsigned long *mem, unsigned long nbr) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100050" : "=a"(*(mem)), "=c"(tlong) : "c"(nbr));
+	asm volatile ("call *0x00100040" : "=a"(*(mem)), "=c"(tlong) : "c"(nbr));
 	return tlong;
 }
 
 unsigned long b_mem_release(unsigned long *mem, unsigned long nbr) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100058" : "=c"(tlong) : "a"(*(mem)), "c"(nbr));
+	asm volatile ("call *0x00100048" : "=c"(tlong) : "a"(*(mem)), "c"(nbr));
 	return tlong;
 }
 
 
 void b_ethernet_tx(void *mem, unsigned long len, unsigned long iid) {
-	asm volatile ("call *0x00100060" : : "S"(mem), "c"(len), "d"(iid));
+	asm volatile ("call *0x00100050" : : "S"(mem), "c"(len), "d"(iid));
 }
 
 unsigned long b_ethernet_rx(void *mem, unsigned long iid) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100068" : "=c"(tlong) : "D"(mem), "d"(iid));
+	asm volatile ("call *0x00100058" : "=c"(tlong) : "D"(mem), "d"(iid));
 	return tlong;
 }
 
 
 unsigned long b_disk_read(unsigned long start, unsigned long num, unsigned long disknum, void *dest) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100070" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "D"(dest));
+	asm volatile ("call *0x00100060" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "D"(dest));
 	return tlong;
 }
 
 unsigned long b_disk_write(unsigned long start, unsigned long num, unsigned long disknum, void *source) {
 	unsigned long tlong = 0;
-	asm volatile ("call *0x00100078" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "S"(source));
+	asm volatile ("call *0x00100068" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "S"(source));
 	return tlong;
 }
 
 
 unsigned long b_system_config(unsigned long function, unsigned long var) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100080" : "=a"(tlong) : "d"(function), "a"(var));
+	asm volatile ("call *0x00100070" : "=a"(tlong) : "d"(function), "a"(var));
 	return tlong;
 }
 
 void b_system_misc(unsigned long function, void* var1, void* var2) {
-	asm volatile ("call *0x00100088" : : "d"(function), "a"(var1), "c"(var2));
+	asm volatile ("call *0x00100078" : : "d"(function), "a"(var1), "c"(var2));
 }
 
 

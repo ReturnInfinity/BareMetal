@@ -13,34 +13,32 @@
 #define _LIBBAREMETAL_H
 
 // Output
-void b_output_chars(const char *str, unsigned long nbr);
 void b_output(const char *str);
+void b_output_chars(const char *str, unsigned long nbr);
 
 // Input
-unsigned char b_input_key(void);
 unsigned long b_input(unsigned char *str, unsigned long nbr);
+unsigned char b_input_key(void);
 
 // SMP
-void b_smp_wait(void);
-void b_smp_run(unsigned long ptr, unsigned long var);
-unsigned long b_smp_dequeue(unsigned long *var);
-unsigned long b_smp_enqueue(void *ptr, unsigned long var);
+unsigned long b_smp_set(void *codeptr, void* dataptr, unsigned long cpu);
+unsigned long b_smp_config();
 
 // Memory
 unsigned long b_mem_release(unsigned long *mem, unsigned long nbr);
 unsigned long b_mem_allocate(unsigned long *mem, unsigned long nbr);
 
-// Network 
-unsigned long b_ethernet_rx(void *mem, unsigned long iid);
+// Network
 void b_ethernet_tx(void *mem, unsigned long len, unsigned long iid);
+unsigned long b_ethernet_rx(void *mem, unsigned long iid);
 
 // Disk
-unsigned long b_disk_write(unsigned long start, unsigned long num, unsigned long disknum, void *source);
 unsigned long b_disk_read(unsigned long start, unsigned long num, unsigned long disknum, void *dest);
+unsigned long b_disk_write(unsigned long start, unsigned long num, unsigned long disknum, void *source);
 
 // Misc
-void b_system_misc(unsigned long function, void *var1, void *var2);
 unsigned long b_system_config(unsigned long function, unsigned long var);
+void b_system_misc(unsigned long function, void *var1, void *var2);
 
 // Index for b_system_config calls
 #define TIMECOUNTER          0
