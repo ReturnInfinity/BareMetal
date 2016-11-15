@@ -3,9 +3,9 @@
 Targeting x86-64 based systems (Intel and AMD)
 
 
-## Debugging
+## Debugging with GDB
 
-This short segment deals with debugging in GDB.
+This short segment deals with debugging in [GDB](https://www.gnu.org/software/gdb/).
 
 
 ### Terminal 1
@@ -43,12 +43,6 @@ Dump some memory
 	x 0xXXXXX
 
 
-## Running via the terminal
-
-Start QEMU with the `-curses` option to disable QEMU screen output via SDL. This is useful for testing the VM via a shell session.
-
-Escape+2 will switch to the QEMU monitor console and Escape+1 will switch back to the VM. Enter `quit` on the QEMU monitor console to stop the VM.
-
 ## Debugging via QEMU monitor
 
 Some useful commands:
@@ -62,3 +56,13 @@ Dumping memory:
 	xp /2xg 0x100000
 
 Dump 2 items in hex (x) 64-bits each (g) starting at address 0x100000
+
+
+## Running QEMU via the terminal or SSH
+
+Starting QEMU with the `-curses` option disables QEMU screen output via SDL. This is useful for testing the VM via a shell session. This is the default option for the scripts in this repo.
+
+Escape+2 will switch to the QEMU monitor console and Escape+1 will switch back to the VM. Enter `quit` on the QEMU monitor console to stop the VM.
+
+
+// EOF
