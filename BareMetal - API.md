@@ -1,6 +1,6 @@
-# BareMetal x86-64 API #
+# BareMetal x86-64 API
 
-Version 1 - June 19, 2015
+Version 1 - November 14, 2016
 
 ### Notes
 
