@@ -39,6 +39,11 @@ init_ahci_found:
 ; Basic config of the controller, port 0
 	mov rsi, rax			; RSI holds the ABAR
 
+; Enable AHCI
+	xor eax, eax
+	bts eax, 31
+	mov [rsi+0x04], eax
+
 ; Search the implemented ports for a drive
 	mov eax, [rsi+0x0C]		; PI – Ports Implemented
 	mov edx, eax
@@ -67,12 +72,22 @@ founddrive:
 	push rcx			; Save port number
 	shl rcx, 7			; Quick multiply by 0x80
 	add rdi, rcx
+
+	mov eax, [rdi+AHCI_PxCMD]	; Stop the port
+	btr eax, 4			; FRE
+	btr eax, 0			; ST
+	mov [rdi+AHCI_PxCMD], eax
+
+	xor eax, eax
+	mov [rdi+AHCI_PxCI], eax	; Clear all slots
+
 	pop rcx				; Restore port number
+
 	mov rax, ahci_cmdlist		; 1024 bytes per port
 	stosd				; Offset 00h: PxCLB – Port x Command List Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; Offset 04h: PxCLBU – Port x Command List Base Address Upper 32-bits
-	mov rax, ahci_cmdlist + 0x1000	; 256 or 4096 bytes per port
+	mov rax, ahci_receivedfis	; 256 or 4096 bytes per port
 	stosd				; Offset 08h: PxFB – Port x FIS Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; Offset 0Ch: PxFBU – Port x FIS Base Address Upper 32-bits
@@ -109,16 +124,16 @@ iddrive:
 	push rcx
 	push rax
 
+	mov rsi, [ahci_base]
 	shl rcx, 7			; Quick multiply by 0x80
 	add rcx, 0x100			; Offset to port 0
+	add rsi, rcx
 
 	push rdi			; Save the destination memory address
 
-	mov rsi, [ahci_base]
-
+	; Build the Command List Header
 	mov rdi, ahci_cmdlist		; command list (1K with 32 entries, 32 bytes each)
-	mov eax, 0x00010004		; 1 PRDTL Entry, Command FIS Length = 16 bytes
-
+	mov eax, 0x00010005		; 1 PRDTL Entry, Command FIS Length = 20 bytes
 	stosd				; DW 0 - Description Information
 	xor eax, eax
 	stosd				; DW 1 - Command Status
@@ -126,13 +141,11 @@ iddrive:
 	stosd				; DW 2 - Command Table Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; DW 3 - Command Table Base Address Upper
-	stosd
-	stosd
-	stosd
-	stosd
-	; DW 4 - 7 are reserved
+	xor eax, eax
+	stosq				; DW 4-7 are reserved
+	stosq
 
-	; command table
+	; Build the Command Table
 	mov rdi, ahci_cmdtable		; Build a command table for Port 0
 	mov eax, 0x00EC8027		; EC identify, bit 15 set, fis 27 H2D
 	stosd				; feature 7:0, command, c, fis
@@ -140,7 +153,9 @@ iddrive:
 	stosd				; device, lba 23:16, lba 15:8, lba 7:0
 	stosd				; feature 15:8, lba 47:40, lba 39:32, lba 31:24
 	stosd				; control, ICC, count 15:8, count 7:0
-;	stosd				; reserved
+	stosd				; reserved
+
+	; PRDT - pysical region descriptor table
 	mov rdi, ahci_cmdtable + 0x80
 	pop rax				; Restore the destination memory address
 	stosd				; Data Base Address
@@ -151,36 +166,26 @@ iddrive:
 	mov eax, 0x000001FF		; 512 - 1
 	stosd				; Description Information
 
-	add rsi, rcx
-
-	mov rdi, rsi
-	add rdi, 0x10			; Port x Interrupt Status
 	xor eax, eax
-	stosd
+	mov [rsi+AHCI_PxIS], eax	; Port x Interrupt Status
 
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0 Command and Status
-	mov eax, [rdi]
-	bts eax, 4			; FRE
-	bts eax, 0			; ST
-	stosd
-
-	mov rdi, rsi
-	add rdi, 0x38			; Command Issue
 	mov eax, 0x00000001		; Execute Command Slot 0
-	stosd
+	mov [rsi+AHCI_PxCI], eax
+
+	xor eax, eax
+	bts eax, 4			; FIS Recieve Enable (FRE)
+	bts eax, 0			; Start (ST)
+	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
 iddrive_poll:
-	mov eax, [rsi+0x38]
+	mov eax, [rsi+AHCI_PxCI]	; Read Command Slot 0 status
 	test eax, eax
 	jnz iddrive_poll
 
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0
-	mov eax, [rdi]
-	btc eax, 4			; FRE
-	btc eax, 0			; ST
-	stosd
+	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
+	btr eax, 4			; FIS Receive Enable (FRE)
+	btr eax, 0			; Start (ST)
+	mov [rsi+AHCI_PxCMD], eax
 
 	pop rax
 	pop rcx
@@ -213,12 +218,12 @@ readsectors:
 	push rax			; Save the block number
 	push rax
 
+	mov rsi, [ahci_base]
 	shl rdx, 7			; Quick multiply by 0x80
 	add rdx, 0x100			; Offset to port 0
+	add rsi, rdx
 
-	mov rsi, [ahci_base]
-
-	; Command list setup
+	; Build the Command List
 	mov rdi, ahci_cmdlist		; command list (1K with 32 entries, 32 bytes each)
 	xor eax, eax
 	mov eax, 0x00010005		; 1 PRDTL Entry, Command FIS Length = 20 bytes
@@ -229,13 +234,11 @@ readsectors:
 	stosd				; DW 2 - Command Table Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; DW 3 - Command Table Base Address Upper
-	stosd
-	stosd
-	stosd
-	stosd
-	; DW 4 - 7 are reserved
+	xor eax, eax
+	stosq				; DW 4 - 7 are reserved
+	stosq
 
-	; Command FIS setup
+	; Build the Command Table
 	mov rdi, ahci_cmdtable		; Build a command table for Port 0
 	mov eax, 0x00258027		; 25 READ DMA EXT, bit 15 set, fis 27 H2D
 	stosd				; feature 7:0, command, c, fis
@@ -264,36 +267,26 @@ readsectors:
 	dec rax				; subtract 1 (4.2.3.3, DBC is number of bytes - 1)
 	stosd				; Description Information
 
-	add rsi, rdx
-
-	mov rdi, rsi
-	add rdi, 0x10			; Port x Interrupt Status
 	xor eax, eax
-	stosd
+	mov [rsi+AHCI_PxIS], eax	; Port x Interrupt Status
 
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0
-	mov eax, [rdi]
-	bts eax, 4			; FRE
-	bts eax, 0			; ST
-	stosd
-
-	mov rdi, rsi
-	add rdi, 0x38			; Command Issue
 	mov eax, 0x00000001		; Execute Command Slot 0
-	stosd
+	mov [rsi+AHCI_PxCI], eax
+
+	xor eax, eax
+	bts eax, 4			; FIS Recieve Enable (FRE)
+	bts eax, 0			; Start (ST)
+	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
 readsectors_poll:
-	mov eax, [rsi+0x38]
+	mov eax, [rsi+AHCI_PxCI]
 	test eax, eax
 	jnz readsectors_poll
 
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0
-	mov eax, [rdi]
-	btc eax, 4			; FRE
-	btc eax, 0			; ST
-	stosd
+	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
+	btr eax, 4			; FIS Receive Enable (FRE)
+	btr eax, 0			; Start (ST)
+	mov [rsi+AHCI_PxCMD], eax
 
 	pop rax				; rax = start
 	pop rcx				; rcx = number of sectors read
@@ -332,15 +325,15 @@ writesectors:
 	push rax			; Save the block number
 	push rax
 
+	mov rsi, [ahci_base]
 	shl rdx, 7			; Quick multiply by 0x80
 	add rdx, 0x100			; Offset to port 0
-
-	mov rsi, [ahci_base]
+	add rsi, rdx
 
 	; Command list setup
 	mov rdi, ahci_cmdlist		; command list (1K with 32 entries, 32 bytes each)
 	xor eax, eax
-	mov eax, 0x00010045		; 1 PRDTL Entry, write flag, Command FIS Length = 20 bytes
+	mov eax, 0x00010045		; 1 PRDTL Entry, write flag (bit 6), Command FIS Length = 20 bytes
 	stosd				; DW 0 - Description Information
 	xor eax, eax
 	stosd				; DW 1 - Command Status
@@ -348,11 +341,8 @@ writesectors:
 	stosd				; DW 2 - Command Table Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; DW 3 - Command Table Base Address Upper
-	stosd
-	stosd
-	stosd
-	stosd
-	; DW 4 - 7 are reserved
+	stosq				; DW 4 - 7 are reserved
+	stosq
 
 	; Command FIS setup
 	mov rdi, ahci_cmdtable		; Build a command table for Port 0
@@ -374,46 +364,35 @@ writesectors:
 	; PRDT setup
 	mov rdi, ahci_cmdtable + 0x80
 	pop rax				; Restore the source memory address
-
 	stosd				; Data Base Address
 	shr rax, 32
 	stosd				; Data Base Address Upper
 	stosd				; Reserved
 	pop rax				; Restore the sector count
 	shl rax, 9			; multiply by 512 for bytes
-	add rax, -1			; subtract 1 (4.2.3.3, DBC is number of bytes - 1)
+	dec rax				; subtract 1 (4.2.3.3, DBC is number of bytes - 1)
 	stosd				; Description Information
 
-	add rsi, rdx
-
-	mov rdi, rsi
-	add rdi, 0x10			; Port x Interrupt Status
 	xor eax, eax
-	stosd
+	mov [rsi+AHCI_PxIS], eax	; Port x Interrupt Status
 
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0
-	mov eax, [rdi]
-	bts eax, 4			; FRE
-	bts eax, 0			; ST
-	stosd
-
-	mov rdi, rsi
-	add rdi, 0x38			; Command Issue
 	mov eax, 0x00000001		; Execute Command Slot 0
-	stosd
+	mov [rsi+AHCI_PxCI], eax
+
+	xor eax, eax
+	bts eax, 4			; FIS Recieve Enable (FRE)
+	bts eax, 0			; Start (ST)
+	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
 writesectors_poll:
-	mov eax, [rsi+0x38]
+	mov eax, [rsi+AHCI_PxCI]
 	test eax, eax
 	jnz writesectors_poll
 
-	mov rdi, rsi
-	add rdi, 0x18			; Offset to port 0
-	mov eax, [rdi]
-	btc eax, 4			; FRE
-	btc eax, 0			; ST
-	stosd
+	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
+	btr eax, 4			; FIS Receive Enable (FRE)
+	btr eax, 0			; Start (ST)
+	mov [rsi+AHCI_PxCMD], eax
 
 	pop rax				; rax = start
 	pop rcx				; rcx = number of sectors read
@@ -427,6 +406,42 @@ writesectors_poll:
 	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
+
+
+; HBA Memory Registers
+
+;Generic Host Control
+AHCI_CAP		equ 0x0000 ; HBA Capabilities
+AHCI_GHC		equ 0x0004 ; Global HBA Control
+AHCI_IS			equ 0x0008 ; Interrupt Status Register
+AHCI_PI			equ 0x000C ; Ports Implemented
+AHCI_VS			equ 0x0010 ; AHCI Version
+AHCI_CCC_CTL		equ 0x0014 ; Command Completion Coalescing Control
+AHCI_CCC_PORTS		equ 0x0018 ; Command Completion Coalescing Ports
+AHCI_EM_LOC		equ 0x001C ; Enclosure Management Location
+AHCI_EM_CTL		equ 0x0020 ; Enclosure Management Control
+AHCI_CAP2		equ 0x0024 ; HBA Capabilities Extended
+AHCI_BOHC		equ 0x0028 ; BIOS/OS Handoff Control and Status
+
+; Port Registers
+; Port 0 starts at 100h, port 1 starts at 180h, port 2 starts at 200h, port 3 at 280h, etc.
+AHCI_PxCLB		equ 0x0000 ; Port x Command List Base Address
+AHCI_PxCLBU		equ 0x0004 ; Port x Command List Base Address Upper 32-bits
+AHCI_PxFB		equ 0x0008 ; Port x FIS Base Address
+AHCI_PxFBU		equ 0x000C ; Port x FIS Base Address Upper 32-bits
+AHCI_PxIS		equ 0x0010 ; Port x Interrupt Status
+AHCI_PxIE		equ 0x0014 ; Port x Interrupt Enable
+AHCI_PxCMD		equ 0x0018 ; Port x Command and Status
+AHCI_PxTFD		equ 0x0020 ; Port x Task File Data
+AHCI_PxSIG		equ 0x0024 ; Port x Signature
+AHCI_PxSSTS		equ 0x0028 ; Port x Serial ATA Status (SCR0: SStatus)
+AHCI_PxSCTL		equ 0x002C ; Port x Serial ATA Control (SCR2: SControl)
+AHCI_PxSERR		equ 0x0030 ; Port x Serial ATA Error (SCR1: SError)
+AHCI_PxSACT		equ 0x0034 ; Port x Serial ATA Active (SCR3: SActive)
+AHCI_PxCI		equ 0x0038 ; Port x Command Issue
+AHCI_PxSNTF		equ 0x003C ; Port x Serial ATA Notification (SCR4: SNotification)
+AHCI_PxFBS		equ 0x0040 ; Port x FIS-based Switching Control
+AHCI_PxDEVSLP		equ 0x0044 ; Port x Device Sleep
 
 
 ; =============================================================================
