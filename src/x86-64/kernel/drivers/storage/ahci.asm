@@ -42,10 +42,10 @@ init_ahci_found:
 ; Enable AHCI
 	xor eax, eax
 	bts eax, 31
-	mov [rsi+0x04], eax
+	mov [rsi+AHCI_GHC], eax
 
 ; Search the implemented ports for a drive
-	mov eax, [rsi+0x0C]		; PI – Ports Implemented
+	mov eax, [rsi+AHCI_PI]		; PI – Ports Implemented
 	mov edx, eax
 	xor ecx, ecx
 	mov ebx, 0x128			; Offset to Port 0 Serial ATA Status
@@ -79,9 +79,7 @@ founddrive:
 	mov [rdi+AHCI_PxCMD], eax
 
 	xor eax, eax
-	mov [rdi+AHCI_PxCI], eax	; Clear all slots
-
-	pop rcx				; Restore port number
+	mov [rdi+AHCI_PxCI], eax	; Clear all command slots
 
 	mov rax, ahci_cmdlist		; 1024 bytes per port
 	stosd				; Offset 00h: PxCLB – Port x Command List Base Address
@@ -95,6 +93,7 @@ founddrive:
 	stosd				; Offset 14h: PxIE – Port x Interrupt Enable
 
 	; Query drive
+	pop rcx				; Restore port number
 	mov rdi, 0x200000
 	call iddrive
 	mov rsi, 0x200000
@@ -123,13 +122,12 @@ iddrive:
 	push rsi
 	push rcx
 	push rax
+	push rdi			; Save the destination memory address
 
 	mov rsi, [ahci_base]
 	shl rcx, 7			; Quick multiply by 0x80
 	add rcx, 0x100			; Offset to port 0
 	add rsi, rcx
-
-	push rdi			; Save the destination memory address
 
 	; Build the Command List Header
 	mov rdi, ahci_cmdlist		; command list (1K with 32 entries, 32 bytes each)
@@ -150,10 +148,8 @@ iddrive:
 	mov eax, 0x00EC8027		; EC identify, bit 15 set, fis 27 H2D
 	stosd				; feature 7:0, command, c, fis
 	xor eax, eax
-	stosd				; device, lba 23:16, lba 15:8, lba 7:0
-	stosd				; feature 15:8, lba 47:40, lba 39:32, lba 31:24
-	stosd				; control, ICC, count 15:8, count 7:0
-	stosd				; reserved
+	stosq				; the rest of the table can be clear
+	stosq
 
 	; PRDT - pysical region descriptor table
 	mov rdi, ahci_cmdtable + 0x80
@@ -197,7 +193,7 @@ iddrive_poll:
 
 ; -----------------------------------------------------------------------------
 ; readsectors -- Read data from a SATA hard drive
-; IN:	RAX = starting sector # to read
+; IN:	RAX = starting sector # to read (48-bit LBA address)
 ;	RCX = number of sectors to read (up to 8192 = 4MiB)
 ;	RDX = disk #
 ;	RDI = memory location to store sectors
@@ -213,6 +209,10 @@ readsectors:
 	push rcx
 	push rax
 
+	mov rbx, 0xFFFFFFFFFFFF		; Check for invalid starting sector
+	cmp rax, rbx
+	jg readsectors_error
+
 	push rcx			; Save the sector count
 	push rdi			; Save the destination memory address
 	push rax			; Save the block number
@@ -223,7 +223,7 @@ readsectors:
 	add rdx, 0x100			; Offset to port 0
 	add rsi, rdx
 
-	; Build the Command List
+	; Build the Command List Header
 	mov rdi, ahci_cmdlist		; command list (1K with 32 entries, 32 bytes each)
 	xor eax, eax
 	mov eax, 0x00010005		; 1 PRDTL Entry, Command FIS Length = 20 bytes
@@ -252,7 +252,7 @@ readsectors:
 	stosd				; feature 15:8, lba 47:40, lba 39:32, lba 31:24
 	mov rax, rcx			; Read the number of sectors given in rcx
 	stosd				; control, ICC, count 15:8, count 7:0
-	mov rax, 0x00000000
+	xor eax, eax
 	stosd				; reserved
 
 	; PRDT setup
@@ -261,6 +261,7 @@ readsectors:
 	stosd				; Data Base Address
 	shr rax, 32
 	stosd				; Data Base Address Upper
+	xor eax, eax
 	stosd				; Reserved
 	pop rax				; Restore the sector count
 	shl rax, 9			; multiply by 512 for bytes
@@ -299,12 +300,22 @@ readsectors_poll:
 	pop rbx
 	pop rdx
 	ret
+
+readsectors_error:
+	pop rax
+	pop rcx
+	pop rsi
+	pop rdi
+	pop rbx
+	pop rdx
+	xor ecx, ecx
+	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
 ; writesectors -- Write data to a SATA hard drive
-; IN:	RAX = starting sector # to write
+; IN:	RAX = starting sector # to write (48-bit LBA Address)
 ;	RCX = number of sectors to write (up to 8192 = 4MiB)
 ;	RDX = disk #
 ;	RSI = memory location of sectors
@@ -320,6 +331,10 @@ writesectors:
 	push rcx
 	push rax
 
+	mov rbx, 0xFFFFFFFFFFFF		; Check for invalid starting sector
+	cmp rax, rbx
+	jg writesectors_error
+
 	push rcx			; Save the sector count
 	push rsi			; Save the source memory address
 	push rax			; Save the block number
@@ -330,7 +345,7 @@ writesectors:
 	add rdx, 0x100			; Offset to port 0
 	add rsi, rdx
 
-	; Command list setup
+	; Build the Command List Header
 	mov rdi, ahci_cmdlist		; command list (1K with 32 entries, 32 bytes each)
 	xor eax, eax
 	mov eax, 0x00010045		; 1 PRDTL Entry, write flag (bit 6), Command FIS Length = 20 bytes
@@ -341,10 +356,11 @@ writesectors:
 	stosd				; DW 2 - Command Table Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; DW 3 - Command Table Base Address Upper
+	xor eax, eax
 	stosq				; DW 4 - 7 are reserved
 	stosq
 
-	; Command FIS setup
+	; Build the Command Table
 	mov rdi, ahci_cmdtable		; Build a command table for Port 0
 	mov eax, 0x00358027		; 35 WRITE DMA EXT, bit 15 set, fis 27 H2D
 	stosd				; feature 7:0, command, c, fis
@@ -358,7 +374,7 @@ writesectors:
 	stosd				; feature 15:8, lba 47:40, lba 39:32, lba 31:24
 	mov rax, rcx			; Read the number of sectors given in rcx
 	stosd				; control, ICC, count 15:8, count 7:0
-	mov rax, 0x00000000
+	xor eax, eax
 	stosd				; reserved
 
 	; PRDT setup
@@ -367,6 +383,7 @@ writesectors:
 	stosd				; Data Base Address
 	shr rax, 32
 	stosd				; Data Base Address Upper
+	xor eax, eax
 	stosd				; Reserved
 	pop rax				; Restore the sector count
 	shl rax, 9			; multiply by 512 for bytes
@@ -405,12 +422,31 @@ writesectors_poll:
 	pop rbx
 	pop rdx
 	ret
+
+writesectors_error:
+	pop rax
+	pop rcx
+	pop rsi
+	pop rdi
+	pop rbx
+	pop rdx
+	xor ecx, ecx
+	ret
 ; -----------------------------------------------------------------------------
 
 
 ; HBA Memory Registers
+; 0x0000 - 0x002B	Generic Host Control
+; 0x002C - 0x005F	Reserved
+; 0x0060 - 0x009F	Reserved for NVMHCI
+; 0x00A0 - 0x00FF	Vendor Specific Registers
+; 0x0100 - 0x017F	Port 0
+; 0x0180 - 0x01FF	Port 1
+; ...
+; 0x1000 - 0x107F	Port 30
+; 0x1080 - 0x10FF	Port 31
 
-;Generic Host Control
+; Generic Host Control
 AHCI_CAP		equ 0x0000 ; HBA Capabilities
 AHCI_GHC		equ 0x0004 ; Global HBA Control
 AHCI_IS			equ 0x0008 ; Interrupt Status Register
@@ -442,6 +478,8 @@ AHCI_PxCI		equ 0x0038 ; Port x Command Issue
 AHCI_PxSNTF		equ 0x003C ; Port x Serial ATA Notification (SCR4: SNotification)
 AHCI_PxFBS		equ 0x0040 ; Port x FIS-based Switching Control
 AHCI_PxDEVSLP		equ 0x0044 ; Port x Device Sleep
+; 0x0048 - 0x006F	Reserved
+; 0x0070 - 0x007F	Port x Vendor Specific
 
 
 ; =============================================================================
