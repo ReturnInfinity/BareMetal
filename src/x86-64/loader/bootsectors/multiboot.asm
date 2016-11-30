@@ -10,7 +10,6 @@
 
 FLAG_ALIGN		equ 1<<0   ; align loaded modules on page boundaries
 FLAG_MEMINFO		equ 1<<1   ; provide memory map
-FLAG_VIDEOMODES		equ 1<<2   ; provide video modes
 FLAG_AOUT_KLUDGE	equ 1<<16
 			;FLAGS[16] indicates to GRUB we are not
 			;an ELF executable and the fields
@@ -40,10 +39,6 @@ multiboot_header:
 	dd 0x00			; load end address : not necessary
 	dd 0x00			; bss end address : not necessary
 	dd multiboot_entry	; entry address GRUB will start at
-	dd mode_type		; 0 for text, 1 for graphics
-	dd width		; requested width in pixels, 0 for no preference
-	dd height		; requested height in pixels, 0 for no preference
-	dd depth		; requests bits per pixel, 0 for no preference
 
 align 16
 
