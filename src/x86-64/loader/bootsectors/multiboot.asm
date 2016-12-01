@@ -1,3 +1,5 @@
+; Multiboot for BareMetal/Pure64
+
 ; http://stackoverflow.com/questions/33488194/creating-a-simple-multiboot-kernel-loaded-with-grub2
 ; https://www.gnu.org/software/grub/manual/multiboot/multiboot.html#OS-image-format
 
@@ -5,7 +7,7 @@
 [global _start]
 [ORG 0x100000]		;If using '-f bin' we need to specify the
 			;origin point for our code with ORG directive
-			;multiboot loaders load us at physical 
+			;multiboot loaders load us at physical
 			;address 0x100000
 
 FLAG_ALIGN		equ 1<<0   ; align loaded modules on page boundaries
@@ -23,6 +25,11 @@ MAGIC			equ 0x1BADB002
 
 FLAGS			equ FLAG_AOUT_KLUDGE | FLAG_ALIGN | FLAG_MEMINFO
 CHECKSUM		equ -(MAGIC + FLAGS)
+
+mode_type		equ 1
+width			equ 1024
+height			equ 768
+depth			equ 32
 
 _start:				; We need some code before the multiboot header
 	xor eax, eax		; Clear eax and ebx in the event
