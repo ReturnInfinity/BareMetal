@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2014 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
 ;
 ; Intel i8254x NIC.
 ; =============================================================================
@@ -28,6 +28,12 @@ net_i8254x_init:
 	mov dl, 0x0F				; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
 	call os_pci_read_reg
 	mov [os_NetIRQ], al			; AL holds the IRQ
+
+	; Enable PCI Bus Mastering
+	mov dl, 0x01				; Get Status/Command
+	call os_pci_read_reg
+	bts eax, 2
+	call os_pci_write_reg
 
 	; Grab the MAC address
 	mov rsi, [os_NetIOBaseMem]
@@ -256,7 +262,7 @@ I8254X_REG_FCTTV	equ 0x0170 ; Flow Control Transmit Timer Value
 I8254X_REG_TXCW		equ 0x0178 ; Transmit Configuration Word
 I8254X_REG_RXCW		equ 0x0180 ; Receive Configuration Word
 I8254X_REG_TCTL		equ 0x0400 ; Transmit Control Register
-I8254X_REG_TIPG		equ 0x0410 ; Transmit Inter Packet Gap 
+I8254X_REG_TIPG		equ 0x0410 ; Transmit Inter Packet Gap
 
 I8254X_REG_LEDCTL	equ 0x0E00 ; LED Control
 I8254X_REG_PBA		equ 0x1000 ; Packet Buffer Allocation
