@@ -65,4 +65,11 @@ Starting QEMU with the `-curses` option disables QEMU screen output via SDL. Thi
 Escape+2 will switch to the QEMU monitor console and Escape+1 will switch back to the VM. Enter `quit` on the QEMU monitor console to stop the VM.
 
 
+## Capturing QEMU network traffic
+
+Add the following to the qemu start command in run_x86_64.sh
+
+	-net nic,model=e1000 -net dump,file=net.pcap
+
+
 // EOF
