@@ -16,6 +16,9 @@ org 0x7C00
 entry:
 	cli				; Disable interrupts
 ;	xchg bx, bx			; Bochs magic debug
+
+	mov [DriveNumber], dl		; BIOS passes drive number in DL
+
 	xor eax, eax
 	mov ss, ax
 	mov es, ax
@@ -23,10 +26,10 @@ entry:
 	mov sp, 0x7C00
 	sti				; Enable interrupts
 
-	mov edi, 0x00004000		; Clear out memory for the E820 map
-	xor eax, eax
-	mov ecx, 2048
-	rep stosd
+;	mov edi, 0x00004000		; Clear out memory for the E820 map
+;	xor eax, eax
+;	mov ecx, 2048
+;	rep stosd
 
 ; Get the BIOS E820 Memory Map
 ; use the INT 0x15, eax= 0xE820 BIOS function to get a memory map
@@ -74,7 +77,7 @@ skipent:
 	test ebx, ebx			; if ebx resets to 0, list is complete
 	jne e820lp
 nomemmap:
-	mov byte [cfg_e820], 0		; No memory map function
+;	mov byte [cfg_e820], 0		; No memory map function
 memmapend:
 	xor eax, eax			; Create a blank record for termination (32 bytes)
 	mov ecx, 8
@@ -94,8 +97,6 @@ check_A20:
 	mov al, 0xDF
 	out 0x60, al
 
-	mov [DriveNumber], dl		; BIOS passes drive number in DL
-
 	mov si, msg_Load
 	call print_string_16
 
@@ -110,13 +111,16 @@ load_nextsector:
 	jnz load_nextsector
 
 	mov eax, [0x8000]
-	cmp eax, 0xC03166FA		; Match against the Pure64 binary
+	cmp eax, 0x00018BE9		; Match against the Pure64 binary
 	jne magic_fail
 
-	mov si, msg_LoadDone
-	call print_string_16
-
-	jmp 0x0000:0x8000
+; At this point we are done with real mode and BIOS interrupts. Jump to 32-bit mode.
+	cli				; No more interrupts
+	lgdt [cs:GDTR32]		; Load GDT register
+	mov eax, cr0
+	or al, 0x01			; Set protected mode bit
+	mov cr0, eax
+	jmp 8:0x8000			; Jump to 32-bit protected mode
 
 magic_fail:
 	mov si, msg_MagicFail
@@ -219,17 +223,14 @@ dw 0xFFFF, 0x0000, 0x9A00, 0x00CF	; 32-bit code descriptor
 dw 0xFFFF, 0x0000, 0x9200, 0x00CF	; 32-bit data descriptor
 gdt32_end:
 
-align 16
-
-msg_Load db "BMFS MBR v1.0 - Loading Pure64", 0
-msg_LoadDone db " - done.", 13, 10, "Executing...", 0
-msg_MagicFail db " - Not found!", 0
-DriveNumber db 0x00
+msg_Load db "BMFS MBR v1.0", 0
+msg_MagicFail db " - Error!", 0
 
 times 446-$+$$ db 0
 
 ; False partition table entry required by some BIOS vendors.
 db 0x80, 0x00, 0x01, 0x00, 0xEB, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF
+DriveNumber db 0x00
 
 times 510-$+$$ db 0
 

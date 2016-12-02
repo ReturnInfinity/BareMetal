@@ -50,6 +50,13 @@ align 16
 ; 32-bit mode
 USE32
 start32:
+	mov eax, 16
+	mov ds, ax
+	mov es, ax
+	mov ss, ax
+	mov fs, ax
+	mov gs, ax
+
 	mov edi, 0xb8000		; Clear the screen
 	mov ax, 0x0720
 	mov cx, 2000
