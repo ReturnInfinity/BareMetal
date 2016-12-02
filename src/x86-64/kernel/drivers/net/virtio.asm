@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2014 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
 ;
 ; Virtio NIC.
 ; =============================================================================
@@ -8,8 +8,8 @@
 
 ; -----------------------------------------------------------------------------
 ; Initialize a Virtio NIC
-;  IN:	BL  = Bus number of the Intel device
-;	CL  = Device/Slot number of the Intel device
+;  IN:	BL  = Bus number of the Virtio device
+;	CL  = Device/Slot number of the Virtio device
 net_virtio_init:
 	push rsi
 	push rdx
@@ -24,9 +24,9 @@ net_virtio_init:
 	mov dword [os_NetIOBaseMem], eax
 
 	; Grab the IRQ of the device
-	mov dl, 0x0F				; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
+	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
 	call os_pci_read_reg
-	mov [os_NetIRQ], al			; AL holds the IRQ
+	mov [os_NetIRQ], al		; AL holds the IRQ
 
 	; Grab the MAC address
 	mov edx, [os_NetIOBaseMem]
@@ -84,8 +84,8 @@ net_virtio_reset:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
-;	Uses RAX, RCX, RSI, RDI
 net_virtio_transmit:
+
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -94,7 +94,6 @@ net_virtio_transmit:
 ; net_virtio_poll - Polls the Virtio NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
-;	Uses RAX, RCX, RDX, RSI, RDI
 net_virtio_poll:
 
 	ret

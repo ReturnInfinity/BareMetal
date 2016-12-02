@@ -72,4 +72,13 @@ Add the following to the qemu start command in run_x86_64.sh
 	-net nic,model=e1000 -net dump,file=net.pcap
 
 
+## Connecting two QEMU VMs via network
+
+VM 1
+	-net socket,listen=:30000
+
+VM 2
+	-net socket,connect=:30000
+
+
 // EOF

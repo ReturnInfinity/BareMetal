@@ -94,6 +94,10 @@ net_i8254x_init_done_MAC:
 ;  IN:	Nothing
 ; OUT:	Nothing, all registers preserved
 net_i8254x_reset:
+	push rdi
+	push rsi
+	push rax
+
 	mov rsi, [os_NetIOBaseMem]
 	mov rdi, rsi
 
@@ -168,6 +172,9 @@ net_i8254x_reset:
 	mov eax, 0x1FFFF			; Temp enable all interrupt types
 	mov [rsi+I8254X_REG_IMS], eax		; Enable interrupt types
 
+	pop rax
+	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -177,8 +184,10 @@ net_i8254x_reset:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
-;	Uses RAX, RCX, RSI, RDI
 net_i8254x_transmit:
+	push rdi
+	push rax
+
 	mov rdi, os_eth_tx_buffer		; Transmit Descriptor Base Address
 	mov rax, rsi
 	stosq					; Store the data location
@@ -192,6 +201,9 @@ net_i8254x_transmit:
 	mov [rdi+I8254X_REG_TDH], eax		; TDH - Transmit Descriptor Head
 	inc eax
 	mov [rdi+I8254X_REG_TDT], eax		; TDL - Transmit Descriptor Tail
+
+	pop rax
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -200,10 +212,12 @@ net_i8254x_transmit:
 ; net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
-;	Uses RAX, RCX, RDX, RSI, RDI
 net_i8254x_poll:
-	xor ecx, ecx
+	push rdi
+	push rsi
+	push rax
 
+	xor ecx, ecx
 	mov cx, [os_eth_rx_buffer+8]		; Get the packet length
 	mov rsi, 0x1c9000
 	push rcx
@@ -215,12 +229,13 @@ net_i8254x_poll:
 	inc eax
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
 
-	push rdi
 	mov rdi, os_eth_rx_buffer
 	mov rax, 0x1c9000
 	stosd
-	pop rdi
 
+	pop rax
+	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -229,12 +244,13 @@ net_i8254x_poll:
 ; net_i8254x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
 ;  IN:	Nothing
 ; OUT:	RAX = Ethernet status
-;	Uses RDI
 net_i8254x_ack_int:
 	push rdi
+
 	xor eax, eax
 	mov rdi, [os_NetIOBaseMem]
 	mov eax, [rdi+I8254X_REG_ICR]
+
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------

@@ -41,20 +41,18 @@ b_net_status_end:
 ;	RCX = Length of packet
 ; OUT:	Nothing. All registers preserved
 b_net_tx:
-	push rsi
-	push rdi
 	push rcx
 	push rax
 
-	cmp byte [os_NetEnabled], 1		; Check if networking is enabled
+	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
 	jne b_net_tx_fail
-	cmp rcx, 64				; An net packet must be at least 64 bytes
+	cmp rcx, 64			; An net packet must be at least 64 bytes
 	jge b_net_tx_maxcheck
-	mov rcx, 64				; If it was below 64 then set to 64
+	mov rcx, 64			; If it was below 64 then set to 64
 	; FIXME - OS should pad the packet with 0's before sending if less than 64
 
 b_net_tx_maxcheck:
-	cmp rcx, 1522				; Fail if more than 1522 bytes
+	cmp rcx, 1522			; Fail if more than 1522 bytes
 	jg b_net_tx_fail
 
 	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
@@ -70,8 +68,6 @@ b_net_tx_maxcheck:
 b_net_tx_fail:
 	pop rax
 	pop rcx
-	pop rdi
-	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -84,7 +80,6 @@ b_net_tx_fail:
 b_net_rx:
 	push rdi
 	push rsi
-	push rdx
 	push rax
 
 	xor ecx, ecx
@@ -106,7 +101,6 @@ b_net_rx:
 b_net_rx_fail:
 
 	pop rax
-	pop rdx
 	pop rsi
 	pop rdi
 	ret
@@ -131,22 +125,10 @@ b_net_ack_int:
 ; OUT:	RCX = Length of packet
 ;	All other registers preserved
 b_net_rx_from_interrupt:
-	push rdi
-	push rsi
-	push rdx
-	push rax
-
-	xor ecx, ecx
-
-; Call the poll function of the network driver
 	call qword [os_net_poll]
 	add qword [os_net_RXPackets], 1
 	add qword [os_net_RXBytes], rcx
 
-	pop rax
-	pop rdx
-	pop rsi
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 

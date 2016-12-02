@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2014 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
 ;
 ; Realtek 8169 NIC. http://wiki.osdev.org/RTL8169
 ; =============================================================================
@@ -186,9 +186,12 @@ reset_8169_completed:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
-;	Uses RAX, RCX, RDX, RSI, RDI
 ; ToDo:	Check for proper timeout
 net_rtl8169_transmit:
+	push rdi
+	push rdx
+	push rax
+
 	mov rdi, os_eth_tx_buffer
 	mov rax, rcx
 	stosw					; Store the frame length
@@ -205,6 +208,10 @@ net_rtl8169_transmit_sendloop:
 	and eax, 0x80000000			; Check the ownership bit (BT command instead?)
 	cmp eax, 0x80000000			; If the ownership bit is clear then the NIC sent the packet
 	je net_rtl8169_transmit_sendloop
+
+	pop rax
+	pop rdx
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -215,6 +222,10 @@ net_rtl8169_transmit_sendloop:
 ; OUT:	RCX = Length of packet
 ;	Uses RAX, RCX, RDX, RSI, RDI
 net_rtl8169_poll:
+	push rdi
+	push rsi
+	push rax
+
 	xor ecx, ecx
 	mov cx, [os_eth_rx_buffer]
 	and cx, 0x3FFF				; Clear the two high bits as length is bits 13-0
@@ -235,6 +246,10 @@ net_rtl8169_poll_first_descriptor:
 	mov [os_eth_rx_buffer+16], eax
 	mov rax, os_ethernet_rx_buffer
 	mov [os_eth_rx_buffer+24], rax
+
+	pop rax
+	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -246,11 +261,13 @@ net_rtl8169_poll_first_descriptor:
 ;	Uses RDI
 net_rtl8169_ack_int:
 	push rdx
+
 	mov dx, word [os_NetIOAddress]		; Clear active interrupt sources
 	add dx, RTL8169_REG_ISR
 	in ax, dx
 	out dx, ax
 	shr eax, 2
+
 	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
@@ -271,7 +288,7 @@ net_rtl8169_ack_int:
 	RTL8169_REG_MAR5	equ 0x0D	; Multicast Register 5
 	RTL8169_REG_MAR6	equ 0x0E	; Multicast Register 6
 	RTL8169_REG_MAR7	equ 0x0F	; Multicast Register 7
-	RTL8169_REG_TNPDS	equ 0x20	; Transmit Normal Priority Descriptors: Start address (64-bit). (256-byte alignment) 
+	RTL8169_REG_TNPDS	equ 0x20	; Transmit Normal Priority Descriptors: Start address (64-bit). (256-byte alignment)
 	RTL8169_REG_COMMAND	equ 0x37	; Command Register
 	RTL8169_REG_TPPOLL	equ 0x38	; Transmit Priority Polling Register
 	RTL8169_REG_IMR		equ 0x3C	; Interrupt Mask Register
@@ -285,14 +302,14 @@ net_rtl8169_ack_int:
 	RTL8169_REG_CONFIG3	equ 0x54	; Configuration Register 3
 	RTL8169_REG_CONFIG4	equ 0x55	; Configuration Register 4
 	RTL8169_REG_CONFIG5	equ 0x56	; Configuration Register 5
-	RTL8169_REG_PHYAR	equ 0x60	; PHY Access Register 
+	RTL8169_REG_PHYAR	equ 0x60	; PHY Access Register
 	RTL8169_REG_PHYStatus	equ 0x6C	; PHY(GMII, MII, or TBI) Status Register
 	RTL8169_REG_MAXRX	equ 0xDA	; Mac Receive Packet Size Register
 	RTL8169_REG_CCR		equ 0xE0	; C+ Command Register
 	RTL8169_REG_RDSAR	equ 0xE4	; Receive Descriptor Start Address Register (256-byte alignment)
 	RTL8169_REG_MAXTX	equ 0xEC	; Max Transmit Packet Size Register
 
-; Command Register (Offset 0037h, R/W)	
+; Command Register (Offset 0037h, R/W)
 	RTL8169_BIT_RST		equ 4		; Reset
 	RTL8169_BIT_RE		equ 3		; Receiver Enable
 	RTL8169_BIT_TE		equ 2		; Transmitter Enable
