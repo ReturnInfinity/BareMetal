@@ -15,6 +15,7 @@ cmd=( qemu-system-x86_64
 #	-device ide-drive,drive=disk,bus=ahci.0
 #	-net dump,file=net.pcap
 #	-serial file:serial.log
+#	-monitor telnet:localhost:1234,server,nowait
 )
 
 #execute the cmd string
