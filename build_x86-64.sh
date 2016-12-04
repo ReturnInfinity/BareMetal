@@ -2,8 +2,8 @@
 
 cd Pure64/
 ./build.sh
-cp src/bootsectors/multiboot.sys ../
-cp src/pure64.sys ../
+cp multiboot.sys ../
+cp pure64.sys ../
 cd ..
 
 cd src/x86-64/
