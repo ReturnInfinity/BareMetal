@@ -75,9 +75,11 @@ Add the following to the qemu start command in run_x86_64.sh
 ## Connecting two QEMU VMs via network
 
 VM 1
+
 	-net socket,listen=:30000
 
 VM 2
+
 	-net socket,connect=:30000
 
 
