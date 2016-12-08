@@ -11,7 +11,7 @@ ORG 0x0000000000100000
 
 %DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2016 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
-
+KERNELSIZE	equ 10240		; Pad the kernel to this length
 
 ; -----------------------------------------------------------------------------
 kernel_start:
@@ -129,7 +129,7 @@ ap_process:				; Set the status byte to "Busy" and run the code
 %include "interrupt.asm"
 %include "sysvar.asm"			; Include this last to keep the read/write variables away from the code
 
-times 10240-($-$$) db 0			; Set the compiled kernel binary to at least this size in bytes
+times KERNELSIZE-($-$$) db 0		; Set the compiled kernel binary to at least this size in bytes
 
 
 ; =============================================================================
