@@ -1,8 +1,8 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2017 Return Infinity -- see LICENSE.TXT
 ;
-; INIT HDD
+; Initialize disk
 ; =============================================================================
 
 
