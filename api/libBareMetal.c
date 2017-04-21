@@ -1,28 +1,8 @@
 // =============================================================================
 // BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-// Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
+// Copyright (C) 2008-2017 Return Infinity -- see LICENSE.TXT
 //
-// The BareMetal OS C/C++ library code.
-//
-// Version 2.0
-//
-// This allows for a C/C++ program to access OS functions available in BareMetal OS
-//
-//
-// Linux compile:
-//
-// Compile:
-// gcc -c -m64 -nostdlib -nostartfiles -nodefaultlibs -fomit-frame-pointer -mno-red-zone -o libBareMetal.o libBareMetal.c
-// gcc -c -m64 -nostdlib -nostartfiles -nodefaultlibs -fomit-frame-pointer -mno-red-zone -o yourapp.o yourapp.c
-// Link:
-// ld -T app.ld -o yourapp.app yourapp.o libBareMetal.o
-//
-//
-// Windows compile:
-//
-// gcc -m64 -nostdlib -nostartfiles -nodefaultlibs -fomit-frame-pointer -mno-red-zone -o yourapp.o yourapp.c libBareMetal.c -Ttext=0x200000
-// objcopy -O binary yourapp.o yourapp.app
-//
+// Version 1.0
 // =============================================================================
 
 
@@ -83,15 +63,15 @@ unsigned long b_ethernet_rx(void *mem, unsigned long iid) {
 }
 
 
-unsigned long b_disk_read(unsigned long start, unsigned long num, unsigned long disknum, void *dest) {
+unsigned long b_disk_read(void *mem, unsigned long start, unsigned long num, unsigned long disknum) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100060" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "D"(dest));
+	asm volatile ("call *0x00100060" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "D"(mem));
 	return tlong;
 }
 
-unsigned long b_disk_write(unsigned long start, unsigned long num, unsigned long disknum, void *source) {
+unsigned long b_disk_write(void *mem, unsigned long start, unsigned long num, unsigned long disknum) {
 	unsigned long tlong = 0;
-	asm volatile ("call *0x00100068" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "S"(source));
+	asm volatile ("call *0x00100068" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "S"(mem));
 	return tlong;
 }
 
@@ -105,7 +85,6 @@ unsigned long b_system_config(unsigned long function, unsigned long var) {
 void b_system_misc(unsigned long function, void* var1, void* var2) {
 	asm volatile ("call *0x00100078" : : "d"(function), "a"(var1), "c"(var2));
 }
-
 
 
 // =============================================================================

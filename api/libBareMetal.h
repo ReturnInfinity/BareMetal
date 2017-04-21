@@ -1,12 +1,8 @@
 // =============================================================================
 // BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-// Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
+// Copyright (C) 2008-2017 Return Infinity -- see LICENSE.TXT
 //
-// The BareMetal OS C/C++ library header.
-//
-// Version 3.0 for BareMetal OS v1.0.0
-//
-// This allows for a C/C++ program to access OS functions available in BareMetal OS
+// Version 1.0
 // =============================================================================
 
 #ifndef _LIBBAREMETAL_H
@@ -21,7 +17,7 @@ unsigned long b_input(unsigned char *str, unsigned long nbr);
 unsigned char b_input_key(void);
 
 // SMP
-unsigned long b_smp_set(void *codeptr, void* dataptr, unsigned long cpu);
+unsigned long b_smp_set(void *codeptr, void *dataptr, unsigned long cpu);
 unsigned long b_smp_config();
 
 // Memory
@@ -33,8 +29,8 @@ void b_ethernet_tx(void *mem, unsigned long len, unsigned long iid);
 unsigned long b_ethernet_rx(void *mem, unsigned long iid);
 
 // Disk
-unsigned long b_disk_read(unsigned long start, unsigned long num, unsigned long disknum, void *dest);
-unsigned long b_disk_write(unsigned long start, unsigned long num, unsigned long disknum, void *source);
+unsigned long b_disk_read(void *mem, unsigned long start, unsigned long num, unsigned long disknum);
+unsigned long b_disk_write(void *mem, unsigned long start, unsigned long num, unsigned long disknum);
 
 // Misc
 unsigned long b_system_config(unsigned long function, unsigned long var);
@@ -64,5 +60,7 @@ void b_system_misc(unsigned long function, void *var1, void *var2);
 #define RESET            256
 
 #endif
+
+
 // =============================================================================
 // EOF

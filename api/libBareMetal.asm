@@ -1,8 +1,8 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2016 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2017 Return Infinity -- see LICENSE.TXT
 ;
-; Include file for Bare Metal program development (API version 2.0)
+; Version 1.0
 ; =============================================================================
 
 
