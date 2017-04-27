@@ -35,6 +35,7 @@ keyboard:
 	push rbx
 	push rax
 	pushfq
+	cld				; Clear direction flag
 
 	xor eax, eax
 
@@ -119,6 +120,7 @@ align 16
 rtc:
 	push rax
 	pushfq
+	cld				; Clear direction flag
 
 	add qword [os_ClockCounter], 1	; 64-bit counter started at boot-up
 
@@ -186,8 +188,8 @@ network:
 	push rcx
 	push rax
 	pushfq
-
 	cld				; Clear direction flag
+
 	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 	bt ax, 0			; TX bit set (caused the IRQ?)
