@@ -25,7 +25,7 @@ BareMetal provides basic support for symetric multiprocessing, network, and disk
 
 ## Prerequisites for building BareMetal
 
- * [NASM](http://www.nasm.us/) (The Netwide Assembler) - At least version 2.07
+ * [NASM](http://www.nasm.us/) (The Netwide Assembler) - At least version 2.11
  * That's it!
 
 
