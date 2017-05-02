@@ -56,7 +56,6 @@ void b_system_misc(unsigned long function, void *var1, void *var2);
 #define ETHERNET_STATUS  7
 #define MEM_GET_FREE     8
 #define SMP_NUMCORES     9
-#define SMP_QUELEN       10
 #define RESET            256
 
 #endif
