@@ -143,8 +143,8 @@ b_system_misc:
 	je b_system_misc_mem_get_free
 	cmp rdx, 9
 	je b_system_misc_smp_numcores
-	cmp rdx, 10
-	je b_system_misc_smp_queuelen
+;	cmp rdx, 10
+;	je b_system_misc_smp_queuelen
 	cmp rdx, 256
 	je b_system_misc_reset
 	ret
@@ -184,11 +184,8 @@ b_system_misc_mem_get_free:
 	ret
 
 b_system_misc_smp_numcores:
-	call b_smp_numcores
-	ret
-
-b_system_misc_smp_queuelen:
-;	call b_smp_queuelen
+	xor eax, eax
+	mov ax, [os_NumCores]
 	ret
 
 b_system_misc_reset:

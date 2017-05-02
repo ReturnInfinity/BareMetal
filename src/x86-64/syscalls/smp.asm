@@ -98,26 +98,24 @@ b_smp_set:
 	push rcx
 
 	mov rdi, os_cpu_work_table
-	shl rcx, 4
-	add rdi, rcx
+	shl rcx, 4		; Quick multiply by 16
+	add rdi, rcx		; Add the offset
 
-	mov rcx, [rdi]
-	cmp rcx, 0
-	jne b_smp_set_error
+	mov rcx, [rdi]		; Load current code address for that core
+	jrcxz b_smp_set_error	; Bail out if the core is already set
 
-	stosq
+	stosq			; Store code address
 	xchg rax, rdx
-	stosq
+	stosq			; Store data address
 	xchg rax, rdx
-	call b_smp_wakeup
+	pop rcx			; Restore the APIC ID
+	call b_smp_wakeup	; Wake up the core
 
-b_smp_set_end:
-	pop rcx
 	pop rdi
 	ret
 
 b_smp_set_error:
-	xor eax, eax
+	xor eax, eax		; Return 0 for error
 	pop rcx
 	pop rdi
 	ret
@@ -132,11 +130,11 @@ b_smp_set_error:
 b_smp_get_work:
 	push rsi
 
-	call b_smp_get_id
+	call b_smp_get_id	; Return APIC ID in RAX
 
 	mov rsi, os_cpu_work_table
-	shl rax, 4
-	add rsi, rax
+	shl rax, 4		; Quick multiply by 16
+	add rsi, rax		; Add the offset
 	lodsq			; load code address
 	xchg rax, rdx
 	lodsq			; load data address
@@ -152,17 +150,6 @@ b_smp_get_work:
 ;  IN:	Nothing
 ; OUT:	Nothing. All registers preserved.
 b_smp_config:
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; b_smp_numcores -- Returns the number of cores in this computer
-;  IN:	Nothing
-; OUT:	RAX = number of cores in this computer
-b_smp_numcores:
-	xor eax, eax
-	mov ax, [os_NumCores]
 	ret
 ; -----------------------------------------------------------------------------
 

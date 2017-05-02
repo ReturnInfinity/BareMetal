@@ -35,7 +35,7 @@ b_input_more:
 	cmp al, 126
 	jg b_input_more
 	cmp rcx, rdx			; Check if we have reached the max number of chars
-	je b_input_more		; Jump if we have (should beep as well)
+	je b_input_more			; Jump if we have
 	stosb				; Store AL at RDI and increment RDI by 1
 	inc rcx				; Increment the counter
 	call os_output_char		; Display char
