@@ -8,7 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Default exception handler
-align 16
+align 8
 exception_gate:
 	mov rsi, int_string00
 	call b_output
@@ -20,7 +20,7 @@ exception_gate:
 
 ; -----------------------------------------------------------------------------
 ; Default interrupt handler
-align 16
+align 8
 interrupt_gate:				; handler for all other interrupts
 	iretq				; It was an undefined interrupt so return to caller
 ; -----------------------------------------------------------------------------
@@ -29,7 +29,7 @@ interrupt_gate:				; handler for all other interrupts
 ; -----------------------------------------------------------------------------
 ; Keyboard interrupt. IRQ 0x01, INT 0x21
 ; This IRQ runs whenever there is input on the keyboard
-align 16
+align 8
 keyboard:
 	push rdi
 	push rbx
@@ -100,7 +100,7 @@ keyboard_done:
 
 ; -----------------------------------------------------------------------------
 ; Cascade interrupt. IRQ 0x02, INT 0x22
-align 16
+align 8
 cascade:
 	push rax
 
@@ -116,7 +116,7 @@ cascade:
 ; Real-time clock interrupt. IRQ 0x08, INT 0x28
 ; Currently this IRQ runs 8 times per second (As defined in init_64.asm)
 ; The supervisor lives here
-align 16
+align 8
 rtc:
 	push rax
 	pushfq
@@ -181,7 +181,7 @@ rtc_end:
 
 ; -----------------------------------------------------------------------------
 ; Network interrupt.
-align 16
+align 8
 network:
 	push rdi
 	push rsi
@@ -258,7 +258,7 @@ network_ack_only_low:
 
 ; -----------------------------------------------------------------------------
 ; Network interrupt.
-align 16
+align 8
 network_callback:
 	pushfq
 	call [os_NetworkCallback]
@@ -269,7 +269,7 @@ network_callback:
 
 ; -----------------------------------------------------------------------------
 ; Network interrupt.
-align 16
+align 8
 clock_callback:
 	pushfq
 	call [os_ClockCallback]
@@ -280,7 +280,7 @@ clock_callback:
 
 ; -----------------------------------------------------------------------------
 ; A simple interrupt that just acknowledges an IPI. Useful for getting an AP past a 'hlt' in the code.
-align 16
+align 8
 ap_wakeup:
 	push rdi
 	push rax
@@ -298,7 +298,7 @@ ap_wakeup:
 
 ; -----------------------------------------------------------------------------
 ; Resets a CPU to execute ap_clear
-align 16
+align 8
 ap_reset:
 	mov rax, ap_clear		; Set RAX to the address of ap_clear
 	mov [rsp], rax			; Overwrite the return address on the CPU's stack
@@ -312,127 +312,127 @@ ap_reset:
 
 ; -----------------------------------------------------------------------------
 ; CPU Exception Gates
-align 16
+align 8
 exception_gate_00:
 	push rax
 	mov al, 0x00
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_01:
 	push rax
 	mov al, 0x01
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_02:
 	push rax
 	mov al, 0x02
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_03:
 	push rax
 	mov al, 0x03
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_04:
 	push rax
 	mov al, 0x04
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_05:
 	push rax
 	mov al, 0x05
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_06:
 	push rax
 	mov al, 0x06
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_07:
 	push rax
 	mov al, 0x07
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_08:
 	push rax
 	mov al, 0x08
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_09:
 	push rax
 	mov al, 0x09
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_10:
 	push rax
 	mov al, 0x0A
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_11:
 	push rax
 	mov al, 0x0B
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_12:
 	push rax
 	mov al, 0x0C
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_13:
 	push rax
 	mov al, 0x0D
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_14:
 	push rax
 	mov al, 0x0E
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_15:
 	push rax
 	mov al, 0x0F
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_16:
 	push rax
 	mov al, 0x10
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_17:
 	push rax
 	mov al, 0x11
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_18:
 	push rax
 	mov al, 0x12
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_19:
 	push rax
 	mov al, 0x13
 	jmp exception_gate_main
 
-align 16
+align 8
 exception_gate_main:
 	mov qword [os_NetworkCallback], 0	; Reset the network callback
 	push rbx
