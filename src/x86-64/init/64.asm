@@ -102,9 +102,6 @@ rtc_poll:
 	mov al, 0x0C			; Acknowledge the RTC
 	out 0x70, al
 	in al, 0x71
-;	mov al, 0x20			; Acknowledge the IRQ
-;	out 0xA0, al
-;	out 0x20, al
 
 	; Grab data from Pure64's infomap
 	xor eax, eax

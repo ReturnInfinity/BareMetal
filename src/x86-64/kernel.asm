@@ -42,19 +42,20 @@ start:
 	call init_hdd			; Initialize the disk
 	call init_net			; Initialize the network
 
-	mov ax, [os_Screen_Rows]	; Display the "ready" message and reset cursor to bottom left
-	dec ax
-	mov word [os_Screen_Cursor_Row], ax
-	mov word [os_Screen_Cursor_Col], 0
-	mov rsi, readymsg
-	call b_output
+	; Copy the payload after the kernel to the proper address
+	mov rsi, 0x100000 + KERNELSIZE
+	mov rdi, 0x200000
+	mov rcx, 2048
+	rep movsq
+
+	; Set the payload to run
+	mov qword [os_ClockCallback], init_process
 
 	; Fall through to ap_clear as align fills the space with No-Ops
 	; At this point the BSP is just like one of the AP's
 
 align 16
 ap_clear:				; All cores start here on first start-up and after an exception
-
 	cli				; Disable interrupts on this core
 
 	; Get local ID of the core
@@ -112,6 +113,13 @@ ap_process:
 	call rax			; Run the code
 	jmp ap_clear			; Reset the stack, clear the registers, and wait for something else to work on
 
+init_process:
+	call b_smp_get_id		; Get the ID of the current core
+	mov rcx, rax
+	mov rax, 0x200000		; Payload was copied here
+	call b_smp_set
+	mov qword [os_ClockCallback], 0	; Clear the callback
+	ret
 
 ; Includes
 %include "init.asm"
