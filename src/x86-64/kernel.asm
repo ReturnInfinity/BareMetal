@@ -19,7 +19,7 @@ kernel_start:
 	nop
 	db 'BAREMETAL'
 
-	align 16
+align 16
 	dq b_output			; 0x0010
 	dq b_output_chars		; 0x0018
 	dq b_input			; 0x0020
@@ -34,8 +34,8 @@ kernel_start:
 	dq b_disk_write			; 0x0068
 	dq b_system_config		; 0x0070
 	dq b_system_misc		; 0x0078
-	align 16
 
+align 16
 start:
 	call init_64			; After this point we are in a working 64-bit environment
 	call init_pci			; Initialize the PCI bus
