@@ -102,7 +102,8 @@ b_smp_set:
 	add rdi, rcx		; Add the offset
 
 	mov rcx, [rdi]		; Load current code address for that core
-	jrcxz b_smp_set_error	; Bail out if the core is already set
+	cmp rcx, 0
+	jne b_smp_set_error	; Bail out if the core is already set
 
 	stosq			; Store code address
 	xchg rax, rdx
