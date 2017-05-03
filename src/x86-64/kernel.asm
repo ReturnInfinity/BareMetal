@@ -99,18 +99,17 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	xor r14, r14
 	xor r15, r15
 
-ap_spin:				; Spin until there is something to do
+ap_check:
 	call b_smp_get_work		; Check for an assigned workload
 	cmp rax, 0			; If 0 then there is nothing to do
 	jne ap_process
 
 ap_halt:				; Halt until a wakeup call is received
-	hlt				; If carry was set we fall through to the HLT
-	jmp ap_spin			; Try again
+	hlt
+	jmp ap_check			; Core will jump to ap_check when it wakes up
 
-ap_process:				; Set the status byte to "Busy" and run the code
+ap_process:
 	call rax			; Run the code
-
 	jmp ap_clear			; Reset the stack, clear the registers, and wait for something else to work on
 
 
