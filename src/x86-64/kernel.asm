@@ -13,7 +13,7 @@ ORG 0x0000000000100000
 %DEFINE BAREMETAL_API_VER 1
 KERNELSIZE	equ 10240		; Pad the kernel to this length
 
-; -----------------------------------------------------------------------------
+
 kernel_start:
 	jmp start			; Skip over the function call index
 	nop
@@ -51,10 +51,7 @@ start:
 
 	; Fall through to ap_clear as align fills the space with No-Ops
 	; At this point the BSP is just like one of the AP's
-; -----------------------------------------------------------------------------
 
-
-; -----------------------------------------------------------------------------
 align 16
 ap_clear:				; All cores start here on first start-up and after an exception
 
@@ -115,7 +112,6 @@ ap_process:				; Set the status byte to "Busy" and run the code
 	call rax			; Run the code
 
 	jmp ap_clear			; Reset the stack, clear the registers, and wait for something else to work on
-; -----------------------------------------------------------------------------
 
 
 ; Includes
