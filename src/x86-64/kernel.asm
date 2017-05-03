@@ -9,7 +9,7 @@
 USE64
 ORG 0x0000000000100000
 
-%DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2016 Return Infinity', 13, 0
+%DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2017 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 KERNELSIZE	equ 10240		; Pad the kernel to this length
 
@@ -102,13 +102,9 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	xor r14, r14
 	xor r15, r15
 
-ap_spin:				; Spin until there is a workload in the queue
-;	cmp word [os_QueueLen], 0	; Check the length of the queue
-;	je ap_halt			; If the queue was empty then jump to the HLT
-;	call b_smp_dequeue		; Try to pull a workload out of the queue
-;	jnc ap_process			; Carry clear if successful, jump to ap_process
-	call b_smp_get_work
-	cmp rax, 0
+ap_spin:				; Spin until there is something to do
+	call b_smp_get_work		; Check for an assigned workload
+	cmp rax, 0			; If 0 then there is nothing to do
 	jne ap_process
 
 ap_halt:				; Halt until a wakeup call is received
