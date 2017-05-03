@@ -13,5 +13,6 @@ cd ../..
 cd Alloy/
 ./build.sh
 cp alloy.bin ../
+cd ..
 
 cat multiboot.sys pure64.sys kernel.sys alloy.bin > boot.bin
