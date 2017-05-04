@@ -75,34 +75,6 @@ make_exception_gates:
 	mov rax, ap_reset
 	call create_gate
 
-	; Set up RTC
-	; Rate defines how often the RTC interrupt is triggered
-	; Rate is a 4-bit value from 1 to 15. 1 = 32768Hz, 6 = 1024Hz, 15 = 2Hz
-	; RTC value must stay at 32.768KHz or the computer will not keep the correct time
-	; http://wiki.osdev.org/RTC
-rtc_poll:
-	mov al, 0x0A			; Status Register A
-	out 0x70, al
-	in al, 0x71
-	test al, 0x80			; Is there an update in process?
-	jne rtc_poll			; If so then keep polling
-	mov al, 0x0A			; Status Register A
-	out 0x70, al
-	mov al, 00101101b		; RTC@32.768KHz (0010), Rate@8Hz (1101)
-	out 0x71, al
-	mov al, 0x0B			; Status Register B
-	out 0x70, al			; Select the address
-	in al, 0x71			; Read the current settings
-	push rax
-	mov al, 0x0B			; Status Register B
-	out 0x70, al			; Select the address
-	pop rax
-	bts ax, 6			; Set Periodic(6)
-	out 0x71, al			; Write the new settings
-	mov al, 0x0C			; Acknowledge the RTC
-	out 0x70, al
-	in al, 0x71
-
 	; Grab data from Pure64's infomap
 	xor eax, eax
 	xor ebx, ebx
