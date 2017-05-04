@@ -21,6 +21,9 @@ b_disk_read:
 	push rcx
 	push rax
 
+	cmp byte [os_DiskEnabled], 1	; Make sure that a disk is present
+	jne b_disk_read_done
+
 	cmp rcx, 0
 	je b_disk_read_done		; Bail out if instructed to read nothing
 	shl rax, 3			; Convert to 512B starting sector
@@ -52,6 +55,9 @@ b_disk_write:
 	push rsi
 	push rcx
 	push rax
+
+	cmp byte [os_DiskEnabled], 1	; Make sure that a disk is present
+	jne b_disk_write_done
 
 	cmp rcx, 0
 	je b_disk_write_done		; Bail out if instructed to write nothing
