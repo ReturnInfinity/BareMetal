@@ -43,10 +43,10 @@ start:
 	call init_net			; Initialize the network
 
 	; Copy the payload after the kernel to the proper address
-	mov rsi, 0x100000 + KERNELSIZE
+	mov rsi, 0x100000 + KERNELSIZE	; Payload starts right after the kernel
 	mov rdi, 0x200000
 	mov rcx, 2048
-	rep movsq
+	rep movsq			; Copy 16384 bytes
 
 	; Set the payload to run
 	mov qword [os_ClockCallback], init_process

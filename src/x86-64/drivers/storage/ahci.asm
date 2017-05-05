@@ -102,6 +102,9 @@ founddrive:
 ;	shr rax, 21			; rax = rax * 512 / 1073741824	GiB
 	mov [hd1_size], eax		; in mebibytes (MiB)
 
+	cmp eax, 0
+	je hdd_setup_err_nodisk
+
 	; Found a bootable drive
 	mov byte [os_DiskEnabled], 0x01
 
