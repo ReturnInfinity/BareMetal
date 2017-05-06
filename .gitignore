@@ -3,4 +3,10 @@
 *.bin
 *.asm~
 *.md~
+bmfs.image
+Alloy
+BMFS
 Pure64
+bin
+include
+lib
