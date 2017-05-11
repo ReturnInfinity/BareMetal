@@ -110,7 +110,9 @@ b_smp_set:
 	stosq			; Store data address
 	xchg rax, rdx
 	pop rcx			; Restore the APIC ID
+	xchg rax, rcx
 	call b_smp_wakeup	; Wake up the core
+	xchg rax, rcx
 
 	pop rdi
 	ret
