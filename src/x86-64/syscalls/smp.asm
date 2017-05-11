@@ -105,10 +105,9 @@ b_smp_set:
 	cmp rcx, 0
 	jne b_smp_set_error	; Bail out if the core is already set
 
-	stosq			; Store code address
-	xchg rax, rdx
-	stosq			; Store data address
-	xchg rax, rdx
+	mov [rdi+0x0], rax	; Store code address
+	mov [rdi+0x8], rdx	; Store data address
+
 	pop rcx			; Restore the APIC ID
 	xchg rax, rcx
 	call b_smp_wakeup	; Wake up the core
@@ -138,10 +137,8 @@ b_smp_get_work:
 	mov rsi, os_cpu_work_table
 	shl rax, 4		; Quick multiply by 16
 	add rsi, rax		; Add the offset
-	lodsq			; load code address
-	xchg rax, rdx
-	lodsq			; load data address
-	xchg rax, rdx
+	mov rax, [rsi+0x0]	; Load code address
+	mov rdx, [rsi+0x8]	; Load data address
 
 	pop rsi
 	ret
