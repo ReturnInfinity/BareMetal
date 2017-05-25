@@ -8,8 +8,6 @@ cmd=( qemu-system-x86_64
 	-curses
 # Boot a multiboot kernel file
 	-kernel ./boot.bin
-# Enable GDB debugging
-	-s
 # Enable a supported NIC
 	-net nic,model=e1000
 # Amount of CPU cores
@@ -20,9 +18,16 @@ cmd=( qemu-system-x86_64
 	-drive id=disk,file=bmfs.image,if=none,format=raw
 	-device ahci,id=ahci
 	-device ide-drive,drive=disk,bus=ahci.0
+# Ouput network to file
 #	-net dump,file=net.pcap
+# Output serial to file
 #	-serial file:serial.log
+# Enable monitor mode
 #	-monitor telnet:localhost:8086,server,nowait
+# Enable GDB debugging
+#	-s
+# Wait for GDB before starting execution
+#	-S
 )
 
 #execute the cmd string
