@@ -4,6 +4,7 @@
 *.asm~
 *.md~
 bmfs.image
+kernel-debug.txt
 Alloy
 BMFS
 Pure64
