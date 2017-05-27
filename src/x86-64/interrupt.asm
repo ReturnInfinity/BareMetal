@@ -180,7 +180,7 @@ rtc_end:
 
 
 ; -----------------------------------------------------------------------------
-; Network interrupt.
+; Network interrupt handler
 align 8
 network:
 	push rdi
@@ -257,7 +257,7 @@ network_ack_only_low:
 
 
 ; -----------------------------------------------------------------------------
-; Network interrupt.
+; Network interrupt callback.
 align 8
 network_callback:
 	pushfq
@@ -268,7 +268,7 @@ network_callback:
 
 
 ; -----------------------------------------------------------------------------
-; Network interrupt.
+; Clock interrupt callback.
 align 8
 clock_callback:
 	pushfq

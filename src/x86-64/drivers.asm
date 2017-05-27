@@ -18,21 +18,21 @@
 %include "drivers/net/virtio.asm"
 
 
-NIC_DeviceVendor_ID:			; The supported list of NICs
+NIC_DeviceVendor_ID:	; The supported list of NICs
 ; The ID's are Device/Vendor
 
 ; Virtio
-dd 0x1AF4FFFF
+dd 0x1AF4FFFF		; Driver marker
 dd 0x10001AF4
 
 ; Realtek 816x/811x Gigabit Ethernet
-dd 0x8169FFFF
+dd 0x8169FFFF		; Driver marker
 dd 0x816710EC		; 8110SC/8169SC
 dd 0x816810EC		; 8111/8168B
 dd 0x816910EC		; 8169
 
 ; Intel 8254x Gigabit Ethernet
-dd 0x8254FFFF
+dd 0x8254FFFF		; Driver marker
 dd 0x10008086		; 82542 (Fiber)
 dd 0x10018086		; 82543GC (Fiber)
 dd 0x10048086		; 82543GC (Copper)
