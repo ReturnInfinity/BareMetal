@@ -9,7 +9,8 @@ cmd=( qemu-system-x86_64
 # Boot a multiboot kernel file
 	-kernel ./boot.bin
 # Enable a supported NIC
-	-net nic,model=e1000
+	-device e1000,netdev=net0
+	-netdev user,id=net0
 # Amount of CPU cores
 	-smp 2
 # Amount of memory in Megabytes
