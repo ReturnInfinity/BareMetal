@@ -6,12 +6,12 @@
 ; =============================================================================
 
 
-USE64
-ORG 0x0000000000100000
+BITS 64					; Specify 64-bit for flat binary
+ORG 0x0000000000100000			; Kernel location is at 1 MiB
 
 %DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2017 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
-KERNELSIZE	equ 8192		; Pad the kernel to this length
+KERNELSIZE equ 8192			; Pad the kernel to this length
 
 
 kernel_start:
@@ -64,16 +64,7 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
 	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
 	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
-	mov ebx, eax
-
-	; Clear the entry in the work table
-	mov rdi, os_cpu_work_table
-	shl rax, 4
-	add rdi, rax
-	xor eax, eax
-	stosq
-	stosq
-	mov eax, ebx
+	mov ebx, eax			; Save the APIC ID
 
 	; Set up the stack
 	shl rax, 21			; Shift left 21 bits for a 2 MiB stack
@@ -81,7 +72,14 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	sub rax, 8
 	mov rsp, rax
 
-	sti				; Enable interrupts on this core
+	; Clear the entry in the work table
+	mov eax, ebx			; Restore the APIC ID
+	mov rdi, os_cpu_work_table
+	shl rax, 4			; Quick multiply by 16 to get to proper record
+	add rdi, rax
+	xor eax, eax
+	stosq				; Clear the code and data addresses
+	stosq
 
 	; Clear registers. Gives us a clean slate to work with
 	xor eax, eax			; aka r0
@@ -99,6 +97,8 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	xor r13, r13
 	xor r14, r14
 	xor r15, r15
+
+	sti				; Enable interrupts on this core
 
 ap_check:
 	call b_smp_get_work		; Check for an assigned workload
