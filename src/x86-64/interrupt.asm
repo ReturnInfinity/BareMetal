@@ -261,6 +261,7 @@ network_ack_only_low:
 align 8
 network_callback:
 	pushfq
+	cld				; Clear direction flag
 	call [os_NetworkCallback]
 	popfq
 	ret
@@ -272,6 +273,7 @@ network_callback:
 align 8
 clock_callback:
 	pushfq
+	cld				; Clear direction flag
 	call [os_ClockCallback]
 	popfq
 	ret
