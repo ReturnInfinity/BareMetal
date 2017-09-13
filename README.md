@@ -20,32 +20,9 @@ BareMetal provides basic support for symetric multiprocessing, network, and disk
 * **Physical and virtual hardware support** with full virtualization, using [x86 hardware virtualization](https://en.wikipedia.org/wiki/X86_virtualization) whenever available (it is on most modern x86-64 CPU's). In principle BareMetal should run on any x86-64 hardware platform, even on a physical x86-64 computer, given appropriate drivers. Officially, we develop on [QEMU](http://www.qemu.org) and [VirtualBox](https://www.virtualbox.org), which means that you can run BareMetal on both Linux, Microsoft Windows, and Apple macOS.
 
 
-# Try it out!
+## Try it out!
 
-
-## Prerequisites for building BareMetal
-
- * [NASM](http://www.nasm.us/) (The Netwide Assembler) - At least version 2.11
- * That's it!
-
-
-## Editing BareMetal
-
-[ATOM](https://atom.io/) is highly recommended. Make sure to install the [language-x86-64-assembly](https://atom.io/packages/language-x86-64-assembly) package for proper syntax highlighting.
-
-
-## Building BareMetal
-
-Execute the build script:
-
-	./build_x86-64.sh
-
-
-## Running BareMetal
-
-Execute the run script to start the kernel in QEMU:
-
-	./run_x86.64.sh
+See the [BareMetal-OS](https://github.com/ReturnInfinity/BareMetal-OS) repo for a full build environment.
 
 
 // EOF
