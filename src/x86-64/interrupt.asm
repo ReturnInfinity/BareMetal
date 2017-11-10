@@ -124,12 +124,6 @@ rtc:
 
 	add qword [os_ClockCounter], 1	; 64-bit counter started at boot-up
 
-;DEBUG
-	mov rax, [os_ClockCounter]
-	and al, 1
-	add al, 1
-	mov [0x000B809E], al
-
 	cmp qword [os_ClockCallback], 0	; Is it valid?
 	je rtc_end			; If not then bail out.
 
