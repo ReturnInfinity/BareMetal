@@ -7,7 +7,6 @@
 
 
 BITS 64					; Specify 64-bit for flat binary
-ORG 0x0000000000100000			; Kernel location is at 1 MiB
 
 %DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2017 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
