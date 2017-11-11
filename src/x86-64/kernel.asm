@@ -45,7 +45,7 @@ start:
 	mov rsi, 0x100000 + KERNELSIZE	; Payload starts right after the kernel
 	cmp qword [rsi], 0		; Is there a payload after the kernel?
 	je ap_clear			; If not, skip to ap_clear
-	mov rdi, 0x200000
+	mov rdi, 0x1E0000
 	mov rcx, 2048
 	rep movsq			; Copy 16384 bytes
 
