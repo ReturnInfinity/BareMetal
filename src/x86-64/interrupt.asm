@@ -436,7 +436,7 @@ exception_gate_main:
 	push rdi
 	push rsi
 	push rax			; Save RAX since b_smp_get_id clobbers it
-	call os_print_newline
+;	call os_print_newline
 	mov rsi, int_string00
 	call b_output
 	call b_smp_get_id		; Get the local CPU ID and print it
@@ -463,7 +463,7 @@ exception_gate_main:
 	mov rax, [rsp+0x08] 		; RIP of caller
 	call os_debug_dump_rax
 	pop rax
-	call os_print_newline
+;	call os_print_newline
 	jmp $				; For debugging
 	call init_memory_map
 	jmp ap_clear			; jump to AP clear code
