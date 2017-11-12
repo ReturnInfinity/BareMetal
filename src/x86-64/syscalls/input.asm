@@ -21,9 +21,6 @@ b_input:
 	xor ecx, ecx			; Offset from start
 
 b_input_more:
-;	mov al, '_'
-;	call os_output_char
-;	call os_dec_cursor
 	call b_input_key
 	jnc b_input_halt		; No key entered... halt until an interrupt is received
 	cmp al, 0x1C			; If Enter key pressed, finish
@@ -44,7 +41,7 @@ b_input_more:
 b_input_backspace:
 	test rcx, rcx			; backspace at the beginning? get a new char
 	jz b_input_more
-	mov al, ' '			; 0x20 is the character for a space
+	mov al, 0x0C			; 0x20 is the character for a space
 	call os_output_char		; Write over the last typed character with the space
 ;	call os_dec_cursor		; Decrement the cursor again
 ;	call os_dec_cursor		; Decrement the cursor
@@ -60,9 +57,8 @@ b_input_halt:
 b_input_done:
 	xor al, al
 	stosb				; We NULL terminate the string
-	mov al, ' '
+	mov al, 0x0A
 	call os_output_char
-;	call os_print_newline
 
 	pop rax
 	pop rdx

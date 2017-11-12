@@ -35,8 +35,9 @@ b_output:
 
 ; -----------------------------------------------------------------------------
 ; os_output_char -- Outputs a character
-;  IN:	AL  = char to display
+;  IN:	AL  = char to output
 ; OUT:	All registers preserved
+; TODO: Remove this function
 os_output_char:
 	push rdx
 
@@ -50,8 +51,8 @@ os_output_char:
 
 ; -----------------------------------------------------------------------------
 ; b_output_chars -- Outputs characters
-;  IN:	RSI = message location (A string, not zero-terminated)
-;	RCX = number of chars to print
+;  IN:	RSI = message location (non zero-terminated)
+;	RCX = number of chars to output
 ; OUT:	All registers preserved
 b_output_chars:
 	push rdi
