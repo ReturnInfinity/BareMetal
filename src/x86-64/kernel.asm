@@ -117,7 +117,7 @@ ap_process:
 init_process:
 	call b_smp_get_id		; Get the ID of the current core
 	mov rcx, rax
-	mov rax, 0x200000		; Payload was copied here
+	mov rax, 0x1E0000		; Payload was copied here
 	call b_smp_set
 	mov qword [os_ClockCallback], 0	; Clear the callback
 	ret
