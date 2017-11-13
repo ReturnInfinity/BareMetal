@@ -19,13 +19,6 @@ init_64:
 	mov rax, 0xFFFFFFFFFFFFFFFF	; Value for a non-present CPU
 	rep stosq
 
-	; Set screen variables and clear screen
-;	mov word [os_Screen_Rows], 25
-;	mov word [os_Screen_Cols], 80
-;	mov word [os_Screen_Cursor_Row], 0
-;	mov word [os_Screen_Cursor_Col], 0
-;	call os_screen_clear
-
 	; Create the 64-bit IDT (at linear address 0x0000000000000000) as defined by Pure64
 	xor edi, edi
 
