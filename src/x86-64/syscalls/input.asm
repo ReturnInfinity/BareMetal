@@ -16,7 +16,9 @@ b_input:
 	push rdi
 	push rdx			; Counter to keep track of max accepted characters
 	push rax
+	pushf
 
+	cld
 	mov rdx, rcx			; Max chars to accept
 	xor ecx, ecx			; Offset from start
 
@@ -35,16 +37,12 @@ b_input_more:
 	je b_input_more			; Jump if we have
 	stosb				; Store AL at RDI and increment RDI by 1
 	inc rcx				; Increment the counter
-	call os_output_char		; Display char
+;	call os_output_char		; Display char
 	jmp b_input_more
 
 b_input_backspace:
 	test rcx, rcx			; backspace at the beginning? get a new char
 	jz b_input_more
-	mov al, 0x0C			; 0x20 is the character for a space
-	call os_output_char		; Write over the last typed character with the space
-;	call os_dec_cursor		; Decrement the cursor again
-;	call os_dec_cursor		; Decrement the cursor
 	dec rdi				; go back one in the string
 	mov byte [rdi], 0x00		; NULL out the char
 	dec rcx				; decrement the counter by one
@@ -57,9 +55,15 @@ b_input_halt:
 b_input_done:
 	xor al, al
 	stosb				; We NULL terminate the string
-	mov al, 0x0A
-	call os_output_char
+	push rsi
+	push rcx
+	mov rcx, 1
+	mov rsi, newline
+	call b_output_chars
+	pop rcx
+	pop rsi
 
+	popf
 	pop rax
 	pop rdx
 	pop rdi

@@ -14,8 +14,9 @@ b_output:
 	push rdi
 	push rcx
 	push rax
+	pushf
 
-	xor ecx, ecx
+	xor ecx, ecx			; 0 terminator for scasb
 	xor eax, eax
 	mov rdi, rsi
 	not rcx
@@ -26,25 +27,10 @@ b_output:
 
 	call b_output_chars
 
+	popf
 	pop rax
 	pop rcx
 	pop rdi
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; os_output_char -- Outputs a character
-;  IN:	AL  = char to output
-; OUT:	All registers preserved
-; TODO: Remove this function
-os_output_char:
-	push rdx
-
-	mov dx, 0x03F8
-	out dx, al
-
-	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -62,13 +48,13 @@ b_output_chars:
 	push rax
 
 	cld				; Clear the direction flag.. we want to increment through the string
-	mov dx, 0x03F8
+	mov dx, 0x03F8			; Address of first serial port
 
 b_output_chars_nextchar:
 	jrcxz b_output_chars_done
 	dec rcx
 	lodsb				; Get char from string and store in AL
-	out dx, al
+	out dx, al			; Send the char to the serial port
 	jmp b_output_chars_nextchar
 
 b_output_chars_done:

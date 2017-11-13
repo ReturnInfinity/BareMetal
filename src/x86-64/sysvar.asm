@@ -11,7 +11,8 @@ hextable: 		db '0123456789ABCDEF'
 
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
-readymsg:		db 'BareMetal is ready', 13, 0
+readymsg:		db 'BareMetal is ready'	; This string falls thru to newline
+newline:		db 13, 0
 memory_message:		db 'Not enough system memory for CPU stacks! System halted.', 0
 
 ; Memory addresses
@@ -100,6 +101,7 @@ keylayoutupper:
 db 0x00, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0x0e, 0, 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0x1c, 0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', 0x22, '~', 0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0, ' ', 0
 ; 0e = backspace
 ; 1c = enter
+tchar: db 0, 0
 
 
 ;------------------------------------------------------------------------------
