@@ -1,6 +1,6 @@
 # BareMetal x86-64 API
 
-Version 1 - November 14, 2016
+Version 1 - November 12, 2017
 
 ### Notes
 
@@ -36,7 +36,7 @@ This document details the API calls built into the BareMetal exokernel.
 
 ### b\_output
 
-Output text to the screen or via serial. The string must be null-terminated - also known as ASCIIZ.
+Output text via the standard output method. The string must be null-terminated - also known as ASCIIZ.
 
 Assembly Registers:
 
@@ -60,7 +60,7 @@ C Example:
 
 ### b\_output\_chars
 
-Output a number of characters to the screen or via serial.
+Output a number of characters via the standard output method.
 
 Assembly Registers:
 
@@ -94,9 +94,9 @@ Accept a number of keys from the keyboard or via serial. The resulting string wi
 Assembly Registers:
 
 	 IN:	RDI = location where string will be stored
-			RCX = number of characters to accept
+		RCX = number of characters to accept
 	OUT:	RCX = length of string that were input (NULL not counted)
-			All other registers preserved
+		All other registers preserved
 
 Assembly Example:
 
@@ -120,7 +120,7 @@ Assembly Registers:
 
 	 IN:	Nothing
 	OUT:	AL = 0 if no key pressed, otherwise ASCII code, other regs preserved
-			All other registers preserved
+		All other registers preserved
 
 Assembly Example:
 
@@ -148,8 +148,8 @@ Add a workload to the processing queue.
 Assembly Registers:
 
 	 IN:	RAX = Code address
-			RDX = Data address
-			RCX = CPU APIC ID
+		RDX = Data address
+		RCX = CPU APIC ID
 	OUT:	RAX = 0 on error
 
 Assembly Example:
@@ -185,14 +185,14 @@ Assembly Registers:
 
 	 IN:	RCX = Number of pages to allocate
 	OUT:	RAX = Starting address (Set to 0 on failure)
-			All other registers preserved
+		All other registers preserved
 
 Assembly Example:
 
-	mov rcx, 2		; Allocate 2 2MiB pages (4MiB in total)
+	mov rcx, 2			; Allocate 2 2MiB pages (4MiB in total)
 	call b_mem_allocate
 	jz mem_fail
-	mov rsi, rax	; Copy memory address to RSI
+	mov rsi, rax			; Copy memory address to RSI
 
 
 ### b\_mem\_release
@@ -202,14 +202,14 @@ Release pages of memory
 Assembly Registers:
 
 	 IN:	RAX = Starting address
-			RCX = Number of pages to free
+		RCX = Number of pages to free
 	OUT:	RCX = Number of pages freed
-			All other registers preserved
+		All other registers preserved
 
 Assembly Example:
 
-	mov rax, rsi	; Copy memory address to RAX
-	mov rcx, 2		; Free 2 2MiB pages (4MiB in total)
+	mov rax, rsi			; Copy memory address to RAX
+	mov rcx, 2			; Free 2 2MiB pages (4MiB in total)
 	call b_mem_release
 
 
@@ -223,8 +223,8 @@ Transmit data via Ethernet
 Assembly Registers:
 
 	 IN:	RSI = memory location of packet
-			RCX = length of packet
-			RDX = Interface ID
+		RCX = length of packet
+		RDX = Interface ID
 	OUT:	All registers preserved
 
 Assembly Example:
@@ -250,7 +250,7 @@ Receive data via Ethernet
 Assembly Registers:
 
 	 IN:	RDI = memory location to store packet
-			RDX = Interface ID
+		RDX = Interface ID
 	OUT:	RCX = length of packet, 0 if nothing to receive
 
 Assembly Example:
@@ -275,18 +275,18 @@ Read a number of sectors from disk to memory
 Assembly Registers:
 
 	 IN:	RAX = Starting sector #
-	 		RCX = Number of sectors to read
-	 		RDX = Disk #
-			RDI = Destination memory address
+	 	RCX = Number of sectors to read
+	 	RDX = Disk #
+		RDI = Destination memory address
 	OUT:	RCX = Number of sectors read
-			All other registers preserved
+		All other registers preserved
 
 Assembly Example:
 
-	mov rax, 0		; Read sector 0
-	mov rcx, 1		; Read one sector
-	mov rdx, 0		; Read from Disk 0
-	mov rdi, diskbuffer	; Read disk to this memory address
+	mov rax, 0			; Read sector 0
+	mov rcx, 1			; Read one sector
+	mov rdx, 0			; Read from Disk 0
+	mov rdi, diskbuffer		; Read disk to this memory address
 	call b_disk_read
 
 
@@ -297,18 +297,18 @@ Write a number of sectors from memory to disk
 Assembly Registers:
 
 	 IN:	RAX = Starting sector #
-	 		RCX = Number of sectors to write
-	 		RDX = Disk #
-			RSI = Source memory address
+	 	RCX = Number of sectors to write
+	 	RDX = Disk #
+		RSI = Source memory address
 	OUT:	RCX = Number of sectors written
-			All other registers preserved
+		All other registers preserved
 
 Assembly Example:
 
-	mov rax, 0		; Write to sector 0
-	mov rcx, 1		; Write one sector
-	mov rdx, 0		; Write to Disk 0
-	mov rsi, diskbuffer	; Write the contents from this memory address to disk
+	mov rax, 0			; Write to sector 0
+	mov rcx, 1			; Write one sector
+	mov rdx, 0			; Write to Disk 0
+	mov rsi, diskbuffer		; Write the contents from this memory address to disk
 	call b_disk_write
 
 
@@ -322,7 +322,7 @@ View or modify system configuration options
 Assembly Registers:
 
 	 IN:	RDX = Function #
-			RAX = Variable 1
+		RAX = Variable 1
 	OUT:	RAX = Result 1
 
 Function numbers come in pairs (one for reading a parameter, and one for writing a parameter). `b_system_config` should be called with a function alias and not a direct function number.
@@ -365,10 +365,10 @@ Call miscellaneous OS sub-functions
 Assembly Registers:
 
 	 IN:	RDX = Function #
-			RAX = Variable 1
-			RCX = Variable 2
+		RAX = Variable 1
+		RCX = Variable 2
 	OUT:	RAX = Result 1
-			RCX = Result 2
+		RCX = Result 2
 
 Currently the following functions are supported:
 
