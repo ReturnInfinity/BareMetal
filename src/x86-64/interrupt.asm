@@ -435,13 +435,18 @@ exception_gate_main:
 	push rbx
 	push rdi
 	push rsi
+	push rcx			; Char counter for b_output
 	push rax			; Save RAX since b_smp_get_id clobbers it
-	call os_print_newline
+	mov rsi, newline
+	mov rcx, 1
+	call b_output
 	mov rsi, int_string00
+	mov rcx, 24
 	call b_output
 	call b_smp_get_id		; Get the local CPU ID and print it
 	call os_debug_dump_ax
 	mov rsi, int_string01
+	mov rcx, 13
 	call b_output
 	mov rsi, exc_string00
 	pop rax
@@ -452,18 +457,19 @@ exception_gate_main:
 	add rsi, rax			; Use the value in RAX as an offset to get to the right message
 	pop rax
 	mov bl, 0x0F
+	mov rcx, 7
 	call b_output
 	pop rsi
 	pop rdi
 	pop rbx
 	pop rax
-	mov rsi, int_string02
-	call b_output
+;	mov rsi, int_string02
+;	call b_output
 	push rax
 	mov rax, [rsp+0x08] 		; RIP of caller
 	call os_debug_dump_rax
 	pop rax
-	call os_print_newline
+;	call os_print_newline
 	jmp $				; For debugging
 	call init_memory_map
 	jmp ap_clear			; jump to AP clear code

@@ -8,7 +8,7 @@
 
 BITS 64					; Specify 64-bit for flat binary
 
-%DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2017 Return Infinity', 13, 0
+%DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2017)', 13, 'Copyright (C) 2008-2017 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 KERNELSIZE equ 8192			; Pad the kernel to this length
 
@@ -19,20 +19,18 @@ kernel_start:
 	db 'BAREMETAL'
 
 align 16
-	dq b_output			; 0x0010
-	dq b_output_chars		; 0x0018
-	dq b_input			; 0x0020
-	dq b_input_key			; 0x0028
-	dq b_smp_set			; 0x0030
-	dq b_smp_config			; 0x0038
-	dq b_mem_allocate		; 0x0040
-	dq b_mem_release		; 0x0048
-	dq b_net_tx			; 0x0050
-	dq b_net_rx			; 0x0058
-	dq b_disk_read			; 0x0060
-	dq b_disk_write			; 0x0068
-	dq b_system_config		; 0x0070
-	dq b_system_misc		; 0x0078
+	dq b_input			; 0x0010
+	dq b_output			; 0x0018
+	dq b_smp_set			; 0x0020
+	dq b_smp_config			; 0x0028
+	dq b_mem_allocate		; 0x0030
+	dq b_mem_release		; 0x0038
+	dq b_net_tx			; 0x0040
+	dq b_net_rx			; 0x0048
+	dq b_disk_read			; 0x0050
+	dq b_disk_write			; 0x0058
+	dq b_system_config		; 0x0060
+	dq b_system_misc		; 0x0068
 
 align 16
 start:
@@ -45,7 +43,7 @@ start:
 	mov rsi, 0x100000 + KERNELSIZE	; Payload starts right after the kernel
 	cmp qword [rsi], 0		; Is there a payload after the kernel?
 	je ap_clear			; If not, skip to ap_clear
-	mov rdi, 0x200000
+	mov rdi, 0x1E0000
 	mov rcx, 2048
 	rep movsq			; Copy 16384 bytes
 
@@ -117,7 +115,7 @@ ap_process:
 init_process:
 	call b_smp_get_id		; Get the ID of the current core
 	mov rcx, rax
-	mov rax, 0x200000		; Payload was copied here
+	mov rax, 0x1E0000		; Payload was copied here
 	call b_smp_set
 	mov qword [os_ClockCallback], 0	; Clear the callback
 	ret

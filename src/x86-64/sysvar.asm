@@ -11,7 +11,8 @@ hextable: 		db '0123456789ABCDEF'
 
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
-readymsg:		db 'BareMetal is ready', 13, 0
+readymsg:		db 'BareMetal is ready'	; This string falls thru to newline
+newline:		db 13, 0
 memory_message:		db 'Not enough system memory for CPU stacks! System halted.', 0
 
 ; Memory addresses
@@ -31,7 +32,6 @@ os_KernelStart:		equ 0x0000000000100000	; 65536 bytes	0x100000 -> 0x10FFFF	Locat
 os_SystemVariables:	equ 0x0000000000110000	; 65536 bytes	0x110000 -> 0x11FFFF	Location of System Variables
 os_MemoryMap:		equ 0x0000000000120000	; 131072 bytes	0x120000 -> 0x13FFFF	Location of Memory Map - Room to map 256 GiB with 2 MiB pages
 os_EthernetBuffer:	equ 0x0000000000140000	; 262144 bytes	0x140000 -> 0x17FFFF	Location of Ethernet RX Ring Buffer - Room for 170 packets
-os_screen:		equ 0x0000000000180000	; 4096 bytes	80x25x2 = 4000
 os_temp:		equ 0x0000000000190000
 os_ethernet_rx_buffer:	equ 0x00000000001C0000
 os_eth_rx_buffer:	equ 0x00000000001C8000
@@ -73,10 +73,6 @@ hd1_size:		equ os_SystemVariables + 272	; in MiB
 os_NumCores:		equ os_SystemVariables + 512
 os_NetIOAddress:	equ os_SystemVariables + 522
 os_NetLock:		equ os_SystemVariables + 524
-os_Screen_Rows:		equ os_SystemVariables + 530
-os_Screen_Cols:		equ os_SystemVariables + 532
-os_Screen_Cursor_Row:	equ os_SystemVariables + 534
-os_Screen_Cursor_Col:	equ os_SystemVariables + 536
 
 ; DB - Starting at offset 768, increments by 1
 scancode:		equ os_SystemVariables + 770
@@ -100,6 +96,7 @@ keylayoutupper:
 db 0x00, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0x0e, 0, 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0x1c, 0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', 0x22, '~', 0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0, ' ', 0
 ; 0e = backspace
 ; 1c = enter
+tchar: db 0, 0
 
 
 ;------------------------------------------------------------------------------

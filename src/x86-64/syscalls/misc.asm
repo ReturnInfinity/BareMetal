@@ -242,11 +242,17 @@ os_debug_dump_al:
 	push rax			; Save RAX since we work in 2 parts
 	shr al, 4			; Shift high 4 bits into low 4 bits
 	xlatb
-	call os_output_char
+	mov [tchar+0], al
 	pop rax
 	and al, 0x0f			; Clear the high 4 bits
 	xlatb
-	call os_output_char
+	mov [tchar+1], al
+	push rsi
+	push rcx
+	mov rcx, 2
+	call b_output
+	pop rcx
+	pop rsi
 	pop rax
 	pop rbx
 	ret

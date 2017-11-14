@@ -7,11 +7,10 @@
 
 
 %include "syscalls/disk.asm"
-%include "syscalls/input.asm"
+%include "syscalls/io.asm"
 %include "syscalls/memory.asm"
 %include "syscalls/misc.asm"
 %include "syscalls/net.asm"
-%include "syscalls/screen.asm"
 %include "syscalls/smp.asm"
 
 
