@@ -8,111 +8,30 @@ This document details the API calls built into the BareMetal exokernel.
 
 ### Contents
 
-1. Output
-	- b\_output
-	- b\_output\_chars
-2. Input
+1. Input/Output
 	- b\_input
-	- b\_input\_key
-3. SMP
+	- b\_output
+2. SMP
 	- b\_smp\_set
 	- b\_smp\_config
-4. Memory
+3. Memory
 	- b\_mem\_allocate
 	- b\_mem\_release
-5. Network
+4. Network
 	- b\_net\_tx
 	- b\_net\_rx
-6. Disk
+5. Disk
 	- b\_disk\_read
 	- b\_disk\_write
-7. Misc
+6. Misc
 	- b\_system\_config
 	- b\_system\_misc
 
 
-## Output
-
-
-### b\_output
-
-Output text via the standard output method. The string must be null-terminated - also known as ASCIIZ.
-
-Assembly Registers:
-
-	 IN:	RSI = message location (zero-terminated string)
-	OUT:	All registers preserved
-
-Assembly Example:
-
-	mov rsi, Message
-	call b_output
-	...
-	Message: db 'This is a test', 0
-
-C Example:
-
-	char Message[] = "This is a test";
-	b_output(Message);
-
-	b_output("This is a another test");
-
-
-### b\_output\_chars
-
-Output a number of characters via the standard output method.
-
-Assembly Registers:
-
-	 IN:	RSI = message location
-			RCX = number of characters to output
-	OUT:	All registers preserved
-
-Assembly Example:
-
-	mov rsi, Message
-	mov rcx, 4
-	call os_output_chars					; Only output the word 'This'
-	...
-	Message: db 'This is a test', 0
-
-C Example:
-
-	b_output_chars("This is a test", 4);	// Output 'This'
-
-	char Message[] = "Hello, world!";
-	b_output_chars(Message, 5);				// Output 'Hello'
-
-
-## Input
+## Input/Output
 
 
 ### b\_input
-
-Accept a number of keys from the keyboard or via serial. The resulting string will automatically be null-terminated.
-
-Assembly Registers:
-
-	 IN:	RDI = location where string will be stored
-		RCX = number of characters to accept
-	OUT:	RCX = length of string that were input (NULL not counted)
-		All other registers preserved
-
-Assembly Example:
-
-	mov rdi, Input
-	mov rcx, 20
-	call b_input
-	...
-	Input: db 0 times 21
-
-C Example:
-
-	char Input[21];
-	b_input(Input, 20);
-
-
-### b\_input\_key
 
 Scans for input from keyboard or serial.
 
@@ -124,7 +43,7 @@ Assembly Registers:
 
 Assembly Example:
 
-	call b_input_key
+	call [b_input]
 	mov byte [KeyChar], al
 	...
 	KeyChar: db 0
@@ -132,18 +51,43 @@ Assembly Example:
 C Example:
 
 	char KeyChar;
-	KeyChar = b_input_key();
+	KeyChar = b_input();
 	if (KeyChar == 'a')
 	...
 
 
+### b\_output
+
+Output a number of characters via the standard output method.
+
+Assembly Registers:
+
+	 IN:	RSI = message location
+		RCX = number of characters to output
+	OUT:	All registers preserved
+
+Assembly Example:
+
+	mov rsi, Message
+	mov rcx, 4
+	call [b_output]					; Only output the word 'This'
+	...
+	Message: db 'This is a test', 0
+
+C Example:
+
+	b_output_chars("This is a test", 4);	// Output 'This'
+
+	char Message[] = "Hello, world!";
+	b_output_chars(Message, 5);				// Output 'Hello'
+
+
 ## SMP
 
-BareMetal uses a queue for tasks. Tasks are automatically pulled out of the queue by available CPU cores.
 
 ### b\_smp\_set
 
-Add a workload to the processing queue.
+Set a CPU to a specific task.
 
 Assembly Registers:
 
@@ -190,7 +134,7 @@ Assembly Registers:
 Assembly Example:
 
 	mov rcx, 2			; Allocate 2 2MiB pages (4MiB in total)
-	call b_mem_allocate
+	call [b_mem_allocate]
 	jz mem_fail
 	mov rsi, rax			; Copy memory address to RSI
 
@@ -210,7 +154,7 @@ Assembly Example:
 
 	mov rax, rsi			; Copy memory address to RAX
 	mov rcx, 2			; Free 2 2MiB pages (4MiB in total)
-	call b_mem_release
+	call [b_mem_release]
 
 
 ## Network
@@ -232,7 +176,7 @@ Assembly Example:
 	mov rsi, Packet
 	mov rcx, 1500
 	mod rdx, 0
-	call b_net_tx
+	call [b_net_tx]
 	...
 	Packet:
 	Packet_Dest: db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF ; Broadcast
@@ -257,7 +201,7 @@ Assembly Example:
 
 	mov rdi, Packet
 	mov rdx, 0
-	call b_net_rx
+	call [b_net_rx]
 	...
 	Packet: times 1518 db 0
 
@@ -287,7 +231,7 @@ Assembly Example:
 	mov rcx, 1			; Read one sector
 	mov rdx, 0			; Read from Disk 0
 	mov rdi, diskbuffer		; Read disk to this memory address
-	call b_disk_read
+	call [b_disk_read]
 
 
 ### b\_disk\_write
@@ -309,7 +253,7 @@ Assembly Example:
 	mov rcx, 1			; Write one sector
 	mov rdx, 0			; Write to Disk 0
 	mov rsi, diskbuffer		; Write the contents from this memory address to disk
-	call b_disk_write
+	call [b_disk_write]
 
 
 ## Misc
