@@ -8,13 +8,9 @@
 #ifndef _LIBBAREMETAL_H
 #define _LIBBAREMETAL_H
 
-// Output
-void b_output(const char *str);
-void b_output_chars(const char *str, unsigned long nbr);
-
-// Input
-unsigned long b_input(unsigned char *str, unsigned long nbr);
-unsigned char b_input_key(void);
+// Input/Output
+unsigned char b_input(void);
+void b_output(const char *str, unsigned long nbr);
 
 // SMP
 unsigned long b_smp_set(void *codeptr, void *dataptr, unsigned long cpu);
