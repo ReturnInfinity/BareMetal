@@ -8,7 +8,7 @@
 
 BITS 64					; Specify 64-bit for flat binary
 
-%DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2016)', 13, 'Copyright (C) 2008-2017 Return Infinity', 13, 0
+%DEFINE BAREMETAL_VER 'v1.0.0 (November 13, 2017)', 13, 'Copyright (C) 2008-2017 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 KERNELSIZE equ 8192			; Pad the kernel to this length
 
@@ -19,20 +19,18 @@ kernel_start:
 	db 'BAREMETAL'
 
 align 16
-	dq b_output			; 0x0010
-	dq b_output_chars		; 0x0018
-	dq b_input			; 0x0020
-	dq b_input_key			; 0x0028
-	dq b_smp_set			; 0x0030
-	dq b_smp_config			; 0x0038
-	dq b_mem_allocate		; 0x0040
-	dq b_mem_release		; 0x0048
-	dq b_net_tx			; 0x0050
-	dq b_net_rx			; 0x0058
-	dq b_disk_read			; 0x0060
-	dq b_disk_write			; 0x0068
-	dq b_system_config		; 0x0070
-	dq b_system_misc		; 0x0078
+	dq b_input			; 0x0010
+	dq b_output			; 0x0018
+	dq b_smp_set			; 0x0020
+	dq b_smp_config			; 0x0028
+	dq b_mem_allocate		; 0x0030
+	dq b_mem_release		; 0x0038
+	dq b_net_tx			; 0x0040
+	dq b_net_rx			; 0x0048
+	dq b_disk_read			; 0x0050
+	dq b_disk_write			; 0x0058
+	dq b_system_config		; 0x0060
+	dq b_system_misc		; 0x0068
 
 align 16
 start:

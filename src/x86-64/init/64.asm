@@ -183,6 +183,7 @@ init_memory_map:			; Build the OS memory table
 ; -----------------------------------------------------------------------------
 system_failure:
 	mov rsi, memory_message
+	mov rcx, 55
 	call b_output
 system_failure_hang:
 	hlt

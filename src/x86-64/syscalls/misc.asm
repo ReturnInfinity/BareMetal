@@ -250,7 +250,7 @@ os_debug_dump_al:
 	push rsi
 	push rcx
 	mov rcx, 2
-	call b_output_chars
+	call b_output
 	pop rcx
 	pop rsi
 	pop rax
