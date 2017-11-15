@@ -12,7 +12,7 @@ hextable: 		db '0123456789ABCDEF'
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
 readymsg:		db 'BareMetal is ready'	; This string falls thru to newline
-newline:		db 13, 0
+newline:		db 10, 0
 memory_message:		db 'Not enough system memory for CPU stacks! System halted.', 0
 
 ; Memory addresses
