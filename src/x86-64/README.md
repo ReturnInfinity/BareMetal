@@ -23,7 +23,7 @@ Start the GNU debugger
 
 	gdb
 
-Set our parameters and connect to the local QEMU instance
+Set our parameters and connect to the local QEMU instance (You can also copy the following lines into `./.gdbinit` to have GDB execute the commands automatically on startup)
 
 	set arch i386:x86-64
 	set disassembly-flavor intel
