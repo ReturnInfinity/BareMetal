@@ -16,12 +16,12 @@ b_input:
 	mov al, [key]
 	test al, al
 	jz b_input_no_key
-	mov byte [key], 0x00	; clear the variable as the keystroke is in AL now
-	stc			; set the carry flag
+	mov byte [key], 0x00		; clear the variable as the keystroke is in AL now
+	stc				; set the carry flag
 	ret
 
 b_input_no_key:
-	clc			; clear the carry flag
+	clc				; clear the carry flag
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -32,16 +32,16 @@ b_input_no_key:
 ;	RCX = number of chars to output
 ; OUT:	All registers preserved
 b_output:
-	push rsi
-	push rdx
-	push rcx
-	push rax
+	push rsi			; Message location
+	push rdx			; Serial port address
+	push rcx			; Counter of chars left to output
+	push rax			; AL is used for the serial port output
 
 	cld				; Clear the direction flag.. we want to increment through the string
 	mov dx, 0x03F8			; Address of first serial port
 
 b_output_nextchar:
-	jrcxz b_output_done
+	jrcxz b_output_done		; If RCX is 0 then the function is complete
 	dec rcx
 	lodsb				; Get char from string and store in AL
 	out dx, al			; Send the char to the serial port
