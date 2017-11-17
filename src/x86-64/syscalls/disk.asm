@@ -32,7 +32,7 @@ b_disk_read:
 b_disk_read_loop:			; Read one sector at a time
 	push rcx
 	mov rcx, 8			; 8 512B sectors = 1 4K sector
-	call readsectors		; Driver deals with 512B sectors
+	call ahci_read			; Driver deals with 512B sectors
 	pop rcx
 	sub rcx, 1
 	jnz b_disk_read_loop
@@ -75,7 +75,7 @@ b_disk_write:
 b_disk_write_loop:			; Write one sector at a time
 	push rcx
 	mov rcx, 8			; 8 512B sectors = 1 4K sector
-	call writesectors		; Driver deals with 512B sectors
+	call ahci_write			; Driver deals with 512B sectors
 	pop rcx
 	sub rcx, 1
 	jnz b_disk_write_loop

@@ -7,30 +7,30 @@
 
 
 ; -----------------------------------------------------------------------------
-init_ahci:
+ahci_init:
 ; Probe for an AHCI hard drive controller
 	xor ebx, ebx			; Clear the Bus number
 	xor ecx, ecx			; Clear the Device/Slot number
 	mov edx, 2			; Register 2 for Class code/Subclass
 
-init_ahci_probe_next:
+ahci_init_probe_next:
 	call os_pci_read_reg
 	shr eax, 16			; Move the Class/Subclass code to AX
 	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
-	je init_ahci_found		; Found a SATA Controller
+	je ahci_init_found		; Found a SATA Controller
 	inc ecx
 	cmp ecx, 256			; Maximum 256 devices/functions per bus
-	je init_ahci_probe_next_bus
-	jmp init_ahci_probe_next
+	je ahci_init_probe_next_bus
+	jmp ahci_init_probe_next
 
-init_ahci_probe_next_bus:
+ahci_init_probe_next_bus:
 	xor ecx, ecx
 	inc ebx
 	cmp ebx, 256			; Maximum 256 buses
-	je init_ahci_err_noahci
-	jmp init_ahci_probe_next
+	je ahci_init_error
+	jmp ahci_init_probe_next
 
-init_ahci_found:
+ahci_init_found:
 	mov dl, 9
 	xor eax, eax
 	call os_pci_read_reg		; BAR5 (AHCI Base Address Register)
@@ -49,23 +49,23 @@ init_ahci_found:
 	mov edx, eax
 	xor ecx, ecx
 	mov ebx, 0x128			; Offset to Port 0 Serial ATA Status
-nextport:
+ahci_init_nextport:
 	bt edx, 0			; Valid port?
-	jnc nodrive
+	jnc ahci_init_nodrive
 	mov eax, [rsi+rbx]
 	test eax, eax
-	jnz founddrive
+	jnz ahci_init_founddrive
 
-nodrive:
+ahci_init_nodrive:
 	inc ecx
 	shr edx, 1
 	add ebx, 0x80			; Each port has a 128 byte memory space
 	cmp ecx, 32
-	je hdd_setup_err_nodisk
-	jmp nextport
+	je ahci_init_error
+	jmp ahci_init_nextport
 
 ; Configure the first port found with a drive attached
-founddrive:
+ahci_init_founddrive:
 	mov [ahci_port], ecx
 	mov rdi, rsi
 	add rdi, 0x100			; Offset to port 0
@@ -96,31 +96,29 @@ founddrive:
 	pop rcx				; Restore port number
 	mov rdi, os_temp
 	mov rsi, rdi
-	call iddrive
+	call ahci_id
 	mov eax, [rsi+200]		; Max LBA Extended
 	shr rax, 11			; rax = rax * 512 / 1048576	MiB
 ;	shr rax, 21			; rax = rax * 512 / 1073741824	GiB
 	mov [hd1_size], eax		; in mebibytes (MiB)
 
 	cmp eax, 0
-	je hdd_setup_err_nodisk
+	je ahci_init_error
 
 	; Found a bootable drive
 	mov byte [os_DiskEnabled], 0x01
 
-init_ahci_err_noahci:
-hdd_setup_err_nodisk:
-
+ahci_init_error:
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; iddrive -- Identify a SATA drive
+; ahci_id -- Identify a SATA drive
 ; IN:	RCX = Port # to query
 ;	RDI = memory location to store details (512 bytes)
 ; OUT:	Nothing, all registers preserved
-iddrive:
+ahci_id:
 	push rdi
 	push rsi
 	push rcx
@@ -176,10 +174,10 @@ iddrive:
 	bts eax, 0			; Start (ST)
 	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
-iddrive_poll:
+ahci_id_poll:
 	mov eax, [rsi+AHCI_PxCI]	; Read Command Slot 0 status
 	test eax, eax
-	jnz iddrive_poll
+	jnz ahci_id_poll
 
 	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
 	btr eax, 4			; FIS Receive Enable (FRE)
@@ -195,7 +193,7 @@ iddrive_poll:
 
 
 ; -----------------------------------------------------------------------------
-; readsectors -- Read data from a SATA hard drive
+; ahci_read -- Read data from a SATA hard drive
 ; IN:	RAX = starting sector # to read (48-bit LBA address)
 ;	RCX = number of sectors to read (up to 8192 = 4MiB)
 ;	RDX = disk #
@@ -204,17 +202,13 @@ iddrive_poll:
 ;	RCX = number of sectors that were read (0 on error)
 ;	RDI = RDI + (number of sectors read * 512)
 ;	All other registers preserved
-readsectors:
+ahci_read:
 	push rdx
 	push rbx
 	push rdi
 	push rsi
 	push rcx
 	push rax
-
-	mov rbx, 0xFFFFFFFFFFFF		; Check for invalid starting sector
-	cmp rax, rbx
-	jg readsectors_error
 
 	push rcx			; Save the sector count
 	push rdi			; Save the destination memory address
@@ -282,10 +276,10 @@ readsectors:
 	bts eax, 0			; Start (ST)
 	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
-readsectors_poll:
+ahci_read_poll:
 	mov eax, [rsi+AHCI_PxCI]
 	test eax, eax
-	jnz readsectors_poll
+	jnz ahci_read_poll
 
 	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
 	btr eax, 4			; FIS Receive Enable (FRE)
@@ -303,21 +297,11 @@ readsectors_poll:
 	pop rbx
 	pop rdx
 	ret
-
-readsectors_error:
-	pop rax
-	pop rcx
-	pop rsi
-	pop rdi
-	pop rbx
-	pop rdx
-	xor ecx, ecx
-	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; writesectors -- Write data to a SATA hard drive
+; ahci_write -- Write data to a SATA hard drive
 ; IN:	RAX = starting sector # to write (48-bit LBA Address)
 ;	RCX = number of sectors to write (up to 8192 = 4MiB)
 ;	RDX = disk #
@@ -326,17 +310,13 @@ readsectors_error:
 ;	RCX = number of sectors that were written (0 on error)
 ;	RSI = RSI + (number of sectors written * 512)
 ;	All other registers preserved
-writesectors:
+ahci_write:
 	push rdx
 	push rbx
 	push rdi
 	push rsi
 	push rcx
 	push rax
-
-	mov rbx, 0xFFFFFFFFFFFF		; Check for invalid starting sector
-	cmp rax, rbx
-	jg writesectors_error
 
 	push rcx			; Save the sector count
 	push rsi			; Save the source memory address
@@ -404,10 +384,10 @@ writesectors:
 	bts eax, 0			; Start (ST)
 	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
-writesectors_poll:
+ahci_write_poll:
 	mov eax, [rsi+AHCI_PxCI]
 	test eax, eax
-	jnz writesectors_poll
+	jnz ahci_write_poll
 
 	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
 	btr eax, 4			; FIS Receive Enable (FRE)
@@ -424,16 +404,6 @@ writesectors_poll:
 	add rdi, rbx
 	pop rbx
 	pop rdx
-	ret
-
-writesectors_error:
-	pop rax
-	pop rcx
-	pop rsi
-	pop rdi
-	pop rbx
-	pop rdx
-	xor ecx, ecx
 	ret
 ; -----------------------------------------------------------------------------
 
