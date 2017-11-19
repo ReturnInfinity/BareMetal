@@ -11,6 +11,7 @@
 %include "syscalls/memory.asm"
 %include "syscalls/misc.asm"
 %include "syscalls/net.asm"
+%include "syscalls/pci.asm"
 %include "syscalls/smp.asm"
 
 
