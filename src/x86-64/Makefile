@@ -16,6 +16,7 @@ kernelfiles += syscalls/io.asm
 kernelfiles += syscalls/memory.asm
 kernelfiles += syscalls/misc.asm
 kernelfiles += syscalls/net.asm
+kernelfiles += syscalls/pci.asm
 kernelfiles += syscalls/smp.asm
 kernelfiles += drivers.asm
 kernelfiles += drivers/pci.asm
