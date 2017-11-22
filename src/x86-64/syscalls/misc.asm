@@ -249,6 +249,7 @@ os_debug_dump_al:
 	mov [tchar+1], al
 	push rsi
 	push rcx
+	mov rsi, tchar
 	mov rcx, 2
 	call b_output
 	pop rcx
