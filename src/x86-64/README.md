@@ -53,9 +53,9 @@ Some useful commands:
 
 Dumping memory:
 
-	xp /8b 0x100000
+	xp /8xb 0x100000
 
-Dump 8 bytes starting at address 0x100000
+Dump 8 bytes in hexadecimal format starting at address 0x100000
 
 
 ## Running QEMU via the terminal or SSH
