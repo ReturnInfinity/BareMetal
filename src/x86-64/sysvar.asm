@@ -19,9 +19,11 @@ memory_message:		db 'Not enough system memory for CPU stacks! System halted.', 0
 sys_idt:		equ 0x0000000000000000	; 4096 bytes	0x000000 -> 0x000FFF	Interrupt descriptor table
 sys_gdt:		equ 0x0000000000001000	; 4096 bytes	0x001000 -> 0x001FFF	Global descriptor table
 sys_pml4:		equ 0x0000000000002000	; 4096 bytes	0x002000 -> 0x002FFF	PML4 table
-sys_pdp:		equ 0x0000000000003000	; 4096 bytes	0x003000 -> 0x003FFF	PDP table
-sys_Pure64:		equ 0x0000000000004000	; 16384 bytes	0x004000 -> 0x007FFF	Pure64 system data
-sys_pd:			equ 0x0000000000010000	; 262144 bytes	0x010000 -> 0x04FFFF	Page directory
+sys_pdpl:		equ 0x0000000000003000	; 4096 bytes	0x003000 -> 0x003FFF	PDP table low
+sys_pdph:		equ 0x0000000000004000	; 4096 bytes	0x004000 -> 0x004FFF	PDP table high
+sys_Pure64:		equ 0x0000000000005000	; 12288 bytes	0x005000 -> 0x007FFF	Pure64 system data
+sys_pdl:		equ 0x0000000000010000	; 65536 bytes	0x010000 -> 0x01FFFF	Page directory low
+sys_pdh:		equ 0x0000000000020000	; 262144 bytes	0x020000 -> 0x05FFFF	Page directory high
 ahci_cmdlist:		equ 0x0000000000070000	; 4096 bytes	0x070000 -> 0x071FFF
 ahci_receivedfis:	equ 0x0000000000071000	; 4096 bytes	0x071000 -> 0x072FFF
 ahci_cmdtable:		equ 0x0000000000072000	; 57344 bytes	0x072000 -> 0x07FFFF
