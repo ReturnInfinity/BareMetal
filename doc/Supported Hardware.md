@@ -19,6 +19,8 @@
 
 ### Intel 8254x (E1000)
 
+* [Software Developer's Manual](https://www.intel.com/content/dam/doc/manual/pci-pci-x-family-gbe-controllers-software-dev-manual.pdf)
+
 ### Realtek 816x
 
 ## Disk
