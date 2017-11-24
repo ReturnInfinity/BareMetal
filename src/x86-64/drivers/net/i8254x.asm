@@ -114,16 +114,16 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_TXCW], eax		; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Request)
 
 	mov eax, [rsi+I8254X_REG_CTRL]
-	btr eax, 3
-	bts eax, 6
-	bts eax, 5
-	btr eax, 31
-	btr eax, 30
-	btr eax, 7
+	btr eax, 3				; LRST = 0
+	bts eax, 6				; SLU = 1
+	bts eax, 5				; ASDE = 1
+	btr eax, 31				; PHY_RST = 0
+	btr eax, 30				; VME = 0 (Disable 802.1Q)
+	btr eax, 7				; ILOS = 0
 	mov [rsi+I8254X_REG_CTRL], eax		; CTRL: clear LRST, set SLU and ASDE, clear RSTPHY, VME, and ILOS
 
 	push rdi
-	add rdi, 0x5200				; MTA: reset
+	add rdi, I8254X_REG_MTA			; MTA: reset
 	mov eax, 0xFFFFFFFF
 	stosd
 	stosd
@@ -305,6 +305,7 @@ I8254X_REG_TADV		equ 0x382C ; TX Absolute Interrupt Delay Value
 I8254X_REG_TSPMT	equ 0x3830 ; TCP Segmentation Pad & Min Threshold
 
 I8254X_REG_RXCSUM	equ 0x5000 ; RX Checksum Control
+I8254X_REG_MTA		equ 0x5200 ; Multicast Table Array
 
 ; Register list for i8254x
 I82542_REG_RDTR		equ 0x0108 ; RX Delay Timer Register
