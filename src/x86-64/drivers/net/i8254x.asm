@@ -135,7 +135,7 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_RDBAL], eax		; Receive Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+I8254X_REG_RDBAH], eax		; Receive Descriptor Base Address High
-	mov eax, (32 * 16)
+	mov eax, (32 * 8)			; Multiples of 8, each desciptor is 16 bytes
 	mov [rsi+I8254X_REG_RDLEN], eax		; Receive Descriptor Length
 	xor eax, eax
 	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
@@ -154,7 +154,7 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_TDBAL], eax		; Transmit Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+I8254X_REG_TDBAH], eax		; Transmit Descriptor Base Address High
-	mov eax, (32 * 16)
+	mov eax, (32 * 8)			; Multiples of 8, each desciptor is 16 bytes
 	mov [rsi+I8254X_REG_TDLEN], eax		; Transmit Descriptor Length
 	xor eax, eax
 	mov [rsi+I8254X_REG_TDH], eax		; Transmit Descriptor Head
