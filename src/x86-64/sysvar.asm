@@ -35,6 +35,8 @@ os_SystemVariables:	equ 0x0000000000110000	; 65536 bytes	0x110000 -> 0x11FFFF	Lo
 os_MemoryMap:		equ 0x0000000000120000	; 131072 bytes	0x120000 -> 0x13FFFF	Location of Memory Map - Room to map 256 GiB with 2 MiB pages
 os_EthernetBuffer:	equ 0x0000000000140000	; 262144 bytes	0x140000 -> 0x17FFFF	Location of Ethernet RX Ring Buffer - Room for 170 packets
 os_temp:		equ 0x0000000000190000
+os_rx_desc:		equ 0x00000000001A0000
+os_tx_desc:		equ 0x00000000001A8000
 os_ethernet_rx_buffer:	equ 0x00000000001C0000
 os_eth_rx_buffer:	equ 0x00000000001C8000
 os_ethernet_tx_buffer:	equ 0x00000000001D0000
