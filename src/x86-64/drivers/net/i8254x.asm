@@ -131,7 +131,7 @@ net_i8254x_reset:
 	stosd
 	pop rdi
 
-	mov rax, os_eth_rx_buffer
+	mov rax, os_rx_desc
 	mov [rsi+I8254X_REG_RDBAL], eax		; Receive Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+I8254X_REG_RDBAH], eax		; Receive Descriptor Base Address High
@@ -145,12 +145,12 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_RCTL], eax		; Receive Control Register
 
 	push rdi
-	mov rdi, os_eth_rx_buffer
-	mov rax, 0x1c9000
+	mov rdi, os_rx_desc
+	mov rax, 0x1c9000			; Packet will go here
 	stosd
 	pop rdi
 
-	mov rax, os_eth_tx_buffer
+	mov rax, os_tx_desc
 	mov [rsi+I8254X_REG_TDBAL], eax		; Transmit Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+I8254X_REG_TDBAH], eax		; Transmit Descriptor Base Address High
@@ -188,7 +188,7 @@ net_i8254x_transmit:
 	push rdi
 	push rax
 
-	mov rdi, os_eth_tx_buffer		; Transmit Descriptor Base Address
+	mov rdi, os_tx_desc			; Transmit Descriptor Base Address
 	mov rax, rsi
 	stosq					; Store the data location
 	mov rax, rcx				; The packet size is in CX
@@ -218,7 +218,7 @@ net_i8254x_poll:
 	push rax
 
 	xor ecx, ecx
-	mov cx, [os_eth_rx_buffer+8]		; Get the packet length
+	mov cx, [os_rx_desc+8]			; Get the packet length
 	mov rsi, 0x1c9000
 	push rcx
 	rep movsb
@@ -229,8 +229,8 @@ net_i8254x_poll:
 	inc eax
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
 
-	mov rdi, os_eth_rx_buffer
-	mov rax, 0x1c9000
+	mov rdi, os_rx_desc
+	mov rax, 0x1c9000			; Packet will go here
 	stosd
 
 	pop rax
