@@ -6,15 +6,15 @@
 ; =============================================================================
 
 
+; Internal
 %include "drivers/pci.asm"
-
 %include "drivers/pic.asm"
 
+; Storage
 %include "drivers/storage/ahci.asm"
-; %include "drivers/storage/ide.asm"
 
+; Network
 %include "drivers/net/i8254x.asm"
-%include "drivers/net/rtl8169.asm"
 %include "drivers/net/virtio.asm"
 
 
@@ -24,12 +24,6 @@ NIC_DeviceVendor_ID:	; The supported list of NICs
 ; Virtio
 dd 0x1AF4FFFF		; Driver marker
 dd 0x10001AF4
-
-; Realtek 816x/811x Gigabit Ethernet
-dd 0x8169FFFF		; Driver marker
-dd 0x816710EC		; 8110SC/8169SC
-dd 0x816810EC		; 8111/8168B
-dd 0x816910EC		; 8169
 
 ; Intel 8254x Gigabit Ethernet
 dd 0x8254FFFF		; Driver marker

@@ -31,42 +31,29 @@ init_net_probe_next_bus:
 	jmp init_net_probe_next
 
 init_net_probe_find_driver:
-	xor edx, edx				; Register 0 for Device/Vendor ID
-	call os_pci_read_reg			; Read the Device/Vendor ID from the PCI device
-	mov r8d, eax				; Save the Device/Vendor ID in R8D
+	xor edx, edx			; Register 0 for Device/Vendor ID
+	call os_pci_read_reg		; Read the Device/Vendor ID from the PCI device
+	mov r8d, eax			; Save the Device/Vendor ID in R8D
 	mov rsi, NIC_DeviceVendor_ID
-	lodsd					; Load a driver ID - Low half must be 0xFFFF
+	lodsd				; Load a driver ID - Low half must be 0xFFFF
 init_net_probe_find_next_driver:
-	mov rdx, rax				; Save the driver ID
+	mov rdx, rax			; Save the driver ID
 init_net_probe_find_next_device:
-	lodsd					; Load a device and vendor ID from our list of supported NICs
-	test eax, eax				; 0x00000000 means we have reached the end of the list
-	jz init_net_probe_not_found		; No supported NIC found
-	cmp ax, 0xFFFF				; New driver ID?
+	lodsd				; Load a device and vendor ID from our list of supported NICs
+	test eax, eax			; 0x00000000 means we have reached the end of the list
+	jz init_net_probe_not_found	; No supported NIC found
+	cmp ax, 0xFFFF			; New driver ID?
 	je init_net_probe_find_next_driver	; We found the next driver type
 	cmp eax, r8d
-	je init_net_probe_found			; If Carry is clear then we found a supported NIC
+	je init_net_probe_found		; If Carry is clear then we found a supported NIC
 	jmp init_net_probe_find_next_device	; Check the next device
 
 init_net_probe_found:
-	cmp edx, 0x8169FFFF
-	je init_net_probe_found_rtl8169
 	cmp edx, 0x8254FFFF
 	je init_net_probe_found_i8254x
 	cmp edx, 0x1AF4FFFF
 	je init_net_probe_found_virtio
 	jmp init_net_probe_not_found
-
-init_net_probe_found_rtl8169:
-	call net_rtl8169_init
-	mov rdi, os_net_transmit
-	mov rax, net_rtl8169_transmit
-	stosq
-	mov rax, net_rtl8169_poll
-	stosq
-	mov rax, net_rtl8169_ack_int
-	stosq
-	jmp init_net_probe_found_finish
 
 init_net_probe_found_i8254x:
 	call net_i8254x_init
