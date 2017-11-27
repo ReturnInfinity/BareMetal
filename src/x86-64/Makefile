@@ -23,7 +23,6 @@ kernelfiles += drivers/pci.asm
 kernelfiles += drivers/pic.asm
 kernelfiles += drivers/storage/ahci.asm
 kernelfiles += drivers/net/i8254x.asm
-kernelfiles += drivers/net/rtl8169.asm
 kernelfiles += drivers/net/virtio.asm
 kernelfiles += interrupt.asm
 kernelfiles += sysvar.asm
