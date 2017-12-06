@@ -28,7 +28,6 @@ ahci_cmdlist:		equ 0x0000000000070000	; 4096 bytes	0x070000 -> 0x071FFF
 ahci_receivedfis:	equ 0x0000000000071000	; 4096 bytes	0x071000 -> 0x072FFF
 ahci_cmdtable:		equ 0x0000000000072000	; 57344 bytes	0x072000 -> 0x07FFFF
 os_temp_string:		equ 0x0000000000080400	; 1024 bytes	0x080400 -> 0x0807FF
-os_args:		equ 0x0000000000080C00
 sys_ROM:		equ 0x00000000000A0000	; 393216 bytes	0x0A0000 -> 0x0FFFFF
 os_KernelStart:		equ 0x0000000000100000	; 65536 bytes	0x100000 -> 0x10FFFF	Location of Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 65536 bytes	0x110000 -> 0x11FFFF	Location of System Variables
@@ -87,7 +86,6 @@ os_EthernetBuffer_C1:	equ os_SystemVariables + 781	; Counter 1 for the Ethernet 
 os_EthernetBuffer_C2:	equ os_SystemVariables + 782	; Counter 2 for the Ethernet RX Ring Buffer
 os_DiskEnabled:		equ os_SystemVariables + 783
 os_DiskActivity:	equ os_SystemVariables + 784
-app_argc:		equ os_SystemVariables + 785
 
 
 keylayoutlower:

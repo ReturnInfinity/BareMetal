@@ -34,8 +34,6 @@ void b_system_misc(unsigned long function, void *var1, void *var2);
 
 // Index for b_system_config calls
 #define TIMECOUNTER          0
-#define GET_ARGC             1
-#define GET_ARGV             2
 #define NETWORKCALLBACK_GET  3
 #define NETWORKCALLBACK_SET  4
 #define CLOCKCALLBACK_GET    5

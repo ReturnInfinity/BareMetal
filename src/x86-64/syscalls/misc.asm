@@ -29,33 +29,6 @@ os_delay_loop:
 
 
 ; -----------------------------------------------------------------------------
-; os_get_argv -- Get the value of an argument that was passed to the program
-; IN:	RAX = Argument number
-; OUT:	RAX = Start of numbered argument string
-os_get_argv:
-	push rsi
-	push rcx
-	mov rsi, os_args
-	test al, al
-	jz os_get_argv_end
-	mov cl, al
-
-os_get_argv_nextchar:
-	lodsb
-	test al, al
-	jnz os_get_argv_nextchar
-	dec cl
-	jnz os_get_argv_nextchar
-
-os_get_argv_end:
-	mov rax, rsi
-	pop rcx
-	pop rsi
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
 ; b_system_config - View or modify system configuration options
 ; IN:	RDX = Function #
 ;	RAX = Variable
@@ -64,10 +37,6 @@ os_get_argv_end:
 b_system_config:
 	cmp rdx, 0
 	je b_system_config_timecounter
-	cmp rdx, 1
-	je b_system_config_argc
-	cmp rdx, 2
-	je b_system_config_argv
 	cmp rdx, 3
 	je b_system_config_networkcallback_get
 	cmp rdx, 4
@@ -82,15 +51,6 @@ b_system_config:
 
 b_system_config_timecounter:
 	mov rax, [os_ClockCounter]	; Grab the timer counter value. It increments 8 times a second
-	ret
-
-b_system_config_argc:
-	xor eax, eax
-	mov al, [app_argc]
-	ret
-
-b_system_config_argv:
-	call os_get_argv
 	ret
 
 b_system_config_networkcallback_get:
