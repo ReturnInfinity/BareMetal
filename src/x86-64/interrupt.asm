@@ -192,13 +192,7 @@ network:
 	jnc network_end
 network_rx_as_well:
 	mov byte [os_NetActivity_RX], 1
-	mov rdi, os_EthernetBuffer	; Raw packet is copied here
-	push rdi
-	add rdi, 2
-	call b_net_rx_from_interrupt
-	pop rdi
-	mov rax, rcx
-	stosw				; Store the size of the packet
+	call b_net_rx_from_interrupt	; Call driver
 	cmp qword [os_NetworkCallback], 0	; Is it valid?
 	je network_end			; If not then bail out.
 
