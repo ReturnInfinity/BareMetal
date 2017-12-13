@@ -141,12 +141,12 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
 	mov eax, 1
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
-	mov eax, 0x04008006			; Receiver Enable, Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
+	mov eax, 0x04008026			; Receiver Enable, Store Bad Packets, Long Packet Reception, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
 	mov [rsi+I8254X_REG_RCTL], eax		; Receive Control Register
 
 	push rdi
 	mov rdi, os_rx_desc
-	mov rax, os_PacketBuffer		; Default packet will go here
+	mov rax, os_PacketBuffers		; Default packet will go here
 	add rax, 2				; Room for packet length
 	stosd
 	pop rdi
