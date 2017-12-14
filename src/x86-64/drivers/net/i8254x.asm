@@ -141,12 +141,13 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
 	mov eax, 1
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
-	mov eax, 0x04008006			; Receiver Enable, Store Bad Packets, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
+	mov eax, 0x04008026			; Receiver Enable, Store Bad Packets, Long Packet Reception, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
 	mov [rsi+I8254X_REG_RCTL], eax		; Receive Control Register
 
 	push rdi
 	mov rdi, os_rx_desc
-	mov rax, 0x1c9000			; Packet will go here
+	mov rax, os_PacketBuffers		; Default packet will go here
+	add rax, 2				; Room for packet length
 	stosd
 	pop rdi
 
@@ -219,10 +220,9 @@ net_i8254x_poll:
 
 	xor ecx, ecx
 	mov cx, [os_rx_desc+8]			; Get the packet length
-	mov rsi, 0x1c9000
-	push rcx
-	rep movsb
-	pop rcx
+	mov rdi, os_PacketBuffers
+	mov [rdi], word cx
+
 	mov rsi, [os_NetIOBaseMem]
 	xor eax, eax
 	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
@@ -230,7 +230,8 @@ net_i8254x_poll:
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
 
 	mov rdi, os_rx_desc
-	mov rax, 0x1c9000			; Packet will go here
+	mov rax, os_PacketBuffers		; Packet will go here
+	add rax, 2				; Room for packet length
 	stosd
 
 	pop rax

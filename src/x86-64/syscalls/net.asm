@@ -60,7 +60,7 @@ b_net_tx_maxcheck:
 
 	inc qword [os_net_TXPackets]
 	add qword [os_net_TXBytes], rcx
-	call qword [os_net_transmit]
+	call qword [os_net_transmit]	; Call the driver
 
 	mov rax, os_NetLock
 	call b_smp_unlock
@@ -87,7 +87,7 @@ b_net_rx:
 	cmp byte [os_NetEnabled], 1
 	jne b_net_rx_fail
 
-	mov rsi, os_EthernetBuffer
+	mov rsi, os_PacketBuffers	; Packet exists here
 	mov ax, word [rsi]		; Grab the packet length
 	test ax, ax			; Anything there?
 	jz b_net_rx_fail		; If not, bail out
@@ -95,7 +95,7 @@ b_net_rx:
 	mov cx, ax			; Save the count
 	add rsi, 2			; Skip the packet length word
 	push rcx
-	rep movsb
+	rep movsb			; Copy packet to new memory
 	pop rcx
 
 b_net_rx_fail:
@@ -125,7 +125,7 @@ b_net_ack_int:
 ; OUT:	RCX = Length of packet
 ;	All other registers preserved
 b_net_rx_from_interrupt:
-	call qword [os_net_poll]
+	call qword [os_net_poll]	; Call the driver
 	add qword [os_net_RXPackets], 1
 	add qword [os_net_RXBytes], rcx
 

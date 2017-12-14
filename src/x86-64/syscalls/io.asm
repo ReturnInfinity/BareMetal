@@ -42,11 +42,11 @@ b_output:
 
 b_output_nextchar:
 	jrcxz b_output_done		; If RCX is 0 then the function is complete
-	add dx, 5			; Offset to Line Status Register
-	in al, dx
-	sub dx, 5			; Back to to base
-	cmp al, 0
-	je b_output_nextchar
+;	add dx, 5			; Offset to Line Status Register
+;	in al, dx
+;	sub dx, 5			; Back to to base
+;	cmp al, 0
+;	je b_output_nextchar
 	dec rcx
 	lodsb				; Get char from string and store in AL
 	out dx, al			; Send the char to the serial port
