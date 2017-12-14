@@ -172,7 +172,7 @@ b_system_misc_reset_no_more_aps:
 
 
 ; -----------------------------------------------------------------------------
-; os_debug_dump_(rax|eax|ax|al) -- Dump content of RAX, EAX, AX, or AL to the screen in hex format
+; os_debug_dump_(rax|eax|ax|al) -- Dump content of RAX, EAX, AX, or AL
 ;  IN:	RAX = content to dump
 ; OUT:	Nothing, all registers preserved
 os_debug_dump_rax:
@@ -216,6 +216,31 @@ os_debug_dump_al:
 	pop rsi
 	pop rax
 	pop rbx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_debug_dump_mem
+;  IN:	RSI = content to dump
+;	RCX = number of bytes
+; OUT:	Nothing, all registers preserved
+os_debug_dump_mem:
+	push rsi
+	push rcx
+	push rax
+os_debug_dump_mem_next:
+	lodsb
+	call os_debug_dump_al
+	dec rcx
+	cmp rcx, 0
+	jne os_debug_dump_mem_next
+	mov rsi, newline
+	mov rcx, 1
+	call b_output
+	pop rax
+	pop rcx
+	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
