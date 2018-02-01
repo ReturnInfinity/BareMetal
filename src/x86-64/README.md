@@ -7,6 +7,10 @@ Targeting x86-64 based systems (Intel and AMD)
 
 This short segment deals with debugging in [GDB](https://www.gnu.org/software/gdb/).
 
+The instructions below require the multiboot.bin and pure64.sys binaries from [Pure64](https://github.com/ReturnInfinity/Pure64). Use the following to build boot.bin:
+
+	cat multiboot.bin pure64.sys kernel.sys > boot.bin
+
 
 ### Terminal 1
 
@@ -14,7 +18,7 @@ Set a 'jmp $' somewhere in the source code.
 
 	./build_x86-64.sh
 
-	qemu-system-x86_64 -machine q35 -cpu core2duo -smp 2 -m 256 -curses -kernel ./boot.bin -s
+	qemu-system-x86_64 -machine q35 -cpu core2duo -smp 2 -m 256 -kernel ./boot.bin -s
 
 
 ### Terminal 2
