@@ -290,7 +290,7 @@ os_debug_dump_mem_print_ascii:
 	sub rsi, 0x10
 	xor rcx, rcx			; Clear the counter
 os_debug_dump_mem_print_ascii_next:
-;	lodsb
+	lodsb
 ;	call os_output_char
 	inc rcx
 	cmp rcx, 16
