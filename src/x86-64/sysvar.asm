@@ -12,7 +12,7 @@ hextable: 		db '0123456789ABCDEF'
 
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
-readymsg:		db 'BareMetal is ready'	; This string falls thru to newline
+readymsg:		db 'BareMetal OK'	; This string falls thru to newline
 newline:		db 10, 0
 memory_message:		db 'Not enough system memory for CPU stacks! System halted.', 0
 
@@ -41,7 +41,7 @@ os_MemoryMap:		equ 0x0000000000120000	; 0x120000 -> 0x13FFFF	128K Memory Map - R
 os_temp:		equ 0x0000000000190000	; REMOVE THIS
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
-os_PacketBuffers:	equ 0x00000000001B0000	; 
+os_PacketBuffers:	equ 0x00000000001B0000	;
 os_cpu_work_table:	equ 0x00000000001FF000	; Location of CPU Queue. Each queue item is 16 bytes. (4KiB before the 2MiB mark, Room for 256 entries)
 
 

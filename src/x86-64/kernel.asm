@@ -40,6 +40,10 @@ start:
 	call init_hdd			; Initialize the disk
 	call init_net			; Initialize the network
 
+	mov rsi, readymsg
+	mov rcx, 13
+	call b_output
+
 	; Copy the payload after the kernel to the proper address
 	mov rsi, 0x100000 + KERNELSIZE	; Payload starts right after the kernel
 	cmp qword [rsi], 0		; Is there a payload after the kernel?
