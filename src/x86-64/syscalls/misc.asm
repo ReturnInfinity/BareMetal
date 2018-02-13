@@ -231,20 +231,8 @@ os_debug_dump_mem:
 
 	test rcx, rcx			; Bail out if no bytes were requested
 	jz os_debug_dump_mem_done
-	mov rax, rsi
-	and rax, 0x0F			; Isolate the low 4 bytes of RSI
-	add rcx, rax			; Add to round up the number of bytes needed
-	mov rdx, rcx			; Save the total number of bytes to display
-	add rdx, 15			; Make sure we print out another line if needed
 
-	and cl, 0xF0
-	and dl, 0xF0
-
-	shr rsi, 4			; Round the starting memory address
-	shl rsi, 4
-
-os_debug_dump_mem_print_address:
-	push rsi
+	push rsi			; Output '0x'
 	push rcx
 	mov rsi, os_debug_dump_mem_chars
 	mov rcx, 2
@@ -252,60 +240,35 @@ os_debug_dump_mem_print_address:
 	pop rcx
 	pop rsi
 
-	mov rax, rsi
+	mov rax, rsi			; Output the memory address
 	call os_debug_dump_rax
+	call os_debug_dump_mem_newline
 
-	push rsi
-	push rcx
-	mov rsi, os_debug_dump_mem_chars+2
-	mov rcx, 3
-	call b_output
-	pop rcx
-	pop rsi
-
-os_debug_dump_mem_print_contents:
-	push rcx
-	mov rcx, 16
-os_debug_dump_mem_print_contents_next:
-	lodsb
-	call os_debug_dump_al
-	push rsi
+nextline:
+	mov dx, 0
+nextchar:
+	cmp rcx, 0
+	je os_debug_dump_mem_done_newline
+	push rsi			; Output ' '
 	push rcx
 	mov rsi, os_debug_dump_mem_chars+3
-	cmp rcx, 9
-	mov rcx, 0
-	jne singlespace
-	add rcx, 1
-singlespace:
-	add rcx, 1
-	call b_output
-	pop rcx
-	pop rsi
-	dec rcx
-	cmp rcx, 0
-	jne os_debug_dump_mem_print_contents_next
-	pop rcx
-
-os_debug_dump_mem_print_ascii:
-	sub rsi, 0x10
-	xor rcx, rcx			; Clear the counter
-os_debug_dump_mem_print_ascii_next:
-	lodsb
-;	call os_output_char
-	inc rcx
-	cmp rcx, 16
-	jne os_debug_dump_mem_print_ascii_next
-	push rsi
-	push rcx
-	mov rsi, newline
 	mov rcx, 1
 	call b_output
 	pop rcx
 	pop rsi
-	sub rdx, 16
-	test rdx, rdx
-	jz os_debug_dump_mem_done
-	jmp os_debug_dump_mem_print_address
+	lodsb
+	call os_debug_dump_al
+	dec rcx
+	inc rdx
+	cmp dx, 16			; End of line yet?
+	jne nextchar
+	call os_debug_dump_mem_newline
+	cmp rcx, 0
+	je os_debug_dump_mem_done
+	jmp nextline
+
+os_debug_dump_mem_done_newline:
+	call os_debug_dump_mem_newline
 
 os_debug_dump_mem_done:
 	pop rax
@@ -314,7 +277,17 @@ os_debug_dump_mem_done:
 	pop rsi
 	ret
 
-os_debug_dump_mem_chars: db '0x:    '
+os_debug_dump_mem_newline:
+	push rsi			; Output newline
+	push rcx
+	mov rsi, newline
+	mov rcx, 1
+	call b_output
+	pop rcx
+	pop rsi
+	ret
+
+os_debug_dump_mem_chars: db '0x: '
 ; -----------------------------------------------------------------------------
 
 
