@@ -83,6 +83,9 @@ make_exception_gates:
 	mov [os_LocalAPICAddress], rax
 	lodsq
 	mov [os_IOAPICAddress], rax
+	mov rsi, 0x5010
+	lodsw
+	mov [os_CoreSpeed], ax
 	mov rsi, 0x5012
 	lodsw
 	mov [os_NumCores], ax

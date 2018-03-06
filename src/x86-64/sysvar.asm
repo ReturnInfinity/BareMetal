@@ -70,7 +70,6 @@ os_hdd_BytesWrite:	equ os_SystemVariables + 176
 
 
 ; DD - Starting at offset 256, increments by 4
-cpu_speed:		equ os_SystemVariables + 256	; in MHz
 os_HPETRate:		equ os_SystemVariables + 260
 os_MemAmount:		equ os_SystemVariables + 264	; in MiB
 ahci_port:		equ os_SystemVariables + 268
@@ -79,6 +78,7 @@ hd1_size:		equ os_SystemVariables + 272	; in MiB
 
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 512
+os_CoreSpeed:		equ os_SystemVariables + 514
 os_NetIOAddress:	equ os_SystemVariables + 522
 os_NetLock:		equ os_SystemVariables + 524
 
