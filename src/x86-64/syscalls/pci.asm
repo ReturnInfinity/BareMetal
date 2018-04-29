@@ -22,10 +22,10 @@ b_pci_read_config:
 	push rcx	; preserve the offset
 	push r8		; preserve r8, used for the 'enable bit'
 
-	shl rdi, 16	; shift the bus index
-	shl rsi, 11	; shift the device index
-	shl rdx, 8	; shift the function index
-	and rcx, 0xfc	; discard lower bits of offset
+	shl rdi, 16	   ; shift the bus index
+	shl rsi, 11	   ; shift the device index
+	shl rdx, 8	   ; shift the function index
+	and rcx, 0xFC	   ; discard lower bits of offset
 	mov r8, 0x80000000 ; r8 contains the 'enable bit'
 
 	xor eax, eax	; put the config address into eax
@@ -44,7 +44,7 @@ b_pci_read_config:
 	and ecx, 0x02	; shift the higher word of eax if needed
 	shl ecx, 0x03	; turn ecx into a bit value (multiply by 8)
 	shr eax, cl	; shift output data by bit count in ecx
-	and eax, 0xffff ; make sure only 16 bits of data is contained by eax
+	and eax, 0xFFFF ; make sure only 16 bits of data is contained by eax
 
 	pop r8		; restore r8
 	pop rcx		; restore offset
