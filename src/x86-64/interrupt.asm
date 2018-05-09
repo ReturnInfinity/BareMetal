@@ -446,54 +446,55 @@ exception_gate_main:
 	pop rax
 	and rax, 0x00000000000000FF	; Clear out everything in RAX except for AL
 	push rax
-	mov bl, 8			; Length of each message
+	mov bl, 6			; Length of each message
 	mul bl				; AX = AL x BL
 	add rsi, rax			; Use the value in RAX as an offset to get to the right message
 	pop rax
 	mov bl, 0x0F
-	mov rcx, 7
+	mov rcx, 6
 	call b_output
 	pop rsi
 	pop rdi
 	pop rbx
 	pop rax
-;	mov rsi, int_string02
-;	call b_output
-	push rax
+	mov rsi, int_string02
+	mov rcx, 5
+	call b_output
 	mov rax, [rsp+0x08] 		; RIP of caller
 	call os_debug_dump_rax
-	pop rax
-;	call os_print_newline
+	mov rsi, newline
+	mov rcx, 1
+	call b_output
 	jmp $				; For debugging
 	call init_memory_map
 	jmp ap_clear			; jump to AP clear code
 
 
-int_string00 db 'Fatal Exception - CPU 0x', 0
-int_string01 db ' - Interrupt ', 0
-int_string02 db ' @ 0x', 0
+int_string00 db 'Fatal Exception - CPU 0x'
+int_string01 db ' - Interrupt '
+int_string02 db ' @ 0x'
 ; Strings for the error messages
-exc_string db 'Unknown Fatal Exception!', 0
-exc_string00 db '00 (DE)', 0
-exc_string01 db '01 (DB)', 0
-exc_string02 db '02     ', 0
-exc_string03 db '03 (BP)', 0
-exc_string04 db '04 (OF)', 0
-exc_string05 db '05 (BR)', 0
-exc_string06 db '06 (UD)', 0
-exc_string07 db '07 (NM)', 0
-exc_string08 db '08 (DF)', 0
-exc_string09 db '09     ', 0	; No longer generated on new CPU's
-exc_string10 db '10 (TS)', 0
-exc_string11 db '11 (NP)', 0
-exc_string12 db '12 (SS)', 0
-exc_string13 db '13 (GP)', 0
-exc_string14 db '14 (PF)', 0
-exc_string15 db '15     ', 0
-exc_string16 db '16 (MF)', 0
-exc_string17 db '17 (AC)', 0
-exc_string18 db '18 (MC)', 0
-exc_string19 db '19 (XM)', 0
+exc_string db 'Unknown Fatal Exception!'
+exc_string00 db '00(DE)'
+exc_string01 db '01(DB)'
+exc_string02 db '02    '
+exc_string03 db '03(BP)'
+exc_string04 db '04(OF)'
+exc_string05 db '05(BR)'
+exc_string06 db '06(UD)'
+exc_string07 db '07(NM)'
+exc_string08 db '08(DF)'
+exc_string09 db '09    '	; No longer generated on new CPU's
+exc_string10 db '10(TS)'
+exc_string11 db '11(NP)'
+exc_string12 db '12(SS)'
+exc_string13 db '13(GP)'
+exc_string14 db '14(PF)'
+exc_string15 db '15    '
+exc_string16 db '16(MF)'
+exc_string17 db '17(AC)'
+exc_string18 db '18(MC)'
+exc_string19 db '19(XM)'
 
 
 ; =============================================================================
