@@ -1,6 +1,6 @@
-# QEMU
+# Debugging with GDB and QEMU
 
-This short segment deals with debugging in [GDB](https://www.gnu.org/software/gdb/).
+This document deals with debugging in [GDB](https://www.gnu.org/software/gdb/).
 
 ## Building a binary for QEMU to boot
 
@@ -27,7 +27,7 @@ Use the following to build boot.bin:
 
 Set a 'jmp $' somewhere in the source code.
 
-	qemu-system-x86_64 -machine q35 -cpu core2duo -smp 2 -m 256 -serial file:serial.log -curses -kernel ./boot.bin -s
+	qemu-system-x86_64 -smp 2 -m 256 -serial file:serial.log -curses -kernel ./boot.bin -s
 
 
 ### Terminal 2
@@ -54,7 +54,14 @@ Execution will be stopped where you put the 'jmp $' in the code. Take a look at 
 QEMU will now be running the code directly after the `jmp $` you had inserted. After the first `stepi` command is executed you can hit enter to repeat the action and want the CPU step through the assembly code.
 
 
-## Entering the QEMU monitor
+## Debugging with QEMU (at a known address)
+
+When the kernel is compiled a file called `kernel-debug.txt` is generated. This file can be used as a reference for opcode addresses within the kernel. Add `0x100000` to any address in the text file for the actual in-memory address.
+
+Start QEMU with the `-S` switch to start the virtual machine in a paused mode if you need to add a breakpoint somewhere in the kernel startup code. You can unpause the execution by typing `c` into GDB after you create the breakpoint.
+
+
+## The QEMU monitor
 
 QEMU has a built in monitor to allow you to query the state of the VM.
 
