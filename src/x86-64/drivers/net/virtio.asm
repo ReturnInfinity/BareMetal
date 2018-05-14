@@ -18,14 +18,14 @@ net_virtio_init:
 
 	; Grab the Base I/O Address of the device
 	mov dl, 0x04			; BAR0
-	call os_pci_read_reg
+	call os_pci_read
 	; Todo: Make sure bit 0 is 1
 	and eax, 0xFFFFFFFC		; Clear the low two bits
 	mov dword [os_NetIOBaseMem], eax
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
-	call os_pci_read_reg
+	call os_pci_read
 	mov [os_NetIRQ], al		; AL holds the IRQ
 
 	; Grab the MAC address

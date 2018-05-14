@@ -20,20 +20,20 @@ net_i8254x_init:
 
 	; Grab the Base I/O Address of the device
 	mov dl, 0x04				; BAR0
-	call os_pci_read_reg
+	call os_pci_read
 	and eax, 0xFFFFFFF0			; EAX now holds the Base Memory IO Address (clear the low 4 bits)
 	mov dword [os_NetIOBaseMem], eax
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F				; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
-	call os_pci_read_reg
+	call os_pci_read
 	mov [os_NetIRQ], al			; AL holds the IRQ
 
 	; Enable PCI Bus Mastering
 	mov dl, 0x01				; Get Status/Command
-	call os_pci_read_reg
+	call os_pci_read
 	bts eax, 2
-	call os_pci_write_reg
+	call os_pci_write
 
 	; Grab the MAC address
 	mov rsi, [os_NetIOBaseMem]

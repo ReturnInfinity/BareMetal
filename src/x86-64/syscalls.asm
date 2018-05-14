@@ -6,13 +6,13 @@
 ; =============================================================================
 
 
+%include "syscalls/config.asm"
 %include "syscalls/debug.asm"
 %include "syscalls/disk.asm"
 %include "syscalls/io.asm"
 %include "syscalls/memory.asm"
 %include "syscalls/misc.asm"
 %include "syscalls/net.asm"
-%include "syscalls/pci.asm"
 %include "syscalls/smp.asm"
 
 

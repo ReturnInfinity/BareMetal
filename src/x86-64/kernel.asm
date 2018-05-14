@@ -31,7 +31,6 @@ align 16
 	dq b_disk_write			; 0x0058
 	dq b_system_config		; 0x0060
 	dq b_system_misc		; 0x0068
-	dq b_pci_read_config		; 0x0070
 
 align 16
 start:

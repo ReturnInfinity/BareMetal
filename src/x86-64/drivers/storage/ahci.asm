@@ -14,7 +14,7 @@ ahci_init:
 	mov edx, 2			; Register 2 for Class code/Subclass
 
 ahci_init_probe_next:
-	call os_pci_read_reg
+	call os_pci_read
 	shr eax, 16			; Move the Class/Subclass code to AX
 	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
 	je ahci_init_found		; Found a SATA Controller
@@ -33,7 +33,7 @@ ahci_init_probe_next_bus:
 ahci_init_found:
 	mov dl, 9
 	xor eax, eax
-	call os_pci_read_reg		; BAR5 (AHCI Base Address Register)
+	call os_pci_read		; BAR5 (AHCI Base Address Register)
 	mov [ahci_base], rax
 
 ; Basic config of the controller, port 0

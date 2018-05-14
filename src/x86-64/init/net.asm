@@ -14,7 +14,7 @@ init_net:
 	mov edx, 2			; Register 2 for Class code/Subclass
 
 init_net_probe_next:
-	call os_pci_read_reg
+	call os_pci_read
 	shr eax, 16			; Move the Class/Subclass code to AX
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver	; Found a Network Controller... now search for a driver
@@ -32,7 +32,7 @@ init_net_probe_next_bus:
 
 init_net_probe_find_driver:
 	xor edx, edx			; Register 0 for Device/Vendor ID
-	call os_pci_read_reg		; Read the Device/Vendor ID from the PCI device
+	call os_pci_read		; Read the Device/Vendor ID from the PCI device
 	mov r8d, eax			; Save the Device/Vendor ID in R8D
 	mov rsi, NIC_DeviceVendor_ID
 	lodsd				; Load a driver ID - Low half must be 0xFFFF

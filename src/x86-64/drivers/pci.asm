@@ -7,13 +7,13 @@
 
 
 ; -----------------------------------------------------------------------------
-; os_pci_read_reg -- Read from a register on a PCI device
+; os_pci_read -- Read from a register on a PCI device
 ;  IN:	BL  = Bus number
 ;	CL  = Device/Slot/Function number
 ;	DL  = Register number (0-15)
 ; OUT:	EAX = Register information
 ;	All other registers preserved
-os_pci_read_reg:
+os_pci_read:
 	push rdx
 	push rcx
 	push rbx
@@ -23,7 +23,7 @@ os_pci_read_reg:
 	mov bx, cx
 	shl edx, 2
 	mov bl, dl
-	and ebx, 0x00ffffff		; Clear bits 31 - 24
+	and ebx, 0x00FFFFFF		; Clear bits 31 - 24
 	or ebx, 0x80000000		; Set bit 31
 	mov eax, ebx
 	mov dx, PCI_CONFIG_ADDRESS
@@ -39,13 +39,13 @@ os_pci_read_reg:
 
 
 ; -----------------------------------------------------------------------------
-; os_pci_write_reg -- Write to a register on a PCI device
+; os_pci_write -- Write to a register on a PCI device
 ;  IN:	BL  = Bus number
 ;	CL  = Device/Slot/Function number
 ;	DL  = Register number (0-15)
-; OUT:	EAX = Register information
-;	All other registers preserved
-os_pci_write_reg:
+;	EAX = Register information
+; OUT:	Nothing, all other registers preserved
+os_pci_write:
 	push rdx
 	push rcx
 	push rbx
@@ -56,7 +56,7 @@ os_pci_write_reg:
 	mov bx, cx
 	shl edx, 2
 	mov bl, dl
-	and ebx, 0x00ffffff		; Clear bits 31 - 24
+	and ebx, 0x00FFFFFF		; Clear bits 31 - 24
 	or ebx, 0x80000000		; Set bit 31
 	mov eax, ebx
 	mov dx, PCI_CONFIG_ADDRESS
@@ -73,15 +73,15 @@ os_pci_write_reg:
 
 
 ;Configuration Mechanism One has two IO port rages associated with it.
-;The address port (0xcf8-0xcfb) and the data port (0xcfc-0xcff).
+;The address port (0xCF8-0xCFB) and the data port (0xCFC-0xCFF).
 ;A configuration cycle consists of writing to the address port to specify which device and register you want to access and then reading or writing the data to the data port.
 
 PCI_CONFIG_ADDRESS	EQU	0x0CF8
 PCI_CONFIG_DATA		EQU	0x0CFC
 
-;ddress dd 10000000000000000000000000000000b
-;          /\     /\      /\   /\ /\    /\
-;        E    Res    Bus    Dev  F  Reg   0
+; Address dd 10000000000000000000000000000000b
+;            /\     /\      /\   /\ /\    /\
+;           E  Res    Bus     Dev  F  Reg   0
 ; Bits
 ; 31		Enable bit = set to 1
 ; 30 - 24	Reserved = set to 0
