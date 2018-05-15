@@ -72,9 +72,9 @@ os_pci_write:
 ; -----------------------------------------------------------------------------
 
 
-;Configuration Mechanism One has two IO port rages associated with it.
-;The address port (0xCF8-0xCFB) and the data port (0xCFC-0xCFF).
-;A configuration cycle consists of writing to the address port to specify which device and register you want to access and then reading or writing the data to the data port.
+; Configuration Mechanism One has two IO port rages associated with it.
+; The address port (0xCF8-0xCFB) and the data port (0xCFC-0xCFF).
+; A configuration cycle consists of writing to the address port to specify which device and register you want to access and then reading or writing the data to the data port.
 
 PCI_CONFIG_ADDRESS	EQU	0x0CF8
 PCI_CONFIG_DATA		EQU	0x0CFC

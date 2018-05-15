@@ -2,9 +2,11 @@
 
 Version 1 - November 12, 2017
 
+
 ### Notes
 
 This document details the API calls built into the BareMetal exokernel.
+
 
 ### Contents
 
@@ -87,6 +89,7 @@ C Example:
 
 ### b\_smp\_set
 
+
 Set a CPU to a specific task.
 
 Assembly Registers:
@@ -120,6 +123,7 @@ Just a stub fuction at the moment
 ## Memory
 
 Memory is allocated in 2MiB pages.
+
 
 ### b\_mem\_allocate
 
@@ -212,6 +216,7 @@ Note: BareMetal does not keep a buffer of received packets. This means that the 
 
 BareMetal uses 4096 byte sectors for all disk access. Disk sectors start at 0. Individual calls to disk read and write functions support up to 512 sectors being read/written (2MiB).
 
+
 ### b\_disk\_read
 
 Read a number of sectors from disk to memory
@@ -301,6 +306,7 @@ Currently the following functions are supported:
 every function that gets something sets RAX with the result
 
 every function that sets something gets the value from RAX
+
 
 ### b\_system\_misc
 

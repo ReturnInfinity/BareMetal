@@ -2,6 +2,13 @@
 
 This document deals with debugging in [GDB](https://www.gnu.org/software/gdb/).
 
+## Prerequisites
+
+This document expects the reader to understand some basic fundamentals about x86-64 assembly instructions and hexadecimal notation.
+
+This document was written while using an Ubuntu 18.04 virtual machine within VirtualBox.
+
+
 ## Building a binary for QEMU to boot
 
 The instructions below require the multiboot.bin and pure64.sys binaries from [Pure64](https://github.com/ReturnInfinity/Pure64).
@@ -58,7 +65,7 @@ QEMU will now be running the code directly after the `jmp $` you had inserted. A
 
 When the kernel is compiled a file called `kernel-debug.txt` is generated. This file can be used as a reference for opcode addresses within the kernel. Add `0x100000` to any address in the text file for the actual in-memory address.
 
-Start QEMU with the `-S` switch to start the virtual machine in a paused mode if you need to add a breakpoint somewhere in the kernel startup code. You can unpause the execution by typing `c` into GDB after you create the breakpoint.
+Start QEMU with the `-S` switch to start the virtual machine in a paused mode if you need to add a breakpoint somewhere in the kernel startup code. You can un-pause the execution by typing `c` into GDB after you create the breakpoint.
 
 
 ## The QEMU monitor
