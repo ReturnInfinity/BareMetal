@@ -1,4 +1,5 @@
 .DS_Store
+*.a
 *.o
 *.elf
 *.sys
@@ -13,3 +14,5 @@ Pure64
 bin
 include
 lib
+kernel-real
+kernel-fake
