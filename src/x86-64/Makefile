@@ -16,7 +16,6 @@ kernelfiles += syscalls/io.asm
 kernelfiles += syscalls/memory.asm
 kernelfiles += syscalls/misc.asm
 kernelfiles += syscalls/net.asm
-kernelfiles += syscalls/pci.asm
 kernelfiles += syscalls/smp.asm
 kernelfiles += drivers.asm
 kernelfiles += drivers/pci.asm
@@ -35,7 +34,7 @@ installfiles := $(installfiles:%=$(DESTDIR)$(PREFIX)/system/%)
 all: kernel.sys kernel-debug.txt kernel.elf kernel.bin
 
 kernel.sys kernel-debug.txt: $(kernelfiles) nasm.ld
-	@echo "NASM $@"
+	@echo "NASM    $@"
 	$(NASM) -P nasm.ld kernel.asm -o $@ -l kernel-debug.txt
 
 kernel.bin: kernel.elf
@@ -43,11 +42,11 @@ kernel.bin: kernel.elf
 	$(OBJCOPY) -O binary $< $@
 
 kernel.elf: kernel.o kernel.ld
-	@echo "LINK $@"
+	@echo "LD      $@"
 	$(LD) -T kernel.ld $< -o $@
 
 kernel.o: $(kernelfiles)
-	@echo "NASM $@"
+	@echo "NASM    $@"
 	$(NASM) -f elf64 -g -F dwarf kernel.asm -o $@
 
 .PHONY: clean
