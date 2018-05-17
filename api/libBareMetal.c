@@ -68,12 +68,12 @@ unsigned long b_disk_write(void *mem, unsigned long start, unsigned long num, un
 
 unsigned long b_system_config(unsigned long function, unsigned long var) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100060" : "=a"(tlong) : "d"(function), "a"(var));
+	asm volatile ("call *0x00100060" : "=a"(tlong) : "c"(function), "a"(var));
 	return tlong;
 }
 
 void b_system_misc(unsigned long function, void* var1, void* var2) {
-	asm volatile ("call *0x00100068" : : "d"(function), "a"(var1), "c"(var2));
+	asm volatile ("call *0x00100068" : : "c"(function), "a"(var1), "d"(var2));
 }
 
 

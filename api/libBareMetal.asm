@@ -21,8 +21,8 @@ b_ethernet_rx		equ 0x0000000000100048	; Polls the Ethernet card for received dat
 b_disk_read		equ 0x0000000000100050	; Read from the disk.
 b_disk_write		equ 0x0000000000100058	; Write to the disk.
 
-b_system_config		equ 0x0000000000100060	; View/modify system configuration. IN: RDX = Function #, RAX = Variable. OUT: RAX = Result
-b_system_misc		equ 0x0000000000100068	; Call a misc system function. IN: RDX = Function #, RAX = Variable 1, RCX = Variable 2. Out: RAX = Result 1, RCX = Result 2
+b_system_config		equ 0x0000000000100060	; View/modify system configuration. IN: RCX = Function, RAX = Variable 1, RDX = Variable 2. OUT: RAX = Result
+b_system_misc		equ 0x0000000000100068	; Call a misc system function. IN: RCX = Function, RAX = Variable 1, RDX = Variable 2. Out: RAX = Result 1, RDX = Result 2
 
 
 ; Index for b_system_config calls

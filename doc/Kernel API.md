@@ -270,9 +270,10 @@ View or modify system configuration options
 
 Assembly Registers:
 
-	 IN:	RDX = Function #
+	 IN:	RCX = Function
 		RAX = Variable 1
-	OUT:	RAX = Result 1
+		RDX = Variable 2
+	OUT:	RAX = Result
 
 Function numbers come in pairs (one for reading a parameter, and one for writing a parameter). `b_system_config` should be called with a function alias and not a direct function number.
 
@@ -314,11 +315,11 @@ Call miscellaneous OS sub-functions
 
 Assembly Registers:
 
-	 IN:	RDX = Function #
+	 IN:	RCX = Function #
 		RAX = Variable 1
-		RCX = Variable 2
+		RDX = Variable 2
 	OUT:	RAX = Result 1
-		RCX = Result 2
+		RDX = Result 2
 
 Currently the following functions are supported:
 
@@ -334,7 +335,7 @@ Currently the following functions are supported:
 4. debug_dump_mem
 	- os_debug_dump_mem
 	- in rax: The start of the memory to dump
-	- in rcx: Number of bytes to dump
+	- in rdx: Number of bytes to dump
 5. debug_dump_rax
 	- Dump rax in Hex
 	- in rax: The Content that gets printed to memory
@@ -347,10 +348,10 @@ Currently the following functions are supported:
 	- out rax: The mac address
 8. mem_get_free
 	- Returns the number of 2 MiB pages that are available
-	- out rcx: Number of pages
+	- out rax: Number of pages
 9. smp_numcores
 	- Returns the number of cores in this computer
-	- out rcx: The number of cores
+	- out rax: The number of cores
 10. smp_queuelen
 	- Returns the number of items in the processing queue
 	- out rax: Number of items in processing queue

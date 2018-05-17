@@ -8,29 +8,30 @@
 
 ; -----------------------------------------------------------------------------
 ; b_system_config - View or modify system configuration options
-; IN:	RDX = Function #
-;	RAX = Variable
+; IN:	RCX = Function
+;	RAX = Variable 1
+;       RDX = Variable 2
 ; OUT:	RAX = Result
 ;	All other registers preserved
 b_system_config:
-       cmp rdx, 0
-       je b_system_config_timecounter
-       cmp rdx, 3
-       je b_system_config_networkcallback_get
-       cmp rdx, 4
-       je b_system_config_networkcallback_set
-       cmp rdx, 5
-       je b_system_config_clockcallback_get
-       cmp rdx, 6
-       je b_system_config_clockcallback_set
-       cmp rdx, 30
-       je b_system_config_mac
-       ; PCI
-       cmp rdx, 0x40
-       je b_system_config_pci_read
-       cmp rdx, 0x41
-       je b_system_config_pci_write
-       ret
+        cmp rcx, 0
+        je b_system_config_timecounter
+        cmp rcx, 3
+        je b_system_config_networkcallback_get
+        cmp rcx, 4
+        je b_system_config_networkcallback_set
+        cmp rcx, 5
+        je b_system_config_clockcallback_get
+        cmp rcx, 6
+        je b_system_config_clockcallback_set
+        cmp rcx, 30
+        je b_system_config_mac
+        ; PCI
+        cmp rcx, 0x40
+        je b_system_config_pci_read
+        cmp rcx, 0x41
+        je b_system_config_pci_write
+        ret
 
 b_system_config_timecounter:
         mov rax, [os_ClockCounter]	; Grab the timer counter value. It increments 8 times a second

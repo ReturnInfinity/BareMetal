@@ -7,7 +7,7 @@
 
 
 ; The PCI functions below require the bus ID, device/function ID, and register
-; ID to be passed in EAX as shown below:
+; ID to be passed in EDX as shown below:
 ;
 ; 0x 00 BS DF RG
 ; BS = Bus, 8 bits

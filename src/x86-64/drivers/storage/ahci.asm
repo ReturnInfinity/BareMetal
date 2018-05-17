@@ -9,7 +9,7 @@
 ; -----------------------------------------------------------------------------
 ahci_init:
 	; Probe for an AHCI hard drive controller
-	mov edx, 0x00000002		; Start a register 2 of the first device
+	mov edx, 0x00000002		; Start at register 2 of the first device
 
 ahci_init_probe_next:
 	call os_pci_read
@@ -52,7 +52,7 @@ ahci_init_nodrive:
 	shr edx, 1
 	add ebx, 0x80			; Each port has a 128 byte memory space
 	cmp ecx, 32
-	je ahci_init_error
+	je ahci_init_not_found
 	jmp ahci_init_nextport
 
 ; Configure the first port found with a drive attached
@@ -94,7 +94,7 @@ ahci_init_founddrive:
 	mov [hd1_size], eax		; in mebibytes (MiB)
 
 	cmp eax, 0
-	je ahci_init_error
+	je ahci_init_not_found
 
 	; Found a bootable drive
 	mov byte [os_DiskEnabled], 0x01
