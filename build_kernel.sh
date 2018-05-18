@@ -8,8 +8,8 @@ fi
 
 function print_help {
 	echo "Options"
-	echo -e "	-h, --help      : Print this help message."
-	echo -e "	-a, --arch ARCH : Build for a specified architecture."
+	echo "	-h, --help      : Print this help message."
+	echo "	-a, --arch ARCH : Build for a specified architecture."
 }
 
 eval set -- ${opts}
