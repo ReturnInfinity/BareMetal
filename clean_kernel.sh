@@ -19,7 +19,7 @@ arch="x86-64"
 
 while true; do
 	case "$1" in
-		-h | --help ) print_help; break;;
+		-h | --help ) print_help; exit 0;;
 		-a | --arch ) arch="$2"; shift 2;;
 		-- ) shift; break;;
 		* ) break;;
