@@ -8,8 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Initialize a Virtio NIC
-;  IN:	BL  = Bus number of the Virtio device
-;	CL  = Device/Slot number of the Virtio device
+;  IN:	EDX = Packed PCI address (as per pci.asm)
 net_virtio_init:
 	push rsi
 	push rdx

@@ -8,8 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Initialize an Intel 8254x NIC
-;  IN:	BL  = Bus number of the Intel device
-;	CL  = Device/Slot number of the Intel device
+;  IN:	EDX = Packed PCI address (as per pci.asm)
 net_i8254x_init:
 	push rsi
 	push rdx

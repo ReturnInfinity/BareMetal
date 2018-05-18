@@ -42,7 +42,7 @@ os_pci_read:
 ; os_pci_write -- Write to a register on a PCI device
 ;  IN:	EDX = Register to write to
 ;	EAX = Register value to be written
-; OUT:	Nothing, all other registers preserved
+; OUT:	Nothing, all registers preserved
 os_pci_write:
 	push rdx
 	push rax			; Save the value to be written

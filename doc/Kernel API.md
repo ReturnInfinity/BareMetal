@@ -315,7 +315,7 @@ Call miscellaneous OS sub-functions
 
 Assembly Registers:
 
-	 IN:	RCX = Function #
+	 IN:	RCX = Function
 		RAX = Variable 1
 		RDX = Variable 2
 	OUT:	RAX = Result 1
