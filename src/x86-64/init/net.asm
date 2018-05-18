@@ -9,35 +9,26 @@
 ; -----------------------------------------------------------------------------
 init_net:
 	; Search for a supported NIC
-	xor ebx, ebx			; Clear the Bus number
-	xor ecx, ecx			; Clear the Device/Slot number
-	mov edx, 2			; Register 2 for Class code/Subclass
+	mov edx, 0x00000002		; Register 2 for Class code/Subclass
 
 init_net_probe_next:
 	call os_pci_read
 	shr eax, 16			; Move the Class/Subclass code to AX
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver	; Found a Network Controller... now search for a driver
-	add ecx, 1
-	cmp ecx, 256			; Maximum 256 devices/functions per bus
-	je init_net_probe_next_bus
-	jmp init_net_probe_next
-
-init_net_probe_next_bus:
-	xor ecx, ecx
-	add ebx, 1
-	cmp ebx, 256			; Maximum 256 buses
-	je init_net_probe_not_found
+	add edx, 0x00000100		; Skip to next PCI device
+	cmp edx, 0x00FFFF00		; Maximum of 65536 devices
+	jge init_net_probe_not_found
 	jmp init_net_probe_next
 
 init_net_probe_find_driver:
-	xor edx, edx			; Register 0 for Device/Vendor ID
+	mov dl, 0x00			; Register 0 for Device/Vendor ID
 	call os_pci_read		; Read the Device/Vendor ID from the PCI device
 	mov r8d, eax			; Save the Device/Vendor ID in R8D
 	mov rsi, NIC_DeviceVendor_ID
 	lodsd				; Load a driver ID - Low half must be 0xFFFF
 init_net_probe_find_next_driver:
-	mov rdx, rax			; Save the driver ID
+	mov rbx, rax			; Save the driver ID
 init_net_probe_find_next_device:
 	lodsd				; Load a device and vendor ID from our list of supported NICs
 	test eax, eax			; 0x00000000 means we have reached the end of the list
@@ -49,9 +40,9 @@ init_net_probe_find_next_device:
 	jmp init_net_probe_find_next_device	; Check the next device
 
 init_net_probe_found:
-	cmp edx, 0x8254FFFF
+	cmp ebx, 0x8254FFFF
 	je init_net_probe_found_i8254x
-	cmp edx, 0x1AF4FFFF
+	cmp ebx, 0x1AF4FFFF
 	je init_net_probe_found_virtio
 	jmp init_net_probe_not_found
 

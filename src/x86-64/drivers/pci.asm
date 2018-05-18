@@ -6,33 +6,33 @@
 ; =============================================================================
 
 
+; The PCI functions below require the bus ID, device/function ID, and register
+; ID to be passed in EDX as shown below:
+;
+; 0x 00 BS DF RG
+; BS = Bus, 8 bits
+; DF = Device/Function, 8 bits
+; RG = Register, 8 bits, 6 used, upper 2 bits will be cleared if set
+
+
 ; -----------------------------------------------------------------------------
 ; os_pci_read -- Read from a register on a PCI device
-;  IN:	BL  = Bus number
-;	CL  = Device/Slot/Function number
-;	DL  = Register number (0-15)
-; OUT:	EAX = Register information
+;  IN:	EDX = Register to read from
+; OUT:	EAX = Register value that was read
 ;	All other registers preserved
 os_pci_read:
 	push rdx
-	push rcx
-	push rbx
 
-	shl ebx, 16			; Move Bus number to bits 23 - 16
-	shl ecx, 8			; Move Device/Slot/Fuction number to bits 15 - 8
-	mov bx, cx
-	shl edx, 2
-	mov bl, dl
-	and ebx, 0x00FFFFFF		; Clear bits 31 - 24
-	or ebx, 0x80000000		; Set bit 31
-	mov eax, ebx
+	shl dl, 2			; Shift PCI register ID left two bits
+	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
+	or edx, 0x80000000		; Set bit 31
+	mov eax, edx			; We need dx so save value to EAX for use
+
 	mov dx, PCI_CONFIG_ADDRESS
 	out dx, eax
 	mov dx, PCI_CONFIG_DATA
 	in eax, dx
 
-	pop rbx
-	pop rcx
 	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
@@ -40,33 +40,24 @@ os_pci_read:
 
 ; -----------------------------------------------------------------------------
 ; os_pci_write -- Write to a register on a PCI device
-;  IN:	BL  = Bus number
-;	CL  = Device/Slot/Function number
-;	DL  = Register number (0-15)
-;	EAX = Register information
+;  IN:	EDX = Register to write to
+;	EAX = Register value to be written
 ; OUT:	Nothing, all other registers preserved
 os_pci_write:
 	push rdx
-	push rcx
-	push rbx
-	push rax
+	push rax			; Save the value to be written
 
-	shl ebx, 16			; Move Bus number to bits 23 - 16
-	shl ecx, 8			; Move Device/Slot/Fuction number to bits 15 - 8
-	mov bx, cx
-	shl edx, 2
-	mov bl, dl
-	and ebx, 0x00FFFFFF		; Clear bits 31 - 24
-	or ebx, 0x80000000		; Set bit 31
-	mov eax, ebx
+	shl dl, 2			; Shift PCI register ID left two bits
+	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
+	or edx, 0x80000000		; Set bit 31
+	mov eax, edx			; We need dx so save value to EAX for use
+
 	mov dx, PCI_CONFIG_ADDRESS
 	out dx, eax
-	pop rax
+	pop rax				; Restore the value and write it
 	mov dx, PCI_CONFIG_DATA
 	out dx, eax
 
-	pop rbx
-	pop rcx
 	pop rdx
 	ret
 ; -----------------------------------------------------------------------------

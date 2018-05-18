@@ -30,33 +30,33 @@ os_delay_loop:
 
 ; -----------------------------------------------------------------------------
 ; b_system_misc - Call misc OS sub-functions
-; IN:	RDX = Function #
+; IN:	RCX = Function
 ;	RAX = Variable 1
-;	RCX = Variable 2
+;	RDX = Variable 2
 ; OUT:	RAX = Result 1, dependant on system call
-;	RCX = Result 2, dependant on system call
+;	RDX = Result 2, dependant on system call
 b_system_misc:
-;	cmp rdx, X
+;	cmp rcx, X
 ;	je b_system_misc_
-	cmp rdx, 1
+	cmp rcx, 1
 	je b_system_misc_smp_get_id
-	cmp rdx, 2
+	cmp rcx, 2
 	je b_system_misc_smp_lock
-	cmp rdx, 3
+	cmp rcx, 3
 	je b_system_misc_smp_unlock
-	cmp rdx, 4
+	cmp rcx, 4
 	je b_system_misc_debug_dump_mem
-	cmp rdx, 5
+	cmp rcx, 5
 	je b_system_misc_debug_dump_rax
-	cmp rdx, 6
+	cmp rcx, 6
 	je b_system_misc_delay
-	cmp rdx, 7
+	cmp rcx, 7
 	je b_system_misc_ethernet_status
-	cmp rdx, 8
+	cmp rcx, 8
 	je b_system_misc_mem_get_free
-	cmp rdx, 9
+	cmp rcx, 9
 	je b_system_misc_smp_numcores
-	cmp rdx, 256
+	cmp rcx, 256
 	je b_system_misc_reset
 	ret
 
@@ -73,7 +73,10 @@ b_system_misc_smp_unlock:
 	ret
 
 b_system_misc_debug_dump_mem:
+	push rcx
+	mov rcx, rdx
 	call os_debug_dump_mem
+	pop rcx
 	ret
 
 b_system_misc_debug_dump_rax:

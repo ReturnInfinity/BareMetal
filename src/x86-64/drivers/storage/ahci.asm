@@ -8,26 +8,17 @@
 
 ; -----------------------------------------------------------------------------
 ahci_init:
-; Probe for an AHCI hard drive controller
-	xor ebx, ebx			; Clear the Bus number
-	xor ecx, ecx			; Clear the Device/Slot number
-	mov edx, 2			; Register 2 for Class code/Subclass
+	; Probe for an AHCI hard drive controller
+	mov edx, 0x00000002		; Start at register 2 of the first device
 
 ahci_init_probe_next:
 	call os_pci_read
 	shr eax, 16			; Move the Class/Subclass code to AX
 	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
 	je ahci_init_found		; Found a SATA Controller
-	inc ecx
-	cmp ecx, 256			; Maximum 256 devices/functions per bus
-	je ahci_init_probe_next_bus
-	jmp ahci_init_probe_next
-
-ahci_init_probe_next_bus:
-	xor ecx, ecx
-	inc ebx
-	cmp ebx, 256			; Maximum 256 buses
-	je ahci_init_error
+	add edx, 0x00000100		; Skip to next PCI device
+	cmp edx, 0x00FFFF00		; Maximum of 65536 devices
+	jge ahci_init_not_found
 	jmp ahci_init_probe_next
 
 ahci_init_found:
@@ -61,7 +52,7 @@ ahci_init_nodrive:
 	shr edx, 1
 	add ebx, 0x80			; Each port has a 128 byte memory space
 	cmp ecx, 32
-	je ahci_init_error
+	je ahci_init_not_found
 	jmp ahci_init_nextport
 
 ; Configure the first port found with a drive attached
@@ -103,12 +94,12 @@ ahci_init_founddrive:
 	mov [hd1_size], eax		; in mebibytes (MiB)
 
 	cmp eax, 0
-	je ahci_init_error
+	je ahci_init_not_found
 
 	; Found a bootable drive
 	mov byte [os_DiskEnabled], 0x01
 
-ahci_init_error:
+ahci_init_not_found:
 	ret
 ; -----------------------------------------------------------------------------
 
