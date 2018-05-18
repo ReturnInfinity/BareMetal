@@ -39,6 +39,10 @@ void b_system_misc(unsigned long function, void *var1, void *var2);
 #define CLOCKCALLBACK_GET    5
 #define CLOCKCALLBACK_SET    6
 #define MAC                  30
+#define PCI_READ             0x40
+#define PCI_WRITE            0x41
+#define STDOUT_SET           0x42
+#define STDOUT_GET           0x43
 
 // Index for b_system_misc calls
 #define SMP_GET_ID       1

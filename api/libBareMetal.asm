@@ -31,7 +31,11 @@ networkcallback_get	equ 3
 networkcallback_set	equ 4
 clockcallback_get	equ 5
 clockcallback_set	equ 6
-
+mac			equ 30
+pci_read		equ 0x40
+pci_write		equ 0x41
+stdout_set		equ 0x42
+stdout_get		equ 0x43
 
 ; Index for b_system_misc calls
 smp_get_id		equ 1
