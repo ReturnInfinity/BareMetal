@@ -28,7 +28,7 @@ init_net_probe_find_driver:
 	mov rsi, NIC_DeviceVendor_ID
 	lodsd				; Load a driver ID - Low half must be 0xFFFF
 init_net_probe_find_next_driver:
-	mov rdx, rax			; Save the driver ID
+	mov rbx, rax			; Save the driver ID
 init_net_probe_find_next_device:
 	lodsd				; Load a device and vendor ID from our list of supported NICs
 	test eax, eax			; 0x00000000 means we have reached the end of the list
@@ -40,9 +40,9 @@ init_net_probe_find_next_device:
 	jmp init_net_probe_find_next_device	; Check the next device
 
 init_net_probe_found:
-	cmp edx, 0x8254FFFF
+	cmp ebx, 0x8254FFFF
 	je init_net_probe_found_i8254x
-	cmp edx, 0x1AF4FFFF
+	cmp ebx, 0x1AF4FFFF
 	je init_net_probe_found_virtio
 	jmp init_net_probe_not_found
 
