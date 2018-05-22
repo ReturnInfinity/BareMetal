@@ -31,6 +31,11 @@ b_system_config:
 	je b_system_config_pci_read
 	cmp rcx, 0x41
 	je b_system_config_pci_write
+	; Standard Output
+	cmp rcx, 0x42
+	je b_system_config_stdout_set
+	cmp rcx, 0x43
+	je b_system_config_stdout_get
 	ret
 
 b_system_config_timecounter:
@@ -64,6 +69,15 @@ b_system_config_pci_read:
 b_system_config_pci_write:
 	call os_pci_write
 	ret
+
+b_system_config_stdout_get:
+	mov rax, qword [0x100018]
+	ret
+
+b_system_config_stdout_set:
+	mov qword [0x100018], rax
+	ret
+
 ; -----------------------------------------------------------------------------
 
 
