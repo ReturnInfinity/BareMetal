@@ -304,6 +304,16 @@ Currently the following functions are supported:
 
    get the current mac address (or 0 if ethernet is down)
 
+ - 50: disk info
+
+   Queries a disk and returns a 512-byte block of data from the device.
+   
+   Useful segments:
+   	10-19    Serial number (20 ASCII characters)
+	23-26    Firmware revision (8 ASCII characters)
+	27-46    Model number (40 ASCII characters)
+	100-103    Total Number of User Addressable Sectors for the 48-bit Address feature set.
+
 every function that gets something sets RAX with the result
 
 every function that sets something gets the value from RAX
