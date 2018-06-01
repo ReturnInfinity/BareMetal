@@ -309,10 +309,11 @@ Currently the following functions are supported:
    Queries a disk and returns a 512-byte block of data from the device.
    
    Useful segments:
-   	10-19    Serial number (20 ASCII characters)
-	23-26    Firmware revision (8 ASCII characters)
-	27-46    Model number (40 ASCII characters)
-	100-103    Total Number of User Addressable Sectors for the 48-bit Address feature set.
+   	- 20-39    Serial number (20 ASCII characters)
+	- 46-52    Firmware revision (8 ASCII characters)
+	- 54-93    Model number (40 ASCII characters)
+	- 200-207    Total Number of User Addressable Sectors
+	- 234-235    Words per Logical Sector
 
 every function that gets something sets RAX with the result
 
