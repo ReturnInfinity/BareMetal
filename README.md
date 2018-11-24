@@ -1,3 +1,5 @@
+# This project has been archived and marked as read-only. The BareMetal kernel is now hosted on [GitLab](https://gitlab.com/ReturnInfinity/BareMetal).
+
 # BareMetal
 
 _Just enough kernel_
