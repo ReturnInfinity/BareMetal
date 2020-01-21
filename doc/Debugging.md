@@ -79,9 +79,11 @@ QEMU has a built in monitor to allow you to query the state of the VM.
 
 Some useful commands:
 
-	info registers
-	info cpus
-	info mem
+	info registers		the CPU registers
+	info cpus		list the CPUs
+	info mem		list the active virtual memory mappings
+	info block		block devices such as hard drives, floppy drives, cdrom
+	info blockstats		read and write statistics on block devices
 
 Dumping memory:
 

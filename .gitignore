@@ -6,13 +6,4 @@
 *.bin
 *.asm~
 *.md~
-bmfs.image
-kernel-debug.txt
-Alloy
-BMFS
-Pure64
-bin
-include
-lib
-kernel-real
-kernel-fake
+bin/*
