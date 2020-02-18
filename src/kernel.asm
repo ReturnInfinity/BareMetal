@@ -67,9 +67,9 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	mov ebx, eax			; Save the APIC ID
 
 	; Set up the stack
-	shl rax, 13			; Shift left 13 bits for an 8 KiB stack
-	add rax, [os_StackBase]		; The stack decrements when you "push", start at 8 KiB in
-	add rax, 8192
+	shl rax, 16			; Shift left 16 bits for an 64 KiB stack
+	add rax, [os_StackBase]		; The stack decrements when you "push", start at 64 KiB in
+	add rax, 65536
 	mov rsp, rax
 
 	; Clear the entry in the work table
