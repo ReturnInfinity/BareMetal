@@ -102,20 +102,6 @@ ahci_init_config_active:
 	stosd				; Offset 10h: PxIS – Port x Interrupt Status
 	stosd				; Offset 14h: PxIE – Port x Interrupt Enable
 
-	push rdx
-	push rdi
-	mov rdi, 0x200000		; Store ID data here
-	mov rdx, rcx			; Copy drive ID to RDX
-	call ahci_id
-	mov rax, [rdi+200]		; Word 100 has 8 bytes for Number of User Addressable Logical Sectors
-	shr rax, 11
-	call os_debug_dump_eax
-	mov eax, [rdi+234]		; Word 117 has 4 bytes for Logical sector size
-	call os_debug_dump_eax
-	
-	pop rdi
-	pop rdx
-
 ahci_init_config_active_skip:
 	inc rcx
 	jmp ahci_init_config_active
