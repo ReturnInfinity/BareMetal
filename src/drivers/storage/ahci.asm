@@ -22,7 +22,7 @@ ahci_init_probe_next:
 	jmp ahci_init_probe_next
 
 ahci_init_found:
-	mov dl, 9
+	mov dl, 9			; Read register 9 for BAR5
 	xor eax, eax
 	call os_pci_read		; BAR5 (AHCI Base Address Register)
 	mov [ahci_base], rax
@@ -102,6 +102,20 @@ ahci_init_config_active:
 	stosd				; Offset 10h: PxIS – Port x Interrupt Status
 	stosd				; Offset 14h: PxIE – Port x Interrupt Enable
 
+	push rdx
+	push rdi
+	mov rdi, 0x200000		; Store ID data here
+	mov rdx, rcx			; Copy drive ID to RDX
+	call ahci_id
+	mov rax, [rdi+200]		; Word 100 has 8 bytes for Number of User Addressable Logical Sectors
+	shr rax, 11
+	call os_debug_dump_eax
+	mov eax, [rdi+234]		; Word 117 has 4 bytes for Logical sector size
+	call os_debug_dump_eax
+	
+	pop rdi
+	pop rdx
+
 ahci_init_config_active_skip:
 	inc rcx
 	jmp ahci_init_config_active
@@ -133,6 +147,9 @@ ahci_read:
 
 	bt dword [ahci_PA], edx		; Is the requested disk marked as active?
 	jnc achi_read_error		; If not, bail out
+	
+	cmp rcx, 8192			; Are we trying to read more that 4MiB?
+	jge achi_read_error		; If so, bail out
 
 	push rcx			; Save the sector count
 	push rdi			; Save the destination memory address
@@ -200,7 +217,7 @@ ahci_read:
 	mov [rsi+AHCI_PxCI], eax
 
 	xor eax, eax
-	bts eax, 4			; FIS Recieve Enable (FRE)
+	bts eax, 4			; FIS Receive Enable (FRE)
 	bts eax, 0			; Start (ST)
 	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
@@ -258,6 +275,9 @@ ahci_write:
 
 	bt dword [ahci_PA], edx		; Is the requested disk marked as active?
 	jnc achi_write_error		; If not, bail out
+	
+	cmp rcx, 8192			; Are we trying to write more that 4MiB?
+	jge achi_write_error		; If so, bail out
 
 	push rcx			; Save the sector count
 	push rsi			; Save the source memory address
@@ -325,7 +345,7 @@ ahci_write:
 	mov [rsi+AHCI_PxCI], eax
 
 	xor eax, eax
-	bts eax, 4			; FIS Recieve Enable (FRE)
+	bts eax, 4			; FIS Receive Enable (FRE)
 	bts eax, 0			; Start (ST)
 	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
@@ -410,7 +430,7 @@ ahci_id:
 	stosq				; the rest of the table can be clear
 	stosq
 
-	; PRDT - pysical region descriptor table
+	; PRDT - physical region descriptor table
 	mov rdi, ahci_CMD + 0x80
 	pop rax				; Restore the destination memory address
 	stosd				; Data Base Address
@@ -428,7 +448,7 @@ ahci_id:
 	mov [rsi+AHCI_PxCI], eax
 
 	xor eax, eax
-	bts eax, 4			; FIS Recieve Enable (FRE)
+	bts eax, 4			; FIS Receive Enable (FRE)
 	bts eax, 0			; Start (ST)
 	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
 
