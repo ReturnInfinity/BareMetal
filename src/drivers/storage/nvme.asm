@@ -25,8 +25,14 @@ nvme_init_found:
 	mov dl, 4			; Read register 4 for BAR0
 	xor eax, eax
 	call os_pci_read		; BAR0 (NVMe Base Address Register)
+	; TODO clear the lower bits
+	sub rax, 4
 	mov [os_NVMe_Base], rax
 	mov rsi, rax			; RSI holds the ABAR
+
+	; Check for a valid version number (Bits 31:16 should be greater than 0)
+	mov eax, [rsi+NVMe_VS]
+	; TODO
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
@@ -39,37 +45,70 @@ nvme_init_found:
 	bts eax, 2
 	call os_pci_write
 
+;	mov eax, [rsi+NVMe_CSTS]
+;	call os_debug_dump_eax
+
+	; Disable the controller
+	mov eax, [rsi+NVMe_CC]
+	btc eax, 0			; Set CC.EN to '0'
+	mov [rsi+NVMe_CC], eax
+	
 	; Reset the controller
 	mov eax, 0x4E564D65		; String is "NVMe"
-	stosd [rsi+NVMe_NSSR], eax	; Reset
+	mov [rsi+NVMe_NSSR], eax	; Reset
 
 nvme_init_reset_wait:
-	lodsd eax, [rsi+NVMe_CSTS]
+	mov eax, [rsi+NVMe_CSTS]
 	bt eax, 0			; Wait for CSTS.RDY to become '0'
 	jc nvme_init_reset_wait
-	
+
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x00010001		; Bits 27:16 is ACQS and bits 11:00 is ASQS
-	stosd [rsi+NVMe_AQA], eax	; Set ACQS and ASQS to two entries each
-	; TODO - Need proper locations. USing the 32KB free at 0x8000 for testing
+	mov [rsi+NVMe_AQA], eax	; Set ACQS and ASQS to two entries each
+	; TODO - Need proper locations. Using the 32KB free at 0x8000 for testing
 	mov rax, 0x8000			; Bits 63:12 define the ASQB
-	stosq [rsi+NVMe_ASQ], rax
+	mov [rsi+NVMe_ASQ], rax
 	mov rax, 0x9000			; Bits 63:12 define the ACQB
-	stosq [rsi+NVMe_ACQ], rax
+	mov [rsi+NVMe_ACQ], rax
 	
 	; Check CAP.CSS and set CC.CSS accordingly
-;	lodsq rax, [rsi+NVMe_CAP]
-;	bt rax, 7			; is bit 7 set? If so set CC.CSS to 111b
-;	bt rax, 6			; is bit 6 set? If so set CC.CSS to 110b
-;	else set CC.CSS to 000b
-	
-	; Enable the controller
-	lodsd eax, [rsi+NVMe_CC]
-	bts eax, 0			; Set CC.EN to '1'
-	stosd [rsi+NVMe_CC], eax
+	mov rax, [rsi+NVMe_CAP]		; CAP.CSS are bits 44:37
+	mov ebx, [rsi+NVMe_CC]		; CC.CSS are bits 06:04
 
+	bt rax, 44
+	jc nvme_init_adminonly		; Is bit 7 of CAP.CSS set? If so set CC.CSS to 111b
+	bt rax, 43
+	jc nvme_init_allsets		; Is bit 6 of CAP.CSS set? If so set CC.CSS to 110b
+	btc ebx, 4
+	btc ebx, 5
+	btc ebx, 6
+
+	jmp nvme_init_write_CC		; Otherwise set CC.CSS to 000b	
+
+nvme_init_adminonly:
+	bts ebx, 4
+	bts ebx, 5
+	bts ebx, 6
+	jmp nvme_init_write_CC
+
+nvme_init_allsets:
+	btc ebx, 4
+	bts ebx, 5
+	bts ebx, 6
+	
+nvme_init_write_CC:
+;	mov [rsi+NVMe_CC], ebx
+
+	; Enable the controller
+	mov eax, [rsi+NVMe_CC]
+	bts eax, 0			; Set CC.EN to '1'
+	mov [rsi+NVMe_CC], eax
+
+	mov eax, [rsi+NVMe_CSTS]
+	call os_debug_dump_eax
+	
 nvme_init_enable_wait:
-	lodsd eax, [rsi+NVMe_CSTS]
+	mov eax, [rsi+NVMe_CSTS]
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
 	jnc nvme_init_enable_wait
 

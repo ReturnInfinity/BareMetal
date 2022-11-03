@@ -64,6 +64,7 @@ os_net_RXBytes:		equ os_SystemVariables + 152
 os_net_RXPackets:	equ os_SystemVariables + 160
 os_hdd_BytesRead:	equ os_SystemVariables + 168
 os_hdd_BytesWrite:	equ os_SystemVariables + 176
+os_NVMe_Base:		equ os_SystemVariables + 180
 
 
 ; DD - Starting at offset 256, increments by 4
@@ -92,6 +93,7 @@ os_EthernetBuffer_C1:	equ os_SystemVariables + 781	; Counter 1 for the Ethernet 
 os_EthernetBuffer_C2:	equ os_SystemVariables + 782	; Counter 2 for the Ethernet RX Ring Buffer
 os_DiskEnabled:		equ os_SystemVariables + 783
 os_DiskActivity:	equ os_SystemVariables + 784
+os_NVMeIRQ:		equ os_SystemVariables + 785
 
 
 ; Misc
