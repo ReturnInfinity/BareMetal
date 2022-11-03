@@ -25,10 +25,16 @@ nvme_init_found:
 	mov dl, 4			; Read register 4 for BAR0
 	xor eax, eax
 	call os_pci_read		; BAR0 (NVMe Base Address Register)
-	; TODO clear the lower bits
-	sub rax, 4
+	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
 	mov [os_NVMe_Base], rax
 	mov rsi, rax			; RSI holds the ABAR
+
+	; Mark memory as uncacheable
+	; TODO cleanup to do it automatically
+	mov rdi, 0x00013fa8
+	mov rax, [rdi]
+	bts rax, 4	; Set PCD to disable caching
+	mov [rdi], rax
 
 	; Check for a valid version number (Bits 31:16 should be greater than 0)
 	mov eax, [rsi+NVMe_VS]
@@ -45,14 +51,16 @@ nvme_init_found:
 	bts eax, 2
 	call os_pci_write
 
-;	mov eax, [rsi+NVMe_CSTS]
-;	call os_debug_dump_eax
+	mov edi, 0x8000
+	mov ecx, 1024			; Clear 8 KiB
+	xor eax, eax
+	rep stosq
 
 	; Disable the controller
 	mov eax, [rsi+NVMe_CC]
 	btc eax, 0			; Set CC.EN to '0'
 	mov [rsi+NVMe_CC], eax
-	
+
 	; Reset the controller
 	mov eax, 0x4E564D65		; String is "NVMe"
 	mov [rsi+NVMe_NSSR], eax	; Reset
@@ -74,43 +82,42 @@ nvme_init_reset_wait:
 	; Check CAP.CSS and set CC.CSS accordingly
 	mov rax, [rsi+NVMe_CAP]		; CAP.CSS are bits 44:37
 	mov ebx, [rsi+NVMe_CC]		; CC.CSS are bits 06:04
-
 	bt rax, 44
-	jc nvme_init_adminonly		; Is bit 7 of CAP.CSS set? If so set CC.CSS to 111b
+	jc nvme_init_adminonly		; Is bit 7 of CAP.CSS set? 
 	bt rax, 43
-	jc nvme_init_allsets		; Is bit 6 of CAP.CSS set? If so set CC.CSS to 110b
+	jc nvme_init_allsets		; Is bit 6 of CAP.CSS set?
 	btc ebx, 4
 	btc ebx, 5
 	btc ebx, 6
-
-	jmp nvme_init_write_CC		; Otherwise set CC.CSS to 000b	
-
-nvme_init_adminonly:
+	jmp nvme_init_write_CC		; Otherwise we set CC.CSS to 000b
+nvme_init_adminonly:			; Set CC.CSS to 111b
 	bts ebx, 4
 	bts ebx, 5
 	bts ebx, 6
 	jmp nvme_init_write_CC
-
-nvme_init_allsets:
+nvme_init_allsets:			; Set CC.CSS to 110b
 	btc ebx, 4
 	bts ebx, 5
 	bts ebx, 6
-	
 nvme_init_write_CC:
-;	mov [rsi+NVMe_CC], ebx
+	ror ebx, 16
+	mov bl, 0x46			; Set the minimum IOCQES (23:20) and IOSQES (19:16) size
+	rol ebx, 16
+	mov [rsi+NVMe_CC], ebx		; Write the new CC value
 
 	; Enable the controller
 	mov eax, [rsi+NVMe_CC]
 	bts eax, 0			; Set CC.EN to '1'
 	mov [rsi+NVMe_CC], eax
-
-	mov eax, [rsi+NVMe_CSTS]
-	call os_debug_dump_eax
 	
 nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
 	jnc nvme_init_enable_wait
+
+	;TODO
+	;get the identity structure
+	;parse out the serial, model, firmware (bits 71:23)
 
 nvme_init_not_found:
 	ret
