@@ -6,6 +6,13 @@
 ; =============================================================================
 
 
+; Memory Usage (temporary!)
+; 0x8000 - Admin Submission Queue Base Address
+; 0x9000 - Admin Completion Queue Base Address
+; 0xA000 - I/O Submission Queue Base Address
+; 0xB000 - I/O Completion Queue Base Address
+; 0xC000 - Identify
+
 ; -----------------------------------------------------------------------------
 nvme_init:
 	; Probe for an NVMe controller
@@ -30,7 +37,7 @@ nvme_init_found:
 	mov rsi, rax			; RSI holds the ABAR
 
 	; Mark memory as uncacheable
-	; TODO cleanup to do it automatically
+	; TODO cleanup to do it automatically (for AHCI too!)
 	mov rdi, 0x00013fa8
 	mov rax, [rdi]
 	bts rax, 4	; Set PCD to disable caching
@@ -38,7 +45,10 @@ nvme_init_found:
 
 	; Check for a valid version number (Bits 31:16 should be greater than 0)
 	mov eax, [rsi+NVMe_VS]
-	; TODO
+	ror eax, 16			; Rotate EAX so MJR is bits 15:00
+	cmp al, 0x01
+	jl nvme_init_not_found
+	; TODO Store MJR, MNR, and TER for later reference
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
@@ -51,8 +61,10 @@ nvme_init_found:
 	bts eax, 2
 	call os_pci_write
 
+	; Clear 32 KiB of memory for the NVMe tables
+	; TODO Define in SysVars instead
 	mov edi, 0x8000
-	mov ecx, 1024			; Clear 8 KiB
+	mov ecx, 4096
 	xor eax, eax
 	rep stosq
 
@@ -115,9 +127,9 @@ nvme_init_enable_wait:
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
 	jnc nvme_init_enable_wait
 
-	;TODO
-	;get the identity structure
-	;parse out the serial, model, firmware (bits 71:23)
+	; TODO
+	; get the identity structure
+	; parse out the serial, model, firmware (bits 71:23)
 
 nvme_init_not_found:
 	ret
