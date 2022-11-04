@@ -131,7 +131,7 @@ nvme_init_enable_wait:
 	; TODO
 	; get the identity structure
 	mov rdi, 0x8000
-	mov eax, 0x00010006		; CDW0 CID 1, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
+	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
 	stosd
 	xor eax, eax
 	stosd				; CDW1 NSID cleared
@@ -142,7 +142,9 @@ nvme_init_enable_wait:
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
+	mov eax, 1
 	stosd				; CDW10 CNS 0
+	xor eax, eax
 	stosd				; CDW11
 	stosd				; CDW12
 	stosd				; CDW13
@@ -150,9 +152,9 @@ nvme_init_enable_wait:
 	stosd				; CDW15
 
 	mov eax, 0
-	mov [rsi+0x1004]		; QEMU writes here???
+	mov [rsi+0x1004], eax		; Write the head
 	mov eax, 1
-	mov [rsi+0x1000]
+	mov [rsi+0x1000], eax		; Write the tail
 
 	; parse out the serial, model, firmware (bits 71:23)
 
