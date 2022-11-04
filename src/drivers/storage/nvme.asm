@@ -84,7 +84,7 @@ nvme_init_reset_wait:
 
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x00010001		; Bits 27:16 is ACQS and bits 11:00 is ASQS
-	mov [rsi+NVMe_AQA], eax	; Set ACQS and ASQS to two entries each
+	mov [rsi+NVMe_AQA], eax		; Set ACQS and ASQS to two entries each
 	; TODO - Need proper locations. Using the 32KB free at 0x8000 for testing
 	mov rax, 0x8000			; Bits 63:12 define the ASQB
 	mov [rsi+NVMe_ASQ], rax
@@ -115,12 +115,13 @@ nvme_init_write_CC:
 	ror ebx, 16
 	mov bl, 0x46			; Set the minimum IOCQES (23:20) and IOSQES (19:16) size
 	rol ebx, 16
-	mov [rsi+NVMe_CC], ebx		; Write the new CC value
+	bts ebx, 0			; Set CC.EN to '1'
+	mov [rsi+NVMe_CC], ebx		; Write the new CC value and enable controller
 
-	; Enable the controller
-	mov eax, [rsi+NVMe_CC]
-	bts eax, 0			; Set CC.EN to '1'
-	mov [rsi+NVMe_CC], eax
+;	; Enable the controller
+;	mov eax, [rsi+NVMe_CC]
+;	bts eax, 0			; Set CC.EN to '1'
+;	mov [rsi+NVMe_CC], eax
 	
 nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
@@ -129,6 +130,30 @@ nvme_init_enable_wait:
 
 	; TODO
 	; get the identity structure
+	mov rdi, 0x8000
+	mov eax, 0x00010006		; CDW0 CID 1, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
+	stosd
+	xor eax, eax
+	stosd				; CDW1 NSID cleared
+	stosd				; CDW2
+	stosd				; CDW3
+	stosq				; CDW4-5 MPTR	
+	mov rax, 0xC000
+	stosq				; CDW6-7 DPTR1
+	xor eax, eax
+	stosq				; CDW8-9 DPTR2
+	stosd				; CDW10 CNS 0
+	stosd				; CDW11
+	stosd				; CDW12
+	stosd				; CDW13
+	stosd				; CDW14
+	stosd				; CDW15
+
+	mov eax, 0
+	mov [rsi+0x1004]		; QEMU writes here???
+	mov eax, 1
+	mov [rsi+0x1000]
+
 	; parse out the serial, model, firmware (bits 71:23)
 
 nvme_init_not_found:
