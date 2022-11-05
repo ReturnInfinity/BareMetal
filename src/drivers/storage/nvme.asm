@@ -83,7 +83,9 @@ nvme_init_reset_wait:
 	jc nvme_init_reset_wait
 
 	; Configure AQA, ASQ, and ACQ
-	mov eax, 0x00010001		; Bits 27:16 is ACQS and bits 11:00 is ASQS
+	mov eax, 0x00070007		; Bits 27:16 is ACQS and bits 11:00 is ASQS
+; 8 commands
+;	mov eax, 0x00010001		; Bits 27:16 is ACQS and bits 11:00 is ASQS
 	mov [rsi+NVMe_AQA], eax		; Set ACQS and ASQS to two entries each
 	; TODO - Need proper locations. Using the 32KB free at 0x8000 for testing
 	mov rax, 0x8000			; Bits 63:12 define the ASQB
@@ -91,7 +93,7 @@ nvme_init_reset_wait:
 	mov rax, 0x9000			; Bits 63:12 define the ACQB
 	mov [rsi+NVMe_ACQ], rax
 	
-	; Check CAP.CSS and set CC.CSS accordingly
+	; Check CAP.CSS and set CC.CSS accordingly. Enable the controller too.
 	mov rax, [rsi+NVMe_CAP]		; CAP.CSS are bits 44:37
 	mov ebx, [rsi+NVMe_CC]		; CC.CSS are bits 06:04
 	bt rax, 44
@@ -117,11 +119,6 @@ nvme_init_write_CC:
 	rol ebx, 16
 	bts ebx, 0			; Set CC.EN to '1'
 	mov [rsi+NVMe_CC], ebx		; Write the new CC value and enable controller
-
-;	; Enable the controller
-;	mov eax, [rsi+NVMe_CC]
-;	bts eax, 0			; Set CC.EN to '1'
-;	mov [rsi+NVMe_CC], eax
 	
 nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
@@ -129,7 +126,7 @@ nvme_init_enable_wait:
 	jnc nvme_init_enable_wait
 
 	; TODO
-	; get the identity structure
+	; Get the identity structure
 	mov rdi, 0x8000
 	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
 	stosd
@@ -143,7 +140,7 @@ nvme_init_enable_wait:
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
 	mov eax, 1
-	stosd				; CDW10 CNS 0
+	stosd				; CDW10 CNS 1 (Identify Controller)
 	xor eax, eax
 	stosd				; CDW11
 	stosd				; CDW12
@@ -151,12 +148,66 @@ nvme_init_enable_wait:
 	stosd				; CDW14
 	stosd				; CDW15
 
+;	mov eax, 0
+;	mov [rsi+0x1004], eax		; Write the head
+;	mov eax, 1
+;	mov [rsi+0x1000], eax		; Write the tail
+	
+	; Create I/O Completion Queue
+	mov eax, 0x00010005		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Completion Queue (0x05)
+	stosd
+	xor eax, eax
+	stosd				; CDW1 NSID cleared
+	stosd				; CDW2
+	stosd				; CDW3
+	stosq				; CDW4-5 MPTR	
+	mov rax, 0xB000
+	stosq				; CDW6-7 DPTR1
+	xor eax, eax
+	stosq				; CDW8-9 DPTR2
+	mov eax, 0x00010001
+	stosd				; CDW10 QSIZE (31-16), QID (15-0)
+	mov eax, 1
+	stosd				; CDW11 PC (0)
+	xor eax, eax
+	stosd				; CDW12
+	stosd				; CDW13
+	stosd				; CDW14
+	stosd				; CDW15
+
+	; Create I/O Submission Queue
+	mov eax, 0x00010001		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Submission Queue (0x01)
+	stosd
+	xor eax, eax
+	stosd				; CDW1 NSID cleared
+	stosd				; CDW2
+	stosd				; CDW3
+	stosq				; CDW4-5 MPTR	
+	mov rax, 0xA000
+	stosq				; CDW6-7 DPTR1
+	xor eax, eax
+	stosq				; CDW8-9 DPTR2
+	mov eax, 0x00010001
+	stosd				; CDW10 QSIZE (31-16), QID (15-0)
+	mov eax, 0x00010001
+	stosd				; CDW11 CQID (31-16), PC (0)
+	xor eax, eax
+	stosd				; CDW12
+	stosd				; CDW13
+	stosd				; CDW14
+	stosd				; CDW15
+
 	mov eax, 0
 	mov [rsi+0x1004], eax		; Write the head
-	mov eax, 1
+	mov eax, 3
 	mov [rsi+0x1000], eax		; Write the tail
 
-	; parse out the serial, model, firmware (bits 71:23)
+
+	; TODO
+	; parse out the serial (bytes 23:04), model (63:24), firmware (71:64)
+	; Copy to new location, search from end and change all 0x20's to 0x00's
+
+	; Process admin completion ring
 
 nvme_init_not_found:
 	ret
@@ -165,7 +216,8 @@ nvme_init_not_found:
 
 ; -----------------------------------------------------------------------------
 ; nvme_read -- Read data from a NVMe device
-
+; IN:	
+; OUT:	
 nvme_read:
 	ret
 ; -----------------------------------------------------------------------------
@@ -173,7 +225,8 @@ nvme_read:
 
 ; -----------------------------------------------------------------------------
 ; nvme_write -- Write data to a NVMe device
-
+; IN:	
+; OUT:	
 nvme_write:
 	ret
 ; -----------------------------------------------------------------------------
