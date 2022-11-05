@@ -92,7 +92,10 @@ nvme_init_reset_wait:
 	mov [rsi+NVMe_ASQ], rax
 	mov rax, 0x9000			; Bits 63:12 define the ACQB
 	mov [rsi+NVMe_ACQ], rax
-	
+
+;	mov eax, 0xFFFFFFFF		; Mask all interrupts
+;	mov [rsi+NVMe_INTMS], eax
+
 	; Check CAP.CSS and set CC.CSS accordingly. Enable the controller too.
 	mov rax, [rsi+NVMe_CAP]		; CAP.CSS are bits 44:37
 	mov ebx, [rsi+NVMe_CC]		; CC.CSS are bits 06:04
@@ -126,7 +129,7 @@ nvme_init_enable_wait:
 	jnc nvme_init_enable_wait
 
 	; TODO
-	; Get the identity structure
+	; Get the Identify Controller structure
 	mov rdi, 0x8000
 	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
 	stosd
@@ -148,10 +151,26 @@ nvme_init_enable_wait:
 	stosd				; CDW14
 	stosd				; CDW15
 
-;	mov eax, 0
-;	mov [rsi+0x1004], eax		; Write the head
-;	mov eax, 1
-;	mov [rsi+0x1000], eax		; Write the tail
+	; Get the Active Namespace ID list
+	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
+	stosd
+	xor eax, eax
+	stosd				; CDW1 NSID cleared
+	stosd				; CDW2
+	stosd				; CDW3
+	stosq				; CDW4-5 MPTR	
+	mov rax, 0xD000
+	stosq				; CDW6-7 DPTR1
+	xor eax, eax
+	stosq				; CDW8-9 DPTR2
+	mov eax, 2
+	stosd				; CDW10 CNS 2 (Active Namespace)
+	xor eax, eax
+	stosd				; CDW11
+	stosd				; CDW12
+	stosd				; CDW13
+	stosd				; CDW14
+	stosd				; CDW15
 	
 	; Create I/O Completion Queue
 	mov eax, 0x00010005		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Completion Queue (0x05)
@@ -197,11 +216,17 @@ nvme_init_enable_wait:
 	stosd				; CDW14
 	stosd				; CDW15
 
+	; Start the Admin commands
 	mov eax, 0
 	mov [rsi+0x1004], eax		; Write the head
-	mov eax, 3
+	mov eax, 4
 	mov [rsi+0x1000], eax		; Write the tail
 
+	; Start the I/O commands
+;	mov eax, 0
+;	mov [rsi+0x1008], eax		; Write the head
+;	mov eax, 1
+;	mov [rsi+0x100A], eax		; Write the tail
 
 	; TODO
 	; parse out the serial (bytes 23:04), model (63:24), firmware (71:64)
