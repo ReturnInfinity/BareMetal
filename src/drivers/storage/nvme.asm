@@ -12,6 +12,8 @@
 ; 0xA000 - I/O Submission Queue Base Address
 ; 0xB000 - I/O Completion Queue Base Address
 ; 0xC000 - Identify
+; 0xD000 - NameSpace
+; 0xE000 - Data
 
 ; -----------------------------------------------------------------------------
 nvme_init:
@@ -184,7 +186,7 @@ nvme_init_enable_wait:
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
-	mov eax, 0x00010001
+	mov eax, 0x00070001
 	stosd				; CDW10 QSIZE (31-16), QID (15-0)
 	mov eax, 1
 	stosd				; CDW11 PC (0)
@@ -206,7 +208,7 @@ nvme_init_enable_wait:
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
-	mov eax, 0x00010001
+	mov eax, 0x00070001
 	stosd				; CDW10 QSIZE (31-16), QID (15-0)
 	mov eax, 0x00010001
 	stosd				; CDW11 CQID (31-16), PC (0)
@@ -219,14 +221,53 @@ nvme_init_enable_wait:
 	; Start the Admin commands
 	mov eax, 0
 	mov [rsi+0x1004], eax		; Write the head
+	mov eax, 2
+	mov [rsi+0x1000], eax		; Write the tail
+
+nvmewait1:
+	mov eax, [0x9018]
+	cmp eax, 0x0
+	je nvmewait1
+	
+	; Run the other admin commands
+	mov eax, 2
+	mov [rsi+0x1004], eax		; Write the head
 	mov eax, 4
 	mov [rsi+0x1000], eax		; Write the tail
 
+nvmewait2:
+	mov eax, [0x9038]
+	cmp eax, 0x0
+	je nvmewait2
+
+	; Create I/O Entry
+	mov rdi, 0xA000
+	mov eax, 0x00010002		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Read (0x02)
+	stosd
+	mov eax, 1
+	stosd				; CDW1 NSID cleared
+	xor eax, eax
+	stosd				; CDW2
+	stosd				; CDW3
+	stosq				; CDW4-5 MPTR	
+	mov rax, 0xE000
+	stosq				; CDW6-7 DPTR1
+	xor eax, eax
+	stosq				; CDW8-9 DPTR2
+	stosd				; CDW10 LBA
+	stosd				; CDW11 LBA
+	mov eax, 1
+	stosd				; CDW12 Blocks to transfer
+	xor eax, eax
+	stosd				; CDW13
+	stosd				; CDW14
+	stosd				; CDW15
+
 	; Start the I/O commands
-;	mov eax, 0
-;	mov [rsi+0x1008], eax		; Write the head
-;	mov eax, 1
-;	mov [rsi+0x100A], eax		; Write the tail
+	mov eax, 0
+	mov [rsi+0x100C], eax		; Write the head
+	mov eax, 1
+	mov [rsi+0x1008], eax		; Write the tail
 
 	; TODO
 	; parse out the serial (bytes 23:04), model (63:24), firmware (71:64)
