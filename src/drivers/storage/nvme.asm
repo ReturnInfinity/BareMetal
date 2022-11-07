@@ -95,30 +95,30 @@ nvme_init_reset_wait:
 	mov rax, 0x9000			; Bits 63:12 define the ACQB
 	mov [rsi+NVMe_ACQ], rax
 
-;	mov eax, 0xFFFFFFFF		; Mask all interrupts
-;	mov [rsi+NVMe_INTMS], eax
+	mov eax, 0xFFFFFFFF		; Mask all interrupts
+	mov [rsi+NVMe_INTMS], eax
 
 	; Check CAP.CSS and set CC.CSS accordingly. Enable the controller too.
 	mov rax, [rsi+NVMe_CAP]		; CAP.CSS are bits 44:37
 	mov ebx, [rsi+NVMe_CC]		; CC.CSS are bits 06:04
-	bt rax, 44
-	jc nvme_init_adminonly		; Is bit 7 of CAP.CSS set? 
-	bt rax, 43
-	jc nvme_init_allsets		; Is bit 6 of CAP.CSS set?
-	btc ebx, 4
-	btc ebx, 5
-	btc ebx, 6
-	jmp nvme_init_write_CC		; Otherwise we set CC.CSS to 000b
-nvme_init_adminonly:			; Set CC.CSS to 111b
-	bts ebx, 4
-	bts ebx, 5
-	bts ebx, 6
-	jmp nvme_init_write_CC
-nvme_init_allsets:			; Set CC.CSS to 110b
-	btc ebx, 4
-	bts ebx, 5
-	bts ebx, 6
-nvme_init_write_CC:
+;	bt rax, 44
+;	jc nvme_init_adminonly		; Is bit 7 of CAP.CSS set? 
+;	bt rax, 43
+;	jc nvme_init_allsets		; Is bit 6 of CAP.CSS set?
+;	btc ebx, 4
+;	btc ebx, 5
+;	btc ebx, 6
+;	jmp nvme_init_write_CC		; Otherwise we set CC.CSS to 000b
+;nvme_init_adminonly:			; Set CC.CSS to 111b
+;	bts ebx, 4
+;	bts ebx, 5
+;	bts ebx, 6
+;	jmp nvme_init_write_CC
+;nvme_init_allsets:			; Set CC.CSS to 110b
+;	btc ebx, 4
+;	bts ebx, 5
+;	bts ebx, 6
+;nvme_init_write_CC:
 	ror ebx, 16
 	mov bl, 0x46			; Set the minimum IOCQES (23:20) and IOSQES (19:16) size
 	rol ebx, 16
@@ -178,7 +178,7 @@ nvme_init_enable_wait:
 	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
 	stosd
 	mov eax, 1
-	stosd				; CDW1 NSID cleared
+	stosd				; CDW1 NSID
 	xor eax, eax
 	stosd				; CDW2
 	stosd				; CDW3
@@ -277,7 +277,7 @@ nvmewait2:
 	stosq				; CDW8-9 DPTR2
 	stosd				; CDW10 SLBA (31:00)
 	stosd				; CDW11 SLBA (63:32)
-	mov eax, 0
+	mov eax, 0x00000000
 	stosd				; CDW12 Number of Logical Blocks (15:00)
 	xor eax, eax
 	stosd				; CDW13 DSM (07:00)
