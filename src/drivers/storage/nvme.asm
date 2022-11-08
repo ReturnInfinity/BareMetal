@@ -75,7 +75,10 @@ nvme_init_found:
 	btc eax, 0			; Set CC.EN to '0'
 	mov [rsi+NVMe_CC], eax
 
-	; Reset the controller
+	; Reset the controller (if allowed)
+	mov rax, [rsi+NVMe_CAP]
+	bt rax, 58			; CAP.NSSS
+	jnc nvme_init_reset_wait
 	mov eax, 0x4E564D65		; String is "NVMe"
 	mov [rsi+NVMe_NSSR], eax	; Reset
 
@@ -85,45 +88,20 @@ nvme_init_reset_wait:
 	jc nvme_init_reset_wait
 
 	; Configure AQA, ASQ, and ACQ
-	mov eax, 0x00070007		; Bits 27:16 is ACQS and bits 11:00 is ASQS
-; 8 commands
-;	mov eax, 0x00010001		; Bits 27:16 is ACQS and bits 11:00 is ASQS
-	mov [rsi+NVMe_AQA], eax		; Set ACQS and ASQS to two entries each
+	mov eax, 0x003F003F		; 64 commands each for ACQS (27:16) and ASQS (11:00)
+	mov [rsi+NVMe_AQA], eax
 	; TODO - Need proper locations. Using the 32KB free at 0x8000 for testing
-	mov rax, 0x8000			; Bits 63:12 define the ASQB
+	mov rax, 0x8000			; ASQB (63:12)
 	mov [rsi+NVMe_ASQ], rax
-	mov rax, 0x9000			; Bits 63:12 define the ACQB
+	mov rax, 0x9000			; ACQB (63:12)
 	mov [rsi+NVMe_ACQ], rax
 
 	mov eax, 0xFFFFFFFF		; Mask all interrupts
 	mov [rsi+NVMe_INTMS], eax
 
-	; Check CAP.CSS and set CC.CSS accordingly. Enable the controller too.
-	mov rax, [rsi+NVMe_CAP]		; CAP.CSS are bits 44:37
-	mov ebx, [rsi+NVMe_CC]		; CC.CSS are bits 06:04
-;	bt rax, 44
-;	jc nvme_init_adminonly		; Is bit 7 of CAP.CSS set? 
-;	bt rax, 43
-;	jc nvme_init_allsets		; Is bit 6 of CAP.CSS set?
-;	btc ebx, 4
-;	btc ebx, 5
-;	btc ebx, 6
-;	jmp nvme_init_write_CC		; Otherwise we set CC.CSS to 000b
-;nvme_init_adminonly:			; Set CC.CSS to 111b
-;	bts ebx, 4
-;	bts ebx, 5
-;	bts ebx, 6
-;	jmp nvme_init_write_CC
-;nvme_init_allsets:			; Set CC.CSS to 110b
-;	btc ebx, 4
-;	bts ebx, 5
-;	bts ebx, 6
-;nvme_init_write_CC:
-	ror ebx, 16
-	mov bl, 0x46			; Set the minimum IOCQES (23:20) and IOSQES (19:16) size
-	rol ebx, 16
-	bts ebx, 0			; Set CC.EN to '1'
-	mov [rsi+NVMe_CC], ebx		; Write the new CC value and enable controller
+	; Enable the controller
+	mov eax, 0x00460001		; Set IOCQES (23:20), IOSQES (19:16), and EN (0)
+	mov [rsi+NVMe_CC], eax		; Write the new CC value and enable controller
 	
 nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
@@ -208,7 +186,7 @@ nvme_init_enable_wait:
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
-	mov eax, 0x00070001
+	mov eax, 0x003F0001
 	stosd				; CDW10 QSIZE (31-16), QID (15-0)
 	mov eax, 1
 	stosd				; CDW11 PC (0)
@@ -230,7 +208,7 @@ nvme_init_enable_wait:
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
-	mov eax, 0x00070001
+	mov eax, 0x003F0001
 	stosd				; CDW10 QSIZE (31-16), QID (15-0)
 	mov eax, 0x00010001
 	stosd				; CDW11 CQID (31-16), PC (0)
@@ -243,58 +221,19 @@ nvme_init_enable_wait:
 	; Start the Admin commands
 	mov eax, 0
 	mov [rsi+0x1004], eax		; Write the head
-	mov eax, 3
-	mov [rsi+0x1000], eax		; Write the tail
-
-nvmewait1:
-	mov eax, [0x9018]
-	cmp eax, 0x0
-	je nvmewait1
-	
-	; Run the other admin commands
-	mov eax, 3
-	mov [rsi+0x1004], eax		; Write the head
 	mov eax, 5
 	mov [rsi+0x1000], eax		; Write the tail
 
-nvmewait2:
+nvme_init_admin_wait:
 	mov eax, [0x9048]
 	cmp eax, 0x0
-	je nvmewait2
+	je nvme_init_admin_wait
 
-	; Create I/O Entry
-	mov rdi, 0xA000
-	mov eax, 0x00000002		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Read (0x02)
-	stosd
-	mov eax, 1
-	stosd				; CDW1 NSID
-	xor eax, eax
-	stosq				; CDW2-3 ELBST EILBRT (47:00)
-	stosq				; CDW4-5 MPTR
-	mov rax, 0xF000
-	stosq				; CDW6-7 DPTR1
-	xor eax, eax
-	stosq				; CDW8-9 DPTR2
-	stosd				; CDW10 SLBA (31:00)
-	stosd				; CDW11 SLBA (63:32)
-	mov eax, 0x00000000
-	stosd				; CDW12 Number of Logical Blocks (15:00)
-	xor eax, eax
-	stosd				; CDW13 DSM (07:00)
-	stosd				; CDW14 ELBST EILBRT (31:00)
-	stosd				; CDW15 ELBATM (31:16), ELBAT (15:00)
-
-	; Start the I/O commands
-	mov eax, 0
-	mov [rsi+0x100C], eax		; Write the head
-	mov eax, 1
-	mov [rsi+0x1008], eax		; Write the tail
-
-	; TODO
-	; parse out the serial (bytes 23:04), model (63:24), firmware (71:64)
-	; Copy to new location, search from end and change all 0x20's to 0x00's
-
-	; Process admin completion ring
+	mov rax, 0	; Starting sector
+	mov rcx, 1	; Num of sectors
+	mov rdx, 1	; Disk num
+	mov rdi, 0xF000	; memory location
+	call nvme_read
 
 nvme_init_not_found:
 	ret
@@ -303,9 +242,59 @@ nvme_init_not_found:
 
 ; -----------------------------------------------------------------------------
 ; nvme_read -- Read data from a NVMe device
-; IN:	
-; OUT:	
+; IN:	RAX = starting sector # to read (48-bit LBA address)
+;	RCX = number of sectors to read (up to 8192 = 4MiB)
+;	RDX = disk #
+;	RDI = memory location to store sectors
+; OUT:	Nothing
+;	All other registers preserved
 nvme_read:
+	push rdi
+	push rbx
+
+	push rax			; Save the starting sector
+	mov rbx, rdi			; Save the memory location
+
+	cmp rcx, 0			; Error if no data was requested
+	je nvme_read_error
+
+	; Create I/O Entry
+	; TODO calculate where this should go based on the last know head/tail
+	mov rdi, 0xA000
+	mov eax, 0x00000002		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Read (0x02)
+	stosd
+	mov eax, edx
+	stosd				; CDW1 NSID
+	xor eax, eax
+	stosq				; CDW2-3 ELBST EILBRT (47:00)
+	stosq				; CDW4-5 MPTR
+	mov rax, rbx
+	stosq				; CDW6-7 DPTR1
+	xor eax, eax
+	stosq				; CDW8-9 DPTR2
+	pop rax				; Restore the starting sector
+	stosd				; CDW10 SLBA (31:00)
+	shr rax, 32
+	stosd				; CDW11 SLBA (63:32)
+	mov eax, ecx
+	sub eax, 1
+	stosd				; CDW12 Number of Logical Blocks (15:00)
+	xor eax, eax
+	stosd				; CDW13 DSM (07:00)
+	stosd				; CDW14 ELBST EILBRT (31:00)
+	stosd				; CDW15 ELBATM (31:16), ELBAT (15:00)
+
+	; Start the I/O commands
+	; TODO use the correct head/tail
+	mov rdi, [os_NVMe_Base]
+	mov eax, 0
+	mov [rdi+0x100C], eax		; Write the head
+	mov eax, 1
+	mov [rdi+0x1008], eax		; Write the tail
+
+nvme_read_error:
+	pop rbx
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
