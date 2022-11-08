@@ -222,10 +222,24 @@ nvme_init_admin_wait:
 	cmp eax, 0x0
 	je nvme_init_admin_wait
 
+	; Parse the data
+	; Namespace Identify
+	; Namespace Size (NSZE) bytes 07:00 - Total LBA blocks
+	; Number of LBA Formats (NLBAF) byte 25
+	; 0 means only one format is supported. Located at bytes 131:128
+	; LBA Data Size (LBADS) is bits 23:16. Needs to be 9 or greater
+	; 9 = 512 byte sectors
+	; 12 = 4096 byte sectors
+	mov cl, [nvme_identitynamespace+25]
+	mov rsi, nvme_identitynamespace
+	add rsi, 0x80
+	lodsd
+	shr eax, 16			; AL holds the LBADS
+
 	mov rax, 0	; Starting sector
-	mov rcx, 64	; Num of sectors
+	mov rcx, 9	; Num of sectors
 	mov rdx, 1	; Disk num
-	mov rdi, 0x800000 ;0xF000	; memory location
+	mov rdi, 0x800000	; memory location
 	call nvme_read	; Test read
 
 nvme_init_not_found:
@@ -238,7 +252,7 @@ nvme_init_not_found:
 ; IN:	RAX = starting sector # to read (48-bit LBA address)
 ;	RCX = number of sectors to read (up to 8192 = 4MiB)
 ;	RDX = disk #
-;	RDI = memory location to store sectors
+;	RDI = memory location to store data
 ; OUT:	Nothing
 ;	All other registers preserved
 nvme_read:
@@ -253,6 +267,7 @@ nvme_read:
 	je nvme_read_error
 
 	; Is the drive configured for 512B sectors?
+	
 	; TODO adjust math for 4K sectors
 
 	; Create I/O Entry
@@ -266,28 +281,28 @@ nvme_read:
 	stosq				; CDW2-3 ELBST EILBRT (47:00)
 	stosq				; CDW4-5 MPTR
 	mov rax, rbx
-	stosq				; CDW6-7 DPTR1
+	stosq				; CDW6-7 PRP1
 	
-	; Need to build the rest at a memory location here
+	; Calculate PRP2
 	push rcx			; Save the requested sector count for later
 	cmp rcx, 2
 	jle nvme_read_calc_rpr2_skip
 	sub rcx, 1			; Subtract one as PTR1 covers one 4K load
 	push rdi
-	mov rdi, nvme_rpr2		; Temp space for RPR2 structure
-next_rpr2:
-	add rax, 4096
+	mov rdi, nvme_rpr		; Space to build the RPR2 structure
+nvme_read_next_rpr:
+	add rax, 4096			; An entry is needed for every 4K
 	stosq
 	sub rcx, 1
 	cmp rcx, 0
-	jne next_rpr2	
+	jne nvme_read_next_rpr	
 	pop rdi
-	mov rax, nvme_rpr2
+	mov rax, nvme_rpr
 	jmp nvme_read_calc_rpr2_end	; Write the address of the RPR2 data
 nvme_read_calc_rpr2_skip:
-	add rax, 4096			; Controller ignores this for a 1 sector read
+	add rax, 4096
 nvme_read_calc_rpr2_end:	
-	stosq				; CDW8-9 DPTR2
+	stosq				; CDW8-9 PRP2
 	pop rcx				; Restore the sector count
 
 	pop rax				; Restore the starting sector
