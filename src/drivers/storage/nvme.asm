@@ -38,7 +38,6 @@ nvme_init_found:
 
 	; Check for a valid version number (Bits 31:16 should be greater than 0)
 	mov eax, [rsi+NVMe_VS]
-	call os_debug_dump_eax
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
 	jl nvme_init_not_found
@@ -224,7 +223,7 @@ nvme_init_admin_wait:
 	je nvme_init_admin_wait
 
 	mov rax, 0	; Starting sector
-	mov rcx, 1	; Num of sectors
+	mov rcx, 64	; Num of sectors
 	mov rdx, 1	; Disk num
 	mov rdi, 0x800000 ;0xF000	; memory location
 	call nvme_read	; Test read
@@ -244,6 +243,7 @@ nvme_init_not_found:
 ;	All other registers preserved
 nvme_read:
 	push rdi
+	push rcx
 	push rbx
 
 	push rax			; Save the starting sector
@@ -251,6 +251,9 @@ nvme_read:
 
 	cmp rcx, 0			; Error if no data was requested
 	je nvme_read_error
+
+	; Is the drive configured for 512B sectors?
+	; TODO adjust math for 4K sectors
 
 	; Create I/O Entry
 	; TODO calculate where this should go based on the last know head/tail
@@ -264,8 +267,29 @@ nvme_read:
 	stosq				; CDW4-5 MPTR
 	mov rax, rbx
 	stosq				; CDW6-7 DPTR1
-	xor eax, eax
+	
+	; Need to build the rest at a memory location here
+	push rcx			; Save the requested sector count for later
+	cmp rcx, 2
+	jle nvme_read_calc_rpr2_skip
+	sub rcx, 1			; Subtract one as PTR1 covers one 4K load
+	push rdi
+	mov rdi, nvme_rpr2		; Temp space for RPR2 structure
+next_rpr2:
+	add rax, 4096
+	stosq
+	sub rcx, 1
+	cmp rcx, 0
+	jne next_rpr2	
+	pop rdi
+	mov rax, nvme_rpr2
+	jmp nvme_read_calc_rpr2_end	; Write the address of the RPR2 data
+nvme_read_calc_rpr2_skip:
+	add rax, 4096			; Controller ignores this for a 1 sector read
+nvme_read_calc_rpr2_end:	
 	stosq				; CDW8-9 DPTR2
+	pop rcx				; Restore the sector count
+
 	pop rax				; Restore the starting sector
 	stosd				; CDW10 SLBA (31:00)
 	shr rax, 32
@@ -290,6 +314,7 @@ nvme_read:
 
 nvme_read_error:
 	pop rbx
+	pop rcx
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------

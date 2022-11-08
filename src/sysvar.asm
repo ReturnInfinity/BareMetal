@@ -46,6 +46,7 @@ nvme_iocqb:		equ 0x0000000000173000	; 0x173000 -> 0x173FFF	4K I/O Completion Que
 nvme_identity:		equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Identify Data
 nvme_activenamespace:	equ 0x0000000000175000	; 0x175000 -> 0x175FFF	4K Namespace Data
 nvme_identitynamespace:	equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identify Data
+nvme_rpr2:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
 						; 0x180000 -> 0x19FFFF	128K Free
 ; Network Memory
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
