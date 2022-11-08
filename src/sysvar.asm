@@ -25,6 +25,7 @@ sys_pdpl:		equ 0x0000000000003000	; 0x003000 -> 0x003FFF	4K PDP table low
 sys_pdph:		equ 0x0000000000004000	; 0x004000 -> 0x004FFF	4K PDP table high
 sys_Pure64:		equ 0x0000000000005000	; 0x005000 -> 0x007FFF	12K Pure64 system data
 						; 0x008000 -> 0x00FFFF	32K Free
+
 sys_pdl:		equ 0x0000000000010000	; 0x010000 -> 0x01FFFF	64K Page directory low (Maps up to 16GB)
 sys_pdh:		equ 0x0000000000020000	; 0x020000 -> 0x05FFFF	256K Page directory high (Maps up to 64GB)
 						; 0x060000 -> 0x09FFFF	256K Free
@@ -32,10 +33,21 @@ sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
 os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 						; 0x120000 -> 0x19FFFF	512K Free
+; Disk memory
+ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
 ahci_CLB:		equ 0x0000000000140000	; 0x140000 -> 0x147FFF	32K AHCI Command List Base (1K per port)
 ahci_FB:		equ 0x0000000000148000	; 0x148000 -> 0x167FFF	128K AHCI FIS Base (4K per port)
 ahci_CMD:		equ 0x0000000000168000	; 0x168000 -> 0x16FFFF	32K AHCI Commands
-						; 0x170000 -> 0x19FFFF	192K Free
+nvme_base:		equ 0x0000000000170000	; 0x170000 -> 0x17FFFF	64K NVMe Structures
+nvme_asqb:		equ 0x0000000000170000	; 0x170000 -> 0x170FFF	4K Admin Submission Queue Base Address
+nvme_acqb:		equ 0x0000000000171000	; 0x171000 -> 0x171FFF	4K Admin Completion Queue Base Address
+nvme_iosqb:		equ 0x0000000000172000	; 0x172000 -> 0x172FFF	4K I/O Submission Queue Base Address
+nvme_iocqb:		equ 0x0000000000173000	; 0x173000 -> 0x173FFF	4K I/O Completion Queue Base Address
+nvme_identity:		equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Identify Data
+nvme_activenamespace:	equ 0x0000000000175000	; 0x175000 -> 0x175FFF	4K Namespace Data
+nvme_identitynamespace:	equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identify Data
+						; 0x180000 -> 0x19FFFF	128K Free
+; Network Memory
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
 os_PacketBuffers:	equ 0x00000000001B0000	;
@@ -94,6 +106,9 @@ os_EthernetBuffer_C2:	equ os_SystemVariables + 782	; Counter 2 for the Ethernet 
 os_DiskEnabled:		equ os_SystemVariables + 783
 os_DiskActivity:	equ os_SystemVariables + 784
 os_NVMeIRQ:		equ os_SystemVariables + 785
+os_NVMeMJR:		equ os_SystemVariables + 786
+os_NVMeMNR:		equ os_SystemVariables + 787
+os_NVMeTER:		equ os_SystemVariables + 788
 
 
 ; Misc

@@ -6,15 +6,6 @@
 ; =============================================================================
 
 
-; Memory Usage (temporary!)
-; 0x8000 - Admin Submission Queue Base Address
-; 0x9000 - Admin Completion Queue Base Address
-; 0xA000 - I/O Submission Queue Base Address
-; 0xB000 - I/O Completion Queue Base Address
-; 0xC000 - Identify
-; 0xD000 - NameSpace
-; 0xE000 - Data
-
 ; -----------------------------------------------------------------------------
 nvme_init:
 	; Probe for an NVMe controller
@@ -40,17 +31,22 @@ nvme_init_found:
 
 	; Mark memory as uncacheable
 	; TODO cleanup to do it automatically (for AHCI too!)
-	mov rdi, 0x00013fa8
-	mov rax, [rdi]
-	bts rax, 4	; Set PCD to disable caching
-	mov [rdi], rax
+;	mov rdi, 0x00013fa8
+;	mov rax, [rdi]
+;	bts rax, 4	; Set PCD to disable caching
+;	mov [rdi], rax
 
 	; Check for a valid version number (Bits 31:16 should be greater than 0)
 	mov eax, [rsi+NVMe_VS]
+	call os_debug_dump_eax
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
 	jl nvme_init_not_found
-	; TODO Store MJR, MNR, and TER for later reference
+	mov [os_NVMeMJR], al
+	rol eax, 8
+	mov [os_NVMeMNR], al
+	rol eax, 8
+	mov [os_NVMeTER], al
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
@@ -63,10 +59,9 @@ nvme_init_found:
 	bts eax, 2
 	call os_pci_write
 
-	; Clear 32 KiB of memory for the NVMe tables
-	; TODO Define in SysVars instead
-	mov edi, 0x8000
-	mov ecx, 4096
+	; Clear 64 KiB of memory for NVMe structures
+	mov edi, nvme_base
+	mov ecx, 8192
 	xor eax, eax
 	rep stosq
 
@@ -90,10 +85,9 @@ nvme_init_reset_wait:
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x003F003F		; 64 commands each for ACQS (27:16) and ASQS (11:00)
 	mov [rsi+NVMe_AQA], eax
-	; TODO - Need proper locations. Using the 32KB free at 0x8000 for testing
-	mov rax, 0x8000			; ASQB (63:12)
+	mov rax, nvme_asqb		; ASQB (63:12)
 	mov [rsi+NVMe_ASQ], rax
-	mov rax, 0x9000			; ACQB (63:12)
+	mov rax, nvme_acqb		; ACQB (63:12)
 	mov [rsi+NVMe_ACQ], rax
 
 	mov eax, 0xFFFFFFFF		; Mask all interrupts
@@ -108,9 +102,8 @@ nvme_init_enable_wait:
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
 	jnc nvme_init_enable_wait
 
-	; TODO
 	; Get the Identify Controller structure
-	mov rdi, 0x8000
+	mov rdi, nvme_asqb		; Build the following commands directly in the Admin Submission Queue
 	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
 	stosd
 	xor eax, eax
@@ -118,7 +111,7 @@ nvme_init_enable_wait:
 	stosd				; CDW2
 	stosd				; CDW3
 	stosq				; CDW4-5 MPTR	
-	mov rax, 0xC000
+	mov rax, nvme_identity
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
@@ -139,7 +132,7 @@ nvme_init_enable_wait:
 	stosd				; CDW2
 	stosd				; CDW3
 	stosq				; CDW4-5 MPTR	
-	mov rax, 0xD000
+	mov rax, nvme_activenamespace
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
@@ -161,7 +154,7 @@ nvme_init_enable_wait:
 	stosd				; CDW2
 	stosd				; CDW3
 	stosq				; CDW4-5 MPTR	
-	mov rax, 0xE000
+	mov rax, nvme_identitynamespace
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
@@ -182,7 +175,7 @@ nvme_init_enable_wait:
 	stosd				; CDW2
 	stosd				; CDW3
 	stosq				; CDW4-5 MPTR	
-	mov rax, 0xB000
+	mov rax, nvme_iocqb
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
@@ -204,7 +197,7 @@ nvme_init_enable_wait:
 	stosd				; CDW2
 	stosd				; CDW3
 	stosq				; CDW4-5 MPTR	
-	mov rax, 0xA000
+	mov rax, nvme_iosqb
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
@@ -225,15 +218,16 @@ nvme_init_enable_wait:
 	mov [rsi+0x1000], eax		; Write the tail
 
 nvme_init_admin_wait:
-	mov eax, [0x9048]
+	; TODO Calculate the offset properly
+	mov eax, [nvme_acqb + 0x48]
 	cmp eax, 0x0
 	je nvme_init_admin_wait
 
 	mov rax, 0	; Starting sector
 	mov rcx, 1	; Num of sectors
 	mov rdx, 1	; Disk num
-	mov rdi, 0xF000	; memory location
-	call nvme_read
+	mov rdi, 0x800000 ;0xF000	; memory location
+	call nvme_read	; Test read
 
 nvme_init_not_found:
 	ret
@@ -260,7 +254,7 @@ nvme_read:
 
 	; Create I/O Entry
 	; TODO calculate where this should go based on the last know head/tail
-	mov rdi, 0xA000
+	mov rdi, nvme_iosqb
 	mov eax, 0x00000002		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Read (0x02)
 	stosd
 	mov eax, edx
@@ -291,6 +285,8 @@ nvme_read:
 	mov [rdi+0x100C], eax		; Write the head
 	mov eax, 1
 	mov [rdi+0x1008], eax		; Write the tail
+	
+	; TODO check completion queue
 
 nvme_read_error:
 	pop rbx
