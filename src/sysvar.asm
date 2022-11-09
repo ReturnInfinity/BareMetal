@@ -84,6 +84,7 @@ os_NVMe_Base:		equ os_SystemVariables + 180
 os_HPETRate:		equ os_SystemVariables + 260
 os_MemAmount:		equ os_SystemVariables + 264	; in MiB
 ahci_PA:		equ os_SystemVariables + 268	; Each set bit is an active port
+os_NVMeTotalLBA:	equ os_SystemVariables + 272
 
 
 ; DW - Starting at offset 512, increments by 2
@@ -110,6 +111,7 @@ os_NVMeIRQ:		equ os_SystemVariables + 785
 os_NVMeMJR:		equ os_SystemVariables + 786
 os_NVMeMNR:		equ os_SystemVariables + 787
 os_NVMeTER:		equ os_SystemVariables + 788
+os_NVMeLBA:		equ os_SystemVariables + 789
 
 
 ; Misc

@@ -222,25 +222,42 @@ nvme_init_admin_wait:
 	cmp eax, 0x0
 	je nvme_init_admin_wait
 
-	; Parse the data
-	; Namespace Identify
-	; Namespace Size (NSZE) bytes 07:00 - Total LBA blocks
+	; TODO move this to it's own function
+	; Parse the Namespace Identify data for disk 0
+	mov rsi, nvme_identitynamespace
+	lodsd				; Namespace Size (NSZE) bytes 07:00 - Total LBA blocks
+	mov [os_NVMeTotalLBA], eax
 	; Number of LBA Formats (NLBAF) byte 25
 	; 0 means only one format is supported. Located at bytes 131:128
 	; LBA Data Size (LBADS) is bits 23:16. Needs to be 9 or greater
 	; 9 = 512 byte sectors
 	; 12 = 4096 byte sectors
-	mov cl, [nvme_identitynamespace+25]
-	mov rsi, nvme_identitynamespace
-	add rsi, 0x80
-	lodsd
+	mov ecx, [nvme_identitynamespace+24]
+	shr ecx, 16
+	add cl, 1			; NLBAF is a 0-based number
+	mov rsi, nvme_identitynamespace+0x80
+	xor ebx, ebx
+nvme_init_LBA_next:
+	cmp cl, 0			; Check # of formats
+	je nvme_init_LBA_end
+	lodsd				; RP (25:24), LBADS (23:16), MS (15:00)
 	shr eax, 16			; AL holds the LBADS
+	mov bl, al			; BL holds the highest LBADS so far
+	cmp al, bl
+	jle nvme_init_LBA_skip
+	mov bl, al			; BL holds the highest LBADS so far
+nvme_init_LBA_skip:
+	dec cl
+	jmp nvme_init_LBA_next
+nvme_init_LBA_end:
+	mov [os_NVMeLBA], bl		; Store the highest LBADS
 
-	mov rax, 0	; Starting sector
-	mov rcx, 9	; Num of sectors
-	mov rdx, 1	; Disk num
-	mov rdi, 0x800000	; memory location
-	call nvme_read	; Test read
+	mov rax, 1			; Starting sector
+	mov rcx, 16			; Num of sectors
+	mov rdx, 1			; Disk num
+	mov rdi, 0x800000		; memory location
+	call nvme_read			; Test read
+jmp $
 
 nvme_init_not_found:
 	ret
@@ -266,10 +283,20 @@ nvme_read:
 	cmp rcx, 0			; Error if no data was requested
 	je nvme_read_error
 
-	; Is the drive configured for 512B sectors?
-	
-	; TODO adjust math for 4K sectors
+	; Check sector size
+	mov al, [os_NVMeLBA]
+	cmp al, 0x0C			; 4096B sectors
+	je nvme_read_setup
+	cmp al, 0x09			; 512B sectors
+	jne nvme_read_error
 
+nvme_read_512b:
+	shl rcx, 3			; Covert count to 4096B sectors
+	pop rax
+	shl rax, 3			; Convert starting sector to 4096B sectors
+	push rax
+
+nvme_read_setup:
 	; Create I/O Entry
 	; TODO calculate where this should go based on the last know head/tail
 	mov rdi, nvme_iosqb
