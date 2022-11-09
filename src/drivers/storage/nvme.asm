@@ -257,7 +257,6 @@ nvme_init_LBA_end:
 	mov rdx, 1			; Disk num
 	mov rdi, 0x800000		; memory location
 	call nvme_read			; Test read
-jmp $
 
 nvme_init_not_found:
 	ret
