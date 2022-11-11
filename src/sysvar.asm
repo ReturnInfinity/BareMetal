@@ -112,6 +112,8 @@ os_NVMeMJR:		equ os_SystemVariables + 786
 os_NVMeMNR:		equ os_SystemVariables + 787
 os_NVMeTER:		equ os_SystemVariables + 788
 os_NVMeLBA:		equ os_SystemVariables + 789
+os_NVMe_atail:		equ os_SystemVariables + 790
+os_NVMe_iotail:		equ os_SystemVariables + 791
 
 
 ; Misc

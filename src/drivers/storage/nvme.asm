@@ -215,9 +215,13 @@ nvme_init_enable_wait:
 	mov [rsi+0x1004], eax		; Write the head
 	mov eax, 5
 	mov [rsi+0x1000], eax		; Write the tail
+	mov [os_NVMe_atail], al
 
 nvme_init_admin_wait:
 	; TODO Calculate the offset properly
+	; First two dwords are command specific
+	; DW2 - SQ Identifier (SQID) bits 31:16, SQ Head Pointer (SQHD) bits 15:00
+	; DW3 - Status bits 31:17, Phase bit 16, Command Identifier (CID) bits 15:00
 	mov eax, [nvme_acqb + 0x48]
 	cmp eax, 0x0
 	je nvme_init_admin_wait
@@ -269,6 +273,13 @@ nvme_init_LBA_skip:
 nvme_init_LBA_end:
 	mov [os_NVMeLBA], bl		; Store the highest LBADS
 
+	; Set the IO head and tail
+	mov rdi, [os_NVMe_Base]
+	mov eax, 0
+	mov [rdi+0x100C], eax		; Write the head
+	mov [rdi+0x1008], eax		; Write the tail	
+
+	; Execute a test read
 	mov rax, 1			; Starting sector
 	mov rcx, 16			; Num of sectors
 	mov rdx, 1			; Disk num
@@ -365,12 +376,13 @@ nvme_read_calc_rpr2_end:
 	stosd				; CDW15 ELBATM (31:16), ELBAT (15:00)
 
 	; Start the I/O commands
-	; TODO use the correct head/tail
+	; TODO make this better, check for wrap around
 	mov rdi, [os_NVMe_Base]
-	mov eax, 0
-	mov [rdi+0x100C], eax		; Write the head
-	mov eax, 1
-	mov [rdi+0x1008], eax		; Write the tail
+	xor eax, eax
+	mov al, [os_NVMe_iotail]
+	add al, 1
+	mov [os_NVMe_iotail], al
+	mov [rdi+0x1008], eax		; Write the tail to IO queue
 	
 	; Check completion queue
 nvme_read_wait:
