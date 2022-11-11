@@ -42,9 +42,9 @@ nvme_init_found:
 	cmp al, 0x01
 	jl nvme_init_not_found
 	mov [os_NVMeMJR], al
-	rol eax, 8
+	rol eax, 8			; Rotate EAX so MNR is bits 07:00
 	mov [os_NVMeMNR], al
-	rol eax, 8
+	rol eax, 8			; Rotate EAX so TER is bits 07:00
 	mov [os_NVMeTER], al
 
 	; Grab the IRQ of the device
@@ -222,11 +222,28 @@ nvme_init_admin_wait:
 	cmp eax, 0x0
 	je nvme_init_admin_wait
 
+	; Parse the Controller Identify data
+	; Serial Number (SN) bytes 23-04
+	; Model Number (MN) bytes 63-24
+	; Firmware Revision (FR) bytes 71-64
+	; Maximum Data Transfer Size (MDTS) byte 77
+	; Controller ID (CNTLID) bytes 79-78
+	mov rsi, nvme_identity
+	add rsi, 77
+	lodsb
+	; The value is in units of the minimum memory page size (CAP.MPSMIN) and is reported as a power of two (2^n).
+	; A value of 0h indicates that there is no maximum data transfer size.
+	; NVMe_CAP Memory Page Size Maximum (MPSMAX): bits 55:52 - The maximum memory page size is (2 ^ (12 + MPSMAX))
+	; NVMe_CAP Memory Page Size Minimum (MPSMIN): bits 51:48 - The minimum memory page size is (2 ^ (12 + MPSMIN))
+	; NVMe_CC Memory Page Size (MPS) bits 10:07 - The memory page size is (2 ^ (12 + MPS)). Min 4 KiB, max 128 MiB
+	; TODO verify MPS is set within allowed bounds. CC.EN to 0 before changing
+
 	; TODO move this to it's own function
 	; Parse the Namespace Identify data for disk 0
 	mov rsi, nvme_identitynamespace
-	lodsd				; Namespace Size (NSZE) bytes 07:00 - Total LBA blocks
+	lodsd				; Namespace Size (NSZE) bytes 07-00 - Total LBA blocks
 	mov [os_NVMeTotalLBA], eax
+
 	; Number of LBA Formats (NLBAF) byte 25
 	; 0 means only one format is supported. Located at bytes 131:128
 	; LBA Data Size (LBADS) is bits 23:16. Needs to be 9 or greater
@@ -283,30 +300,34 @@ nvme_read:
 	je nvme_read_error
 
 	; Check sector size
+	; TODO This needs to check based on the Namespace ID
 	mov al, [os_NVMeLBA]
 	cmp al, 0x0C			; 4096B sectors
 	je nvme_read_setup
 	cmp al, 0x09			; 512B sectors
 	jne nvme_read_error
 
+	; Convert sector sizes if needed
 nvme_read_512b:
 	shl rcx, 3			; Covert count to 4096B sectors
 	pop rax
 	shl rax, 3			; Convert starting sector to 4096B sectors
 	push rax
 
-nvme_read_setup:
 	; Create I/O Entry
+nvme_read_setup:
 	; TODO calculate where this should go based on the last know head/tail
 	mov rdi, nvme_iosqb
+	; get last known tail
+	; increment and store
 	mov eax, 0x00000002		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Read (0x02)
 	stosd
-	mov eax, edx
+	mov eax, edx			; Move the Namespace ID to RAX
 	stosd				; CDW1 NSID
 	xor eax, eax
 	stosq				; CDW2-3 ELBST EILBRT (47:00)
 	stosq				; CDW4-5 MPTR
-	mov rax, rbx
+	mov rax, rbx			; Move the memory address to RAX
 	stosq				; CDW6-7 PRP1
 	
 	; Calculate PRP2
@@ -351,7 +372,12 @@ nvme_read_calc_rpr2_end:
 	mov eax, 1
 	mov [rdi+0x1008], eax		; Write the tail
 	
-	; TODO check completion queue
+	; Check completion queue
+nvme_read_wait:
+	; TODO Calculate the offset properly
+	mov eax, [nvme_iocqb + 0x8]
+	cmp eax, 0x0
+	je nvme_read_wait
 
 nvme_read_error:
 	pop rbx
