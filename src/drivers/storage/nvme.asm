@@ -69,13 +69,12 @@ nvme_init_found:
 	btc eax, 0			; Set CC.EN to '0'
 	mov [rsi+NVMe_CC], eax
 
-	; Reset the controller (if allowed)
+	; Reset the controller (if supported)
 	mov rax, [rsi+NVMe_CAP]
 	bt rax, 58			; CAP.NSSS
 	jnc nvme_init_reset_wait
 	mov eax, 0x4E564D65		; String is "NVMe"
 	mov [rsi+NVMe_NSSR], eax	; Reset
-
 nvme_init_reset_wait:
 	mov eax, [rsi+NVMe_CSTS]
 	bt eax, 0			; Wait for CSTS.RDY to become '0'
@@ -84,18 +83,18 @@ nvme_init_reset_wait:
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x003F003F		; 64 commands each for ACQS (27:16) and ASQS (11:00)
 	mov [rsi+NVMe_AQA], eax
-	mov rax, nvme_asqb		; ASQB (63:12)
+	mov rax, nvme_asqb		; ASQB 4K aligned (63:12)
 	mov [rsi+NVMe_ASQ], rax
-	mov rax, nvme_acqb		; ACQB (63:12)
+	mov rax, nvme_acqb		; ACQB 4K aligned (63:12)
 	mov [rsi+NVMe_ACQ], rax
 
+	; Disable controller interrupts
 	mov eax, 0xFFFFFFFF		; Mask all interrupts
 	mov [rsi+NVMe_INTMS], eax
 
 	; Enable the controller
 	mov eax, 0x00460001		; Set IOCQES (23:20), IOSQES (19:16), and EN (0)
 	mov [rsi+NVMe_CC], eax		; Write the new CC value and enable controller
-	
 nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
@@ -109,7 +108,7 @@ nvme_init_enable_wait:
 	stosd				; CDW1 NSID cleared
 	stosd				; CDW2
 	stosd				; CDW3
-	stosq				; CDW4-5 MPTR	
+	stosq				; CDW4-5 MPTR
 	mov rax, nvme_identity
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
@@ -130,7 +129,7 @@ nvme_init_enable_wait:
 	stosd				; CDW1 NSID cleared
 	stosd				; CDW2
 	stosd				; CDW3
-	stosq				; CDW4-5 MPTR	
+	stosq				; CDW4-5 MPTR
 	mov rax, nvme_activenamespace
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
@@ -152,7 +151,7 @@ nvme_init_enable_wait:
 	xor eax, eax
 	stosd				; CDW2
 	stosd				; CDW3
-	stosq				; CDW4-5 MPTR	
+	stosq				; CDW4-5 MPTR
 	mov rax, nvme_identitynamespace
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
@@ -173,15 +172,15 @@ nvme_init_enable_wait:
 	stosd				; CDW1 NSID cleared
 	stosd				; CDW2
 	stosd				; CDW3
-	stosq				; CDW4-5 MPTR	
+	stosq				; CDW4-5 MPTR
 	mov rax, nvme_iocqb
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
 	mov eax, 0x003F0001
-	stosd				; CDW10 QSIZE (31-16), QID (15-0)
+	stosd				; CDW10 QSIZE 64 entries (31-16), QID 1 (15-0)
 	mov eax, 1
-	stosd				; CDW11 PC (0)
+	stosd				; CDW11 PC Enabled (0)
 	xor eax, eax
 	stosd				; CDW12
 	stosd				; CDW13
@@ -195,15 +194,15 @@ nvme_init_enable_wait:
 	stosd				; CDW1 NSID cleared
 	stosd				; CDW2
 	stosd				; CDW3
-	stosq				; CDW4-5 MPTR	
+	stosq				; CDW4-5 MPTR
 	mov rax, nvme_iosqb
 	stosq				; CDW6-7 DPTR1
 	xor eax, eax
 	stosq				; CDW8-9 DPTR2
 	mov eax, 0x003F0001
-	stosd				; CDW10 QSIZE (31-16), QID (15-0)
+	stosd				; CDW10 QSIZE 64 entries (31-16), QID 1 (15-0)
 	mov eax, 0x00010001
-	stosd				; CDW11 CQID (31-16), PC (0)
+	stosd				; CDW11 CQID 1 (31-16), PC Enabled (0)
 	xor eax, eax
 	stosd				; CDW12
 	stosd				; CDW13
@@ -356,7 +355,7 @@ nvme_read_setup:
 	stosq				; CDW4-5 MPTR
 	mov rax, rbx			; Move the memory address to RAX
 	stosq				; CDW6-7 PRP1
-	
+
 	; Calculate PRP2
 	push rcx			; Save the requested sector count for later
 	cmp rcx, 2
@@ -403,7 +402,7 @@ nvme_read_calc_rpr2_end:
 nvme_read_savetail:
 	mov [os_NVMe_iotail], al	; Save the tail for the next command
 	mov [rdi+0x1008], eax		; Write the new tail value
-	
+
 	; Check completion queue
 	mov rdi, nvme_iocqb
 	shl rcx, 4			; Each entry is 16 bytes
