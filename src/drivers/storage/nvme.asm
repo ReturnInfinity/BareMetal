@@ -286,6 +286,13 @@ nvme_init_LBA_end:
 	mov rdi, 0x800000		; memory location
 	call nvme_read			; Test read
 
+	; Execute another test read
+	mov rax, 4			; Starting sector
+	mov rcx, 4			; Num of sectors
+	mov rdx, 1			; Disk num
+	mov rdi, 0x810000		; memory location
+	call nvme_read			; Test read
+
 nvme_init_not_found:
 	ret
 ; -----------------------------------------------------------------------------
@@ -327,10 +334,14 @@ nvme_read_512b:
 
 	; Create I/O Entry
 nvme_read_setup:
-	; TODO calculate where this should go based on the last know head/tail
+	; Build the command at the expected location in the Submission ring
 	mov rdi, nvme_iosqb
-	; get last known tail
-	; increment and store
+	xor eax, eax
+	mov al, [os_NVMe_iotail]	; Get the current I/O tail value
+	shl eax, 6
+	add rdi, rax
+
+	; Create the 64-byte command
 	mov eax, 0x00000002		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Read (0x02)
 	stosd
 	mov eax, edx			; Move the Namespace ID to RAX
@@ -375,21 +386,30 @@ nvme_read_calc_rpr2_end:
 	stosd				; CDW14 ELBST EILBRT (31:00)
 	stosd				; CDW15 ELBATM (31:16), ELBAT (15:00)
 
-	; Start the I/O commands
-	; TODO make this better, check for wrap around
+	; Start the I/O command by updating the tail doorbell
 	mov rdi, [os_NVMe_Base]
 	xor eax, eax
-	mov al, [os_NVMe_iotail]
-	add al, 1
-	mov [os_NVMe_iotail], al
-	mov [rdi+0x1008], eax		; Write the tail to IO queue
+	mov al, [os_NVMe_iotail]	; Get the current I/O tail value
+	mov ecx, eax			; Save the old I/O tail value for reading from the completion ring
+	add al, 1			; Add 1 to it
+	cmp al, 64			; Is it 64 or greater?
+	jl nvme_read_savetail
+	xor eax, eax			; Is so, wrap around to 0
+nvme_read_savetail:
+	mov [os_NVMe_iotail], al	; Save the tail for the next command
+	mov [rdi+0x1008], eax		; Write the new tail value
 	
 	; Check completion queue
+	mov rdi, nvme_iocqb
+	shl rcx, 4			; Each entry is 16 bytes
+	add rcx, 8			; Add 8 for DW3
+	add rdi, rcx
 nvme_read_wait:
-	; TODO Calculate the offset properly
-	mov eax, [nvme_iocqb + 0x8]
+	mov eax, [rdi]
 	cmp eax, 0x0
 	je nvme_read_wait
+	xor eax, eax
+	stosd				; Overwrite the old entry
 
 nvme_read_error:
 	pop rbx
