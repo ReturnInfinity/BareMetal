@@ -58,12 +58,6 @@ nvme_init_found:
 	bts eax, 2
 	call os_pci_write
 
-	; Clear 64 KiB of memory for NVMe structures
-	mov edi, nvme_base
-	mov ecx, 8192
-	xor eax, eax
-	rep stosq
-
 	; Disable the controller
 	mov eax, [rsi+NVMe_CC]
 	btc eax, 0			; Set CC.EN to '0'

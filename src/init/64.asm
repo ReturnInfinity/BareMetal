@@ -10,7 +10,7 @@
 init_64:
 	; Set the temporary stack
 
-	; Clear system variables area
+	; Clear all memory after the kernel up to 2MiB
 	mov edi, os_SystemVariables
 	mov ecx, 122880			; Clear 960 KiB
 	xor eax, eax
