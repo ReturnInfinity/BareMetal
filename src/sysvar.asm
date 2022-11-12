@@ -43,7 +43,7 @@ nvme_asqb:		equ 0x0000000000170000	; 0x170000 -> 0x170FFF	4K Admin Submission Qu
 nvme_acqb:		equ 0x0000000000171000	; 0x171000 -> 0x171FFF	4K Admin Completion Queue Base Address
 nvme_iosqb:		equ 0x0000000000172000	; 0x172000 -> 0x172FFF	4K I/O Submission Queue Base Address
 nvme_iocqb:		equ 0x0000000000173000	; 0x173000 -> 0x173FFF	4K I/O Completion Queue Base Address
-nvme_identity:		equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Identify Data
+nvme_controllerdata:	equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Identify Data
 nvme_activenamespace:	equ 0x0000000000175000	; 0x175000 -> 0x175FFF	4K Namespace Data
 nvme_identitynamespace:	equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identify Data
 nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries

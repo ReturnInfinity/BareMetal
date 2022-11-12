@@ -60,7 +60,7 @@ nvme_init_found:
 
 	; Disable the controller
 	mov eax, [rsi+NVMe_CC]
-	btc eax, 0			; Set CC.EN to '0'
+	btc eax, 0			; Clear CC.EN bit to '0'
 	mov [rsi+NVMe_CC], eax
 
 	; Reset the controller (if supported)
@@ -93,71 +93,8 @@ nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
 	jnc nvme_init_enable_wait
-
-	; Get the Identify Controller structure
+	
 	mov rdi, nvme_asqb		; Build the following commands directly in the Admin Submission Queue
-	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
-	stosd
-	xor eax, eax
-	stosd				; CDW1 NSID cleared
-	stosd				; CDW2
-	stosd				; CDW3
-	stosq				; CDW4-5 MPTR
-	mov rax, nvme_identity
-	stosq				; CDW6-7 DPTR1
-	xor eax, eax
-	stosq				; CDW8-9 DPTR2
-	mov eax, 1
-	stosd				; CDW10 CNS 1 (Identify Controller)
-	xor eax, eax
-	stosd				; CDW11
-	stosd				; CDW12
-	stosd				; CDW13
-	stosd				; CDW14
-	stosd				; CDW15
-
-	; Get the Active Namespace ID list
-	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
-	stosd
-	xor eax, eax
-	stosd				; CDW1 NSID cleared
-	stosd				; CDW2
-	stosd				; CDW3
-	stosq				; CDW4-5 MPTR
-	mov rax, nvme_activenamespace
-	stosq				; CDW6-7 DPTR1
-	xor eax, eax
-	stosq				; CDW8-9 DPTR2
-	mov eax, 2
-	stosd				; CDW10 CNS 2 (Active Namespace)
-	xor eax, eax
-	stosd				; CDW11
-	stosd				; CDW12
-	stosd				; CDW13
-	stosd				; CDW14
-	stosd				; CDW15
-
-	; Get the Identify Namespace structure
-	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
-	stosd
-	mov eax, 1
-	stosd				; CDW1 NSID
-	xor eax, eax
-	stosd				; CDW2
-	stosd				; CDW3
-	stosq				; CDW4-5 MPTR
-	mov rax, nvme_identitynamespace
-	stosq				; CDW6-7 DPTR1
-	xor eax, eax
-	stosq				; CDW8-9 DPTR2
-	mov eax, 0
-	stosd				; CDW10 CNS 2 (Identify Namespace)
-	xor eax, eax
-	stosd				; CDW11
-	stosd				; CDW12
-	stosd				; CDW13
-	stosd				; CDW14
-	stosd				; CDW15
 
 	; Create I/O Completion Queue
 	mov eax, 0x00010005		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Completion Queue (0x05)
@@ -206,12 +143,12 @@ nvme_init_enable_wait:
 	; Start the Admin commands
 	xor eax, eax
 	mov [rsi+0x1004], eax		; Write the head
-	mov eax, 5
+	mov eax, 2
 	mov [rsi+0x1000], eax		; Write the tail
-	mov [os_NVMe_atail], al
+	mov [os_NVMe_atail], al		; Save the Admin SQ Tail
 
-	; Check completion queue
-	; First two dwords are command specific
+	; Check Admin Completion Queue
+	; DW0 and DW1 are command specific
 	; DW2 - SQ Identifier (SQID) bits 31:16, SQ Head Pointer (SQHD) bits 15:00
 	; DW3 - Status bits 31:17, Phase bit 16, Command Identifier (CID) bits 15:00
 	mov rsi, nvme_acqb
@@ -224,13 +161,32 @@ nvme_init_admin_wait:
 	cmp eax, 0x0
 	je nvme_init_admin_wait
 
+	; Save the Identify Controller structure
+	mov ecx, NVMe_Identify_Controller
+	xor edx, edx			; NS ID ignored for Identify Controller
+	mov rdi, nvme_controllerdata
+	call nvme_identify
+
+	; Save the Active Namespace ID list
+	mov ecx, NVMe_Active_Namespace
+	xor edx, edx			; NS ID ignored for Active Namespace
+	mov rdi, nvme_activenamespace
+	call nvme_identify
+
+	; TODO Only do this for the Active Namespaces
+	; Save the Identify Namespace data
+	mov ecx, NVMe_Identify_Namespace
+	mov edx, 1			; NS ID
+	mov rdi, nvme_identitynamespace
+	call nvme_identify
+
 	; Parse the Controller Identify data
 	; Serial Number (SN) bytes 23-04
 	; Model Number (MN) bytes 63-24
 	; Firmware Revision (FR) bytes 71-64
 	; Maximum Data Transfer Size (MDTS) byte 77
 	; Controller ID (CNTLID) bytes 79-78
-	mov rsi, nvme_identity
+	mov rsi, nvme_controllerdata
 	add rsi, 77
 	lodsb
 	; The value is in units of the minimum memory page size (CAP.MPSMIN) and is reported as a power of two (2^n).
@@ -271,11 +227,13 @@ nvme_init_LBA_skip:
 nvme_init_LBA_end:
 	mov [os_NVMeLBA], bl		; Store the highest LBADS
 
-	; Set the IO head and tail
+	; Set the I/O Submission Queue head and tail
 	mov rdi, [os_NVMe_Base]
 	mov eax, 0
 	mov [rdi+0x100C], eax		; Write the head
 	mov [rdi+0x1008], eax		; Write the tail	
+
+; Start Test Code
 
 	; Execute a test read
 	mov rax, 1			; Starting sector
@@ -291,6 +249,21 @@ nvme_init_LBA_end:
 	mov rdi, 0x810000		; memory location
 	call nvme_read			; Test read
 
+	; Fill memory with some test data
+	mov rdi, 0x820000
+	mov rax, 0x0000BABEBABE0000
+	mov rcx, 10
+	rep stosq
+
+	; Execute a test write
+	mov rax, 16			; Starting sector
+	mov rcx, 4			; Num of sectors
+	mov rdx, 1			; Disk num
+	mov rdi, 0x820000		; memory location
+	call nvme_write			; Test read
+
+; End Test Code
+
 nvme_init_not_found:
 	ret
 ; -----------------------------------------------------------------------------
@@ -299,7 +272,7 @@ nvme_init_not_found:
 ; -----------------------------------------------------------------------------
 ; nvme_read -- Read data from a NVMe device
 ; IN:	RAX = starting sector # to read (48-bit LBA address)
-;	RCX = number of sectors to read (up to 8192 = 4MiB)
+;	RCX = number of sectors to read
 ;	RDX = disk #
 ;	RDI = memory location to store data
 ; OUT:	Nothing
@@ -419,11 +392,202 @@ nvme_read_error:
 
 ; -----------------------------------------------------------------------------
 ; nvme_write -- Write data to a NVMe device
-; IN:	
-; OUT:	
+; IN:	RAX = starting sector # to write (48-bit LBA address)
+;	RCX = number of sectors to write
+;	RDX = disk #
+;	RDI = memory location to load data
+; OUT:	Nothing
+;	All other registers preserved
 nvme_write:
+	push rdi
+	push rcx
+	push rbx
+
+	push rax			; Save the starting sector
+	mov rbx, rdi			; Save the memory location
+
+	cmp rcx, 0			; Error if no data was requested
+	je nvme_write_error
+
+	; Check sector size
+	; TODO This needs to check based on the Namespace ID
+	mov al, [os_NVMeLBA]
+	cmp al, 0x0C			; 4096B sectors
+	je nvme_write_setup
+	cmp al, 0x09			; 512B sectors
+	jne nvme_write_error
+
+	; Convert sector sizes if needed
+nvme_write_512b:
+	shl rcx, 3			; Covert count to 4096B sectors
+	pop rax
+	shl rax, 3			; Convert starting sector to 4096B sectors
+	push rax
+
+	; Create I/O Entry
+nvme_write_setup:
+	; Build the command at the expected location in the Submission ring
+	mov rdi, nvme_iosqb
+	xor eax, eax
+	mov al, [os_NVMe_iotail]	; Get the current I/O tail value
+	shl eax, 6
+	add rdi, rax
+
+	; Create the 64-byte command
+	mov eax, 0x00000001		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Write (0x01)
+	stosd
+	mov eax, edx			; Move the Namespace ID to RAX
+	stosd				; CDW1 NSID
+	xor eax, eax
+	stosq				; CDW2-3 ELBST EILBRT (47:00)
+	stosq				; CDW4-5 MPTR
+	mov rax, rbx			; Move the memory address to RAX
+	stosq				; CDW6-7 PRP1
+
+	; Calculate PRP2
+	push rcx			; Save the requested sector count for later
+	cmp rcx, 2
+	jle nvme_write_calc_rpr2_skip
+	sub rcx, 1			; Subtract one as PTR1 covers one 4K load
+	push rdi
+	mov rdi, nvme_rpr		; Space to build the RPR2 structure
+nvme_write_next_rpr:
+	add rax, 4096			; An entry is needed for every 4K
+	stosq
+	sub rcx, 1
+	cmp rcx, 0
+	jne nvme_write_next_rpr	
+	pop rdi
+	mov rax, nvme_rpr
+	jmp nvme_write_calc_rpr2_end	; Write the address of the RPR2 data
+nvme_write_calc_rpr2_skip:
+	add rax, 4096
+nvme_write_calc_rpr2_end:	
+	stosq				; CDW8-9 PRP2
+	pop rcx				; Restore the sector count
+
+	pop rax				; Restore the starting sector
+	stosd				; CDW10 SLBA (31:00)
+	shr rax, 32
+	stosd				; CDW11 SLBA (63:32)
+	mov eax, ecx
+	sub eax, 1
+	stosd				; CDW12 Number of Logical Blocks (15:00)
+	xor eax, eax
+	stosd				; CDW13 DSM (07:00)
+	stosd				; CDW14 ELBST EILBRT (31:00)
+	stosd				; CDW15 ELBATM (31:16), ELBAT (15:00)
+
+	; Start the I/O command by updating the tail doorbell
+	mov rdi, [os_NVMe_Base]
+	xor eax, eax
+	mov al, [os_NVMe_iotail]	; Get the current I/O tail value
+	mov ecx, eax			; Save the old I/O tail value for reading from the completion ring
+	add al, 1			; Add 1 to it
+	cmp al, 64			; Is it 64 or greater?
+	jl nvme_write_savetail
+	xor eax, eax			; Is so, wrap around to 0
+nvme_write_savetail:
+	mov [os_NVMe_iotail], al	; Save the tail for the next command
+	mov [rdi+0x1008], eax		; Write the new tail value
+
+	; Check completion queue
+	mov rdi, nvme_iocqb
+	shl rcx, 4			; Each entry is 16 bytes
+	add rcx, 8			; Add 8 for DW3
+	add rdi, rcx
+nvme_write_wait:
+	mov eax, [rdi]
+	cmp eax, 0x0
+	je nvme_write_wait
+	xor eax, eax
+	stosd				; Overwrite the old entry
+
+nvme_write_error:
+	pop rbx
+	pop rcx
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; nvme_identify -- Identify a NVMe device
+; IN:	RCX = CNS
+;	RDX = NSID
+;	RDI = memory location to store data
+; OUT:	Nothing
+;	All other registers preserved
+nvme_identify:
+	push rdi
+	push rcx
+	push rbx
+	push rax
+	
+	mov rbx, rdi			; Save the memory location
+
+	; Create Admin Entry
+	; Build the command at the expected location in the Submission ring
+	mov rdi, nvme_asqb
+	xor eax, eax
+	mov al, [os_NVMe_atail]	; Get the current I/O tail value
+	shl eax, 6
+	add rdi, rax
+
+	; Build the Identify structure
+	mov eax, 0x00000006
+	stosd				; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
+	mov eax, edx
+	stosd				; CDW1 NSID
+	xor eax, eax
+	stosd				; CDW2
+	stosd				; CDW3
+	stosq				; CDW4-5 MPTR
+	mov rax, rbx
+	stosq				; CDW6-7 DPTR1
+	xor eax, eax
+	stosq				; CDW8-9 DPTR2
+	mov eax, ecx
+	stosd				; CDW10 CNS
+	xor eax, eax
+	stosd				; CDW11
+	stosd				; CDW12
+	stosd				; CDW13
+	stosd				; CDW14
+	stosd				; CDW15
+
+	; Start the I/O command by updating the tail doorbell
+	mov rdi, [os_NVMe_Base]
+	xor eax, eax
+	mov al, [os_NVMe_atail]		; Get the current I/O tail value
+	mov ecx, eax			; Save the old I/O tail value for reading from the completion ring
+	add al, 1			; Add 1 to it
+	cmp al, 64			; Is it 64 or greater?
+	jl nvme_identify_savetail
+	xor eax, eax			; Is so, wrap around to 0
+nvme_identify_savetail:
+	mov [os_NVMe_atail], al		; Save the tail for the next command
+	mov [rdi+0x1000], eax		; Write the new tail value
+
+	; Check completion queue
+	mov rdi, nvme_acqb
+	shl rcx, 4			; Each entry is 16 bytes
+	add rcx, 8			; Add 8 for DW3
+	add rdi, rcx
+nvme_identify_wait:
+	mov eax, [rdi]
+	cmp eax, 0x0
+	je nvme_identify_wait
+	xor eax, eax
+	stosd				; Overwrite the old entry
+
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
 
 ; Register list
 NVMe_CAP		equ 0x00 ; Controller Capabilities
@@ -456,4 +620,9 @@ NVMe_PMRSWTP		equ 0xE10 ; Persistent Memory Region Sustained Write Throughput
 NVMe_PMRMSCL		equ 0xE14 ; Persistent Memory Region Memory Space Control Lower
 NVMe_PMRMSCU		equ 0xE18 ; Persistent Memory Region Memory Space Control Upper
 
+
+; Command list
+NVMe_Identify_Namespace		equ 0x00 ; Identify Namespace data structure for the specified NSID
+NVMe_Identify_Controller	equ 0x01 ; Identify Controller data structure for the controller
+NVMe_Active_Namespace		equ 0x02 ; Active Namespace ID list
 
