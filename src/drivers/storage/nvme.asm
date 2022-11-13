@@ -77,9 +77,9 @@ nvme_init_reset_wait:
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x003F003F		; 64 commands each for ACQS (27:16) and ASQS (11:00)
 	mov [rsi+NVMe_AQA], eax
-	mov rax, nvme_asqb		; ASQB 4K aligned (63:12)
+	mov rax, os_nvme_asqb		; ASQB 4K aligned (63:12)
 	mov [rsi+NVMe_ASQ], rax
-	mov rax, nvme_acqb		; ACQB 4K aligned (63:12)
+	mov rax, os_nvme_acqb		; ACQB 4K aligned (63:12)
 	mov [rsi+NVMe_ACQ], rax
 
 	; Disable controller interrupts
@@ -99,7 +99,7 @@ nvme_init_enable_wait:
 	xor ebx, ebx			; CDW1 Ignored
 	mov ecx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
 	mov edx, 0x00000001		; CDW11 PC Enabled (0)
-	mov rdi, nvme_iocqb		; CDW6-7 DPTR
+	mov rdi, os_nvme_iocqb		; CDW6-7 DPTR
 	call nvme_admin
 
 	; Create I/O Submission Queue
@@ -107,7 +107,7 @@ nvme_init_enable_wait:
 	xor ebx, ebx			; CDW1 Ignored
 	mov ecx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
 	mov edx, 0x00010001		; CDW11 CQID 1 (31:16), PC Enabled (0)
-	mov rdi, nvme_iosqb		; CDW6-7 DPTR
+	mov rdi, os_nvme_iosqb		; CDW6-7 DPTR
 	call nvme_admin
 
 	; Save the Identify Controller structure
@@ -115,7 +115,7 @@ nvme_init_enable_wait:
 	xor ebx, ebx			; CDW1 Ignored
 	mov ecx, NVMe_ID_CTRL		; CDW10 CNS
 	xor edx, edx			; CDW11 Ignored
-	mov rdi, nvme_controllerdata	; CDW6-7 DPTR
+	mov rdi, os_nvme_CTRLID		; CDW6-7 DPTR
 	call nvme_admin
 
 	; Save the Active Namespace ID list
@@ -123,7 +123,7 @@ nvme_init_enable_wait:
 	xor ebx, ebx			; CDW1 Ignored
 	mov ecx, NVMe_ANS		; CDW10 CNS
 	xor edx, edx			; CDW11 Ignored
-	mov rdi, nvme_activenamespace	; CDW6-7 DPTR
+	mov rdi, os_nvme_ANS		; CDW6-7 DPTR
 	call nvme_admin
 
 	; Save the Identify Namespace data
@@ -131,7 +131,7 @@ nvme_init_enable_wait:
 	mov ebx, 1			; CDW1 NSID
 	mov ecx, NVMe_ID_NS		; CDW10 CNS
 	xor edx, edx			; CDW11 Ignored
-	mov rdi, nvme_identitynamespace	; CDW6-7 DPTR
+	mov rdi, os_nvme_NSID		; CDW6-7 DPTR
 	call nvme_admin
 
 	; Parse the Controller Identify data
@@ -140,7 +140,7 @@ nvme_init_enable_wait:
 	; Firmware Revision (FR) bytes 71-64
 	; Maximum Data Transfer Size (MDTS) byte 77
 	; Controller ID (CNTLID) bytes 79-78
-	mov rsi, nvme_controllerdata
+	mov rsi, os_nvme_CTRLID
 	add rsi, 77
 	lodsb
 	; The value is in units of the minimum memory page size (CAP.MPSMIN) and is reported as a power of two (2^n).
@@ -152,7 +152,7 @@ nvme_init_enable_wait:
 
 	; TODO move this to it's own function
 	; Parse the Namespace Identify data for disk 0
-	mov rsi, nvme_identitynamespace
+	mov rsi, os_nvme_NSID
 	lodsd				; Namespace Size (NSZE) bytes 07-00 - Total LBA blocks
 	mov [os_NVMeTotalLBA], eax
 
@@ -161,10 +161,10 @@ nvme_init_enable_wait:
 	; LBA Data Size (LBADS) is bits 23:16. Needs to be 9 or greater
 	; 9 = 512 byte sectors
 	; 12 = 4096 byte sectors
-	mov ecx, [nvme_identitynamespace+24]
+	mov ecx, [os_nvme_NSID+24]
 	shr ecx, 16
 	add cl, 1			; NLBAF is a 0-based number
-	mov rsi, nvme_identitynamespace+0x80
+	mov rsi, os_nvme_NSID+0x80
 	xor ebx, ebx
 nvme_init_LBA_next:
 	cmp cl, 0			; Check # of formats
@@ -190,7 +190,7 @@ nvme_init_LBA_end:
 ; Start Test Code
 
 	; Execute a test read
-	mov rax, 1			; Starting sector
+	mov rax, 0			; Starting sector
 	mov rbx, NVMe_Read
 	mov rcx, 16			; Num of sectors
 	mov rdx, 1			; Disk num
@@ -247,7 +247,7 @@ nvme_admin:
 
 	; Build the command at the expected location in the Submission ring
 	push rax
-	mov rdi, nvme_asqb
+	mov rdi, os_nvme_asqb
 	xor eax, eax
 	mov al, [os_NVMe_atail]		; Get the current Admin tail value
 	shl eax, 6			; Quick multiply by 64
@@ -290,7 +290,7 @@ nvme_admin_savetail:
 	mov [rdi+0x1000], eax		; Write the new tail value
 
 	; Check completion queue
-	mov rdi, nvme_acqb
+	mov rdi, os_nvme_acqb
 	shl rcx, 4			; Each entry is 16 bytes
 	add rcx, 8			; Add 8 for DW3
 	add rdi, rcx
@@ -313,7 +313,7 @@ nvme_admin_wait:
 
 ; -----------------------------------------------------------------------------
 ; nvme_io -- Perform an I/O operation on a NVMe device
-; IN:	RAX = starting sector # (48-bit LBA address)
+; IN:	RAX = starting sector #
 ;	RBX = I/O Opcode
 ;	RCX = number of sectors
 ;	RDX = disk #
@@ -351,7 +351,7 @@ nvme_io_setup:
 	mov rbx, rdi			; Save the memory location
 
 	; Build the command at the expected location in the Submission ring
-	mov rdi, nvme_iosqb
+	mov rdi, os_nvme_iosqb
 	xor eax, eax
 	mov al, [os_NVMe_iotail]	; Get the current I/O tail value
 	shl eax, 6
@@ -378,7 +378,7 @@ nvme_io_setup:
 	jle nvme_io_calc_rpr2_skip
 	sub rcx, 1			; Subtract one as PTR1 covers one 4K load
 	push rdi
-	mov rdi, nvme_rpr		; Space to build the RPR2 structure
+	mov rdi, os_nvme_rpr		; Space to build the RPR2 structure
 nvme_io_next_rpr:
 	add rax, 4096			; An entry is needed for every 4K
 	stosq
@@ -386,7 +386,7 @@ nvme_io_next_rpr:
 	cmp rcx, 0
 	jne nvme_io_next_rpr	
 	pop rdi
-	mov rax, nvme_rpr
+	mov rax, os_nvme_rpr
 	jmp nvme_io_calc_rpr2_end	; Write the address of the RPR2 data
 nvme_io_calc_rpr2_skip:
 	add rax, 4096
@@ -420,7 +420,7 @@ nvme_io_savetail:
 	mov [rdi+0x1008], eax		; Write the new tail value
 
 	; Check completion queue
-	mov rdi, nvme_iocqb
+	mov rdi, os_nvme_iocqb
 	shl rcx, 4			; Each entry is 16 bytes
 	add rcx, 8			; Add 8 for DW3
 	add rdi, rcx
