@@ -94,72 +94,19 @@ nvme_init_enable_wait:
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
 	jnc nvme_init_enable_wait
 	
-	mov rdi, nvme_asqb		; Build the following commands directly in the Admin Submission Queue
-
 	; Create I/O Completion Queue
 	mov eax, 0x00010005		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Completion Queue (0x05)
-	stosd
-	xor eax, eax
-	stosd				; CDW1 NSID cleared
-	stosd				; CDW2
-	stosd				; CDW3
-	stosq				; CDW4-5 MPTR
-	mov rax, nvme_iocqb
-	stosq				; CDW6-7 DPTR1
-	xor eax, eax
-	stosq				; CDW8-9 DPTR2
-	mov eax, 0x003F0001
-	stosd				; CDW10 QSIZE 64 entries (31-16), QID 1 (15-0)
-	mov eax, 1
-	stosd				; CDW11 PC Enabled (0)
-	xor eax, eax
-	stosd				; CDW12
-	stosd				; CDW13
-	stosd				; CDW14
-	stosd				; CDW15
+	mov ebx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
+	mov ecx, 0x00000001		; CDW11 PC Enabled (0)
+	mov rdi, nvme_iocqb		; CDW6-7 DPTR
+	call nvme_admin
 
 	; Create I/O Submission Queue
 	mov eax, 0x00010001		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Submission Queue (0x01)
-	stosd
-	xor eax, eax
-	stosd				; CDW1 NSID cleared
-	stosd				; CDW2
-	stosd				; CDW3
-	stosq				; CDW4-5 MPTR
-	mov rax, nvme_iosqb
-	stosq				; CDW6-7 DPTR1
-	xor eax, eax
-	stosq				; CDW8-9 DPTR2
-	mov eax, 0x003F0001
-	stosd				; CDW10 QSIZE 64 entries (31-16), QID 1 (15-0)
-	mov eax, 0x00010001
-	stosd				; CDW11 CQID 1 (31-16), PC Enabled (0)
-	xor eax, eax
-	stosd				; CDW12
-	stosd				; CDW13
-	stosd				; CDW14
-	stosd				; CDW15
-
-	; Start the Admin commands
-	xor eax, eax
-	mov [rsi+0x1004], eax		; Write the head
-	mov eax, 2
-	mov [rsi+0x1000], eax		; Write the tail
-	mov [os_NVMe_atail], al		; Save the Admin SQ Tail
-
-	; Check Admin Completion Queue
-	; DW0 and DW1 are command specific
-	; DW2 - SQ Identifier (SQID) bits 31:16, SQ Head Pointer (SQHD) bits 15:00
-	; DW3 - Status bits 31:17, Phase bit 16, Command Identifier (CID) bits 15:00
-	mov rsi, nvme_acqb
-	sub rax, 1
-	shl rax, 4			; Each entry is 16 bytes
-	add rax, 8			; Add 8 for DW3
-	add rsi, rax
-nvme_init_admin_wait:
-	mov eax, [rsi]
-	cmp eax, 0x0
-	je nvme_init_admin_wait
+	mov ebx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
+	mov ecx, 0x00010001		; CDW11 CQID 1 (31:16), PC Enabled (0)
+	mov rdi, nvme_iosqb		; CDW6-7 DPTR
+	call nvme_admin
 
 	; Save the Identify Controller structure
 	mov ecx, NVMe_Identify_Controller
@@ -268,6 +215,90 @@ nvme_init_LBA_end:
 ; End Test Code
 
 nvme_init_not_found:
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; nvme_admin -- Perform an Admin operation on a NVMe controller
+; IN:	RAX = 
+;	RBX = 
+;	RCX = 
+;	RDX = 
+;	RDI = memory location
+; OUT:	Nothing
+;	All other registers preserved
+nvme_admin:
+	push rdi
+	push rdx
+	push rcx
+	push rbx
+	push rax
+	
+	mov rdx, rdi			; Save the memory location
+
+	; Create Admin Entry
+	; Build the command at the expected location in the Submission ring
+	push rax
+	mov rdi, nvme_asqb
+	xor eax, eax
+	mov al, [os_NVMe_atail]		; Get the current Admin tail value
+	shl eax, 6			; Quick multiply by 64
+	add rdi, rax
+	pop rax
+
+	; Build the Identify structure
+	stosd				; CDW0
+	xor eax, eax
+	stosd				; CDW1
+	stosd				; CDW2
+	stosd				; CDW3
+	stosq				; CDW4-5
+	mov rax, rdx
+	stosq				; CDW6-7
+	xor eax, eax
+	stosq				; CDW8-9
+	mov eax, ebx
+	stosd				; CDW10
+	xor eax, eax
+	mov eax, ecx
+	stosd				; CDW11
+	xor eax, eax
+	stosd				; CDW12
+	stosd				; CDW13
+	stosd				; CDW14
+	stosd				; CDW15
+
+	; Start the Admin command by updating the tail doorbell
+	mov rdi, [os_NVMe_Base]
+	xor eax, eax
+	mov al, [os_NVMe_atail]		; Get the current Admin tail value
+	mov ecx, eax			; Save the old Admin tail value for reading from the completion ring
+	add al, 1			; Add 1 to it
+	cmp al, 64			; Is it 64 or greater?
+	jl nvme_admin_savetail
+	xor eax, eax			; Is so, wrap around to 0
+nvme_admin_savetail:
+	mov [os_NVMe_atail], al		; Save the tail for the next command
+	mov [rdi+0x1000], eax		; Write the new tail value
+
+	; Check completion queue
+	mov rdi, nvme_acqb
+	shl rcx, 4			; Each entry is 16 bytes
+	add rcx, 8			; Add 8 for DW3
+	add rdi, rcx
+nvme_admin_wait:
+	mov eax, [rdi]
+	cmp eax, 0x0
+	je nvme_admin_wait
+	xor eax, eax
+	stosd				; Overwrite the old entry
+
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -442,11 +473,11 @@ nvme_identify:
 	stosd				; CDW14
 	stosd				; CDW15
 
-	; Start the I/O command by updating the tail doorbell
+	; Start the Admin command by updating the tail doorbell
 	mov rdi, [os_NVMe_Base]
 	xor eax, eax
-	mov al, [os_NVMe_atail]		; Get the current I/O tail value
-	mov ecx, eax			; Save the old I/O tail value for reading from the completion ring
+	mov al, [os_NVMe_atail]		; Get the current Admin tail value
+	mov ecx, eax			; Save the old Admin tail value for reading from the completion ring
 	add al, 1			; Add 1 to it
 	cmp al, 64			; Is it 64 or greater?
 	jl nvme_identify_savetail
