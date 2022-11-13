@@ -96,36 +96,43 @@ nvme_init_enable_wait:
 	
 	; Create I/O Completion Queue
 	mov eax, 0x00010005		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Completion Queue (0x05)
-	mov ebx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
-	mov ecx, 0x00000001		; CDW11 PC Enabled (0)
+	xor ebx, ebx			; CDW1 Ignored
+	mov ecx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
+	mov edx, 0x00000001		; CDW11 PC Enabled (0)
 	mov rdi, nvme_iocqb		; CDW6-7 DPTR
 	call nvme_admin
 
 	; Create I/O Submission Queue
 	mov eax, 0x00010001		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Submission Queue (0x01)
-	mov ebx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
-	mov ecx, 0x00010001		; CDW11 CQID 1 (31:16), PC Enabled (0)
+	xor ebx, ebx			; CDW1 Ignored
+	mov ecx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
+	mov edx, 0x00010001		; CDW11 CQID 1 (31:16), PC Enabled (0)
 	mov rdi, nvme_iosqb		; CDW6-7 DPTR
 	call nvme_admin
 
 	; Save the Identify Controller structure
-	mov ecx, NVMe_Identify_Controller
-	xor edx, edx			; NS ID ignored for Identify Controller
-	mov rdi, nvme_controllerdata
-	call nvme_identify
+	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
+	xor ebx, ebx			; CDW1 Ignored
+	mov ecx, NVMe_ID_CTRL		; CDW10 CNS
+	xor edx, edx			; CDW11 Ignored
+	mov rdi, nvme_controllerdata	; CDW6-7 DPTR
+	call nvme_admin
 
 	; Save the Active Namespace ID list
-	mov ecx, NVMe_Active_Namespace
-	xor edx, edx			; NS ID ignored for Active Namespace
-	mov rdi, nvme_activenamespace
-	call nvme_identify
+	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
+	xor ebx, ebx			; CDW1 Ignored
+	mov ecx, NVMe_ANS		; CDW10 CNS
+	xor edx, edx			; CDW11 Ignored
+	mov rdi, nvme_activenamespace	; CDW6-7 DPTR
+	call nvme_admin
 
-	; TODO Only do this for the Active Namespaces
 	; Save the Identify Namespace data
-	mov ecx, NVMe_Identify_Namespace
-	mov edx, 1			; NS ID
-	mov rdi, nvme_identitynamespace
-	call nvme_identify
+	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
+	mov ebx, 1			; CDW1 NSID
+	mov ecx, NVMe_ID_NS		; CDW10 CNS
+	xor edx, edx			; CDW11 Ignored
+	mov rdi, nvme_identitynamespace	; CDW6-7 DPTR
+	call nvme_admin
 
 	; Parse the Controller Identify data
 	; Serial Number (SN) bytes 23-04
@@ -200,8 +207,8 @@ nvme_init_LBA_end:
 
 	; Fill memory with some test data
 	mov rdi, 0x820000
-	mov rax, 0x0000BABEBABE0000
-	mov rcx, 10
+	mov rax, 0x55AA55AA55AA55AA
+	mov rcx, 2048
 	rep stosq
 
 	; Execute a test write
@@ -221,23 +228,23 @@ nvme_init_not_found:
 
 ; -----------------------------------------------------------------------------
 ; nvme_admin -- Perform an Admin operation on a NVMe controller
-; IN:	RAX = 
-;	RBX = 
-;	RCX = 
-;	RDX = 
-;	RDI = memory location
+; IN:	EAX = CDW0
+;	EBX = CDW1
+;	ECX = CDW10
+;	EDX = CDW11
+;	RDI = CDW6-7
 ; OUT:	Nothing
 ;	All other registers preserved
 nvme_admin:
+	push r9
 	push rdi
 	push rdx
 	push rcx
 	push rbx
 	push rax
 	
-	mov rdx, rdi			; Save the memory location
+	mov r9, rdi			; Save the memory location
 
-	; Create Admin Entry
 	; Build the command at the expected location in the Submission ring
 	push rax
 	mov rdi, nvme_asqb
@@ -247,21 +254,21 @@ nvme_admin:
 	add rdi, rax
 	pop rax
 
-	; Build the Identify structure
+	; Build the structure
 	stosd				; CDW0
-	xor eax, eax
+	mov eax, ebx
 	stosd				; CDW1
+	xor eax, eax
 	stosd				; CDW2
 	stosd				; CDW3
 	stosq				; CDW4-5
-	mov rax, rdx
+	mov rax, r9
 	stosq				; CDW6-7
 	xor eax, eax
 	stosq				; CDW8-9
-	mov eax, ebx
-	stosd				; CDW10
-	xor eax, eax
 	mov eax, ecx
+	stosd				; CDW10
+	mov eax, edx
 	stosd				; CDW11
 	xor eax, eax
 	stosd				; CDW12
@@ -299,6 +306,7 @@ nvme_admin_wait:
 	pop rcx
 	pop rdx
 	pop rdi
+	pop r9
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -362,6 +370,9 @@ nvme_io_setup:
 	stosq				; CDW6-7 PRP1
 
 	; Calculate PRP2
+	; For 1 - 4096 bytes only PRP1 is needed, PRP2 is ignored
+	; For 4097 - 8192 bytes PRP2 is needed to point to memory address to store it
+	; For 8193+ bytes PRP2 points to a list of more PRPs
 	push rcx			; Save the requested sector count for later
 	cmp rcx, 2
 	jle nvme_io_calc_rpr2_skip
@@ -430,78 +441,11 @@ nvme_io_error:
 
 ; -----------------------------------------------------------------------------
 ; nvme_identify -- Identify a NVMe device
-; IN:	RCX = CNS
-;	RDX = NSID
+; IN:	RBX = NameSpace ID
 ;	RDI = memory location to store data
 ; OUT:	Nothing
 ;	All other registers preserved
 nvme_identify:
-	push rdi
-	push rcx
-	push rbx
-	push rax
-	
-	mov rbx, rdi			; Save the memory location
-
-	; Create Admin Entry
-	; Build the command at the expected location in the Submission ring
-	mov rdi, nvme_asqb
-	xor eax, eax
-	mov al, [os_NVMe_atail]	; Get the current I/O tail value
-	shl eax, 6
-	add rdi, rax
-
-	; Build the Identify structure
-	mov eax, 0x00000006
-	stosd				; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
-	mov eax, edx
-	stosd				; CDW1 NSID
-	xor eax, eax
-	stosd				; CDW2
-	stosd				; CDW3
-	stosq				; CDW4-5 MPTR
-	mov rax, rbx
-	stosq				; CDW6-7 DPTR1
-	xor eax, eax
-	stosq				; CDW8-9 DPTR2
-	mov eax, ecx
-	stosd				; CDW10 CNS
-	xor eax, eax
-	stosd				; CDW11
-	stosd				; CDW12
-	stosd				; CDW13
-	stosd				; CDW14
-	stosd				; CDW15
-
-	; Start the Admin command by updating the tail doorbell
-	mov rdi, [os_NVMe_Base]
-	xor eax, eax
-	mov al, [os_NVMe_atail]		; Get the current Admin tail value
-	mov ecx, eax			; Save the old Admin tail value for reading from the completion ring
-	add al, 1			; Add 1 to it
-	cmp al, 64			; Is it 64 or greater?
-	jl nvme_identify_savetail
-	xor eax, eax			; Is so, wrap around to 0
-nvme_identify_savetail:
-	mov [os_NVMe_atail], al		; Save the tail for the next command
-	mov [rdi+0x1000], eax		; Write the new tail value
-
-	; Check completion queue
-	mov rdi, nvme_acqb
-	shl rcx, 4			; Each entry is 16 bytes
-	add rcx, 8			; Add 8 for DW3
-	add rdi, rcx
-nvme_identify_wait:
-	mov eax, [rdi]
-	cmp eax, 0x0
-	je nvme_identify_wait
-	xor eax, eax
-	stosd				; Overwrite the old entry
-
-	pop rax
-	pop rbx
-	pop rcx
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -537,9 +481,9 @@ NVMe_PMRMSCL		equ 0xE14 ; Persistent Memory Region Memory Space Control Lower
 NVMe_PMRMSCU		equ 0xE18 ; Persistent Memory Region Memory Space Control Upper
 
 ; Command list
-NVMe_Identify_Namespace		equ 0x00 ; Identify Namespace data structure for the specified NSID
-NVMe_Identify_Controller	equ 0x01 ; Identify Controller data structure for the controller
-NVMe_Active_Namespace		equ 0x02 ; Active Namespace ID list
+NVMe_ID_NS		equ 0x00 ; Identify Namespace data structure for the specified NSID
+NVMe_ID_CTRL		equ 0x01 ; Identify Controller data structure for the controller
+NVMe_ANS		equ 0x02 ; Active Namespace ID list
 
 ; Opcodes for NVM Commands
 NVMe_Write		equ 0x01
