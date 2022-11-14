@@ -185,41 +185,7 @@ nvme_init_LBA_end:
 	mov rdi, [os_NVMe_Base]
 	mov eax, 0
 	mov [rdi+0x100C], eax		; Write the head
-	mov [rdi+0x1008], eax		; Write the tail	
-
-; Start Test Code
-
-	; Execute a test read
-	mov rax, 0			; Starting sector
-	mov rbx, NVMe_Read
-	mov rcx, 16			; Num of sectors
-	mov rdx, 1			; Disk num
-	mov rdi, 0x800000		; memory location
-	call nvme_io
-
-	; Execute another test read
-	mov rax, 4			; Starting sector
-	mov rbx, NVMe_Read
-	mov rcx, 4			; Num of sectors
-	mov rdx, 1			; Disk num
-	mov rdi, 0x810000		; memory location
-	call nvme_io
-
-	; Fill memory with some test data
-	mov rdi, 0x820000
-	mov rax, 0x55AA55AA55AA55AA
-	mov rcx, 2048
-	rep stosq
-
-	; Execute a test write
-	mov rax, 16			; Starting sector
-	mov rbx, NVMe_Write
-	mov rcx, 4			; Num of sectors
-	mov rdx, 1			; Disk num
-	mov rdi, 0x820000		; memory location
-	call nvme_io
-
-; End Test Code
+	mov [rdi+0x1008], eax		; Write the tail
 
 nvme_init_not_found:
 	ret

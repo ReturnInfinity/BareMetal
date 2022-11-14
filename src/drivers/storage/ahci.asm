@@ -135,6 +135,9 @@ ahci_read:
 	push rcx
 	push rax
 
+	shl rax, 3			; Convert to 512B starting sector
+	shl rcx, 3			; Convert 4K sectors to 512B sectors
+
 	bt dword [ahci_PA], edx		; Is the requested disk marked as active?
 	jnc achi_read_error		; If not, bail out
 	
@@ -262,6 +265,9 @@ ahci_write:
 	push rsi
 	push rcx
 	push rax
+
+	shl rax, 3			; Convert to 512B starting sector
+	shl rcx, 3			; Convert 4K sectors to 512B sectors
 
 	bt dword [ahci_PA], edx		; Is the requested disk marked as active?
 	jnc achi_write_error		; If not, bail out
