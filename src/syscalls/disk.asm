@@ -20,34 +20,34 @@
 b_disk_read:
 	push rdi
 	push rcx
+	push rbx
 	push rax
 
 	cmp rcx, 0
 	je b_disk_read_fail		; Bail out if instructed to read nothing
-	shl rax, 3			; Convert to 512B starting sector
-	shl rcx, 3			; Convert 4K sectors to 512B sectors
+	cmp rdx, 100
+	jge b_disk_read_nvme
 
-b_disk_read_loop:
-	cmp rcx, 8192			; We can read up to 8192 512B sectors with one call
-	jl b_disk_read_remainder
-	push rcx
-	mov rcx, 8192
-	call ahci_read
-	pop rcx
-	sub rcx, 8192
-	jnz b_disk_read_loop
-	jmp b_disk_read_done
-b_disk_read_remainder:
+b_disk_read_ahci:
 	call ahci_read
 
 b_disk_read_done:
 	pop rax
+	pop rbx
 	pop rcx
 	pop rdi
 	ret
 
+b_disk_read_nvme:
+	sub rdx, 99			; To BareMetal the first NVMe drive is 100. Internally it is 1
+	mov rbx, NVMe_Read
+	call nvme_io
+	add rdx, 99
+	jmp b_disk_read_done
+
 b_disk_read_fail:
 	pop rax
+	pop rbx
 	pop rcx
 	pop rdi
 	xor ecx, ecx
@@ -66,34 +66,34 @@ b_disk_read_fail:
 b_disk_write:
 	push rsi
 	push rcx
+	push rbx
 	push rax
 
 	cmp rcx, 0
 	je b_disk_write_fail		; Bail out if instructed to write nothing
-	shl rax, 3			; Convert to 512B starting sector
-	shl rcx, 3			; Convert 4K sectors to 512B sectors
+	cmp rdx, 100
+	jge b_disk_write_nvme
 
-b_disk_write_loop:
-	cmp rcx, 8192			; We can write up to 8192 512B sectors with one call
-	jl b_disk_write_remainder
-	push rcx
-	mov rcx, 8192
-	call ahci_write
-	pop rcx
-	sub rcx, 8192
-	jnz b_disk_write_loop
-	jmp b_disk_write_done
-b_disk_write_remainder:
+b_disk_write_ahci:
 	call ahci_write
 
 b_disk_write_done:
 	pop rax
+	pop rbx
 	pop rcx
 	pop rsi
 	ret
 
+b_disk_write_nvme:
+	sub rdx, 99			; To BareMetal the first NVMe drive is 100. Internally it is 1
+	mov rbx, NVMe_Write
+	call nvme_io
+	add rdx, 99
+	jmp b_disk_write_done
+
 b_disk_write_fail:
 	pop rax
+	pop rbx
 	pop rcx
 	pop rsi
 	xor ecx, ecx
