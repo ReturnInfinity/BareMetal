@@ -29,7 +29,8 @@ b_disk_read:
 	jge b_disk_read_nvme
 
 b_disk_read_ahci:
-	call ahci_read
+	mov ebx, AHCI_Read
+	call ahci_io
 
 b_disk_read_done:
 	pop rax
@@ -40,7 +41,7 @@ b_disk_read_done:
 
 b_disk_read_nvme:
 	sub rdx, 99			; To BareMetal the first NVMe drive is 100. Internally it is 1
-	mov rbx, NVMe_Read
+	mov ebx, NVMe_Read
 	call nvme_io
 	add rdx, 99
 	jmp b_disk_read_done
@@ -75,7 +76,8 @@ b_disk_write:
 	jge b_disk_write_nvme
 
 b_disk_write_ahci:
-	call ahci_write
+	mov ebx, AHCI_Write
+	call ahci_io
 
 b_disk_write_done:
 	pop rax
@@ -86,7 +88,7 @@ b_disk_write_done:
 
 b_disk_write_nvme:
 	sub rdx, 99			; To BareMetal the first NVMe drive is 100. Internally it is 1
-	mov rbx, NVMe_Write
+	mov ebx, NVMe_Write
 	call nvme_io
 	add rdx, 99
 	jmp b_disk_write_done
