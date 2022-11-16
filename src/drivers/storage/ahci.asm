@@ -25,19 +25,37 @@ ahci_init_found:
 	mov dl, 9			; Read register 9 for BAR5
 	xor eax, eax
 	call os_pci_read		; BAR5 (AHCI Base Address Register)
+	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
 	mov [ahci_base], rax
 	mov rsi, rax			; RSI holds the ABAR
 
+	; Mark memory as uncacheable
+	; TODO cleanup to do it automatically (for AHCI too!)
+;	mov rdi, 0x00013fa8
+;	mov rax, [rdi]
+;	bts rax, 4	; Set PCD to disable caching
+;	mov [rdi], rax
+
 	; Check for a valid version number (Bits 31:16 should be greater than 0)
 	mov eax, [rsi+AHCI_VS]
-	; TODO
+	ror eax, 16			; Rotate EAX so MJR is bits 15:00
+	cmp al, 0x01
+	jl ahci_init_not_found
+	mov [os_AHCIMJR], al
+	rol eax, 8			; Rotate EAX so MNR is bits 07:00
+	mov [os_AHCIMNR], al
 
-; Enable AHCI
+	; Grab the IRQ of the device
+	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
+	call os_pci_read
+	mov [os_AHCIIRQ], al		; AL holds the IRQ
+
+	; Enable AHCI
 	xor eax, eax
 	bts eax, 31
 	mov [rsi+AHCI_GHC], eax
 
-; Search the implemented ports for connected devices
+	; Search the implemented ports for connected devices
 	mov edx, [rsi+AHCI_PI]		; PI – Ports Implemented
 	xor ecx, ecx
 ahci_init_search_ports:
@@ -63,7 +81,7 @@ ahci_init_skip_port:
 
 ahci_init_search_ports_done:
 
-; Configure the active ports
+	; Configure the active ports
 	mov edx, [ahci_PA]
 	xor ecx, ecx
 ahci_init_config_active:
@@ -161,8 +179,8 @@ ahci_io:
 	add rdi, rdx
 	shr rdx, 10
 	mov eax, 0x00010005		; 1 PRDTL Entry, Command FIS Length = 20 bytes
-	cmp ebx, 0x35
-	jne ahci_io_skip_writebit
+	cmp ebx, 0x35			; Was a write requested?
+	jne ahci_io_skip_writebit	; If not, skip setting the write flag
 	bts ebx, 6			; Set the write flag (bit 6)
 ahci_io_skip_writebit:
 	stosd				; DW 0 - Description Information
@@ -398,6 +416,7 @@ AHCI_PxDEVSLP		equ 0x0044 ; Port x Device Sleep
 ; Opcodes for AHCI Commands
 AHCI_Write		equ 0x35
 AHCI_Read		equ 0x25
+AHCI_Identify		equ 0xEC
 
 
 ; =============================================================================
