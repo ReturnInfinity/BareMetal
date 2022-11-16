@@ -140,7 +140,7 @@ ahci_init_not_found:
 ; IN:	RAX = starting sector # (48-bit LBA address)
 ;	RBX = I/O Opcode
 ;	RCX = number of sectors
-;	RDX = disk #
+;	RDX = drive #
 ;	RDI = memory location
 ; OUT:	Nothing
 ;	All other registers preserved
@@ -283,7 +283,7 @@ ahci_id:
 	push rax
 	push rdi			; Save the destination memory address
 
-	bt dword [ahci_PA], edx		; Is the requested disk marked as active?
+	bt dword [ahci_PA], edx		; Is the requested drive marked as active?
 	jnc ahci_id_error		; If not, bail out
 
 	mov rsi, [ahci_base]

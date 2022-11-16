@@ -27,7 +27,7 @@ b_system:
 	cmp rcx, 6
 	je b_system_delay
 	cmp rcx, 7
-	je b_system_ethernet_status
+	je b_system_net_status
 	cmp rcx, 8
 	je b_system_mem_get_free
 	cmp rcx, 9
@@ -64,7 +64,7 @@ b_system_delay:
 	call os_delay
 	ret
 
-b_system_ethernet_status:
+b_system_net_status:
 	call b_net_status
 	ret
 

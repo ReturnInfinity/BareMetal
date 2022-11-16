@@ -8,7 +8,7 @@
 
 %include "syscalls/config.asm"
 %include "syscalls/debug.asm"
-%include "syscalls/disk.asm"
+%include "syscalls/storage.asm"
 %include "syscalls/io.asm"
 %include "syscalls/net.asm"
 %include "syscalls/smp.asm"

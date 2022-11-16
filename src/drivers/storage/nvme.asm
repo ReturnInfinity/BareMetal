@@ -151,7 +151,7 @@ nvme_init_enable_wait:
 	; TODO verify MPS is set within allowed bounds. CC.EN to 0 before changing
 
 	; TODO move this to it's own function
-	; Parse the Namespace Identify data for disk 0
+	; Parse the Namespace Identify data for drive 0
 	mov rsi, os_nvme_NSID
 	lodsd				; Namespace Size (NSZE) bytes 07-00 - Total LBA blocks
 	mov [os_NVMeTotalLBA], eax
@@ -282,7 +282,7 @@ nvme_admin_wait:
 ; IN:	RAX = starting sector #
 ;	RBX = I/O Opcode
 ;	RCX = number of sectors
-;	RDX = disk #
+;	RDX = drive #
 ;	RDI = memory location to store data
 ; OUT:	Nothing
 ;	All other registers preserved

@@ -14,12 +14,12 @@ unsigned char b_input(void);
 void b_output(const char *str, unsigned long nbr);
 
 // Network
-void b_ethernet_tx(void *mem, unsigned long len, unsigned long iid);
-unsigned long b_ethernet_rx(void *mem, unsigned long iid);
+void b_net_tx(void *mem, unsigned long len, unsigned long iid);
+unsigned long b_net_rx(void *mem, unsigned long iid);
 
-// Disk
-unsigned long b_disk_read(void *mem, unsigned long start, unsigned long num, unsigned long disknum);
-unsigned long b_disk_write(void *mem, unsigned long start, unsigned long num, unsigned long disknum);
+// Storage
+unsigned long b_storage_read(void *mem, unsigned long start, unsigned long num, unsigned long drivenum);
+unsigned long b_storage_write(void *mem, unsigned long start, unsigned long num, unsigned long drivenum);
 
 // Misc
 unsigned long b_config(unsigned long function, unsigned long var);
@@ -45,7 +45,7 @@ void b_system(unsigned long function, void *var1, void *var2);
 #define DEBUG_DUMP_MEM		4
 #define DEBUG_DUMP_RAX		5
 #define DELAY			6
-#define ETHERNET_STATUS		7
+#define NET_STATUS		7
 #define MEM_GET_FREE		8
 #define SMP_NUMCORES		9
 #define SMP_SET			10

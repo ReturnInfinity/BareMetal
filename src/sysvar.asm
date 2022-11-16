@@ -33,7 +33,7 @@ sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
 os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 						; 0x120000 -> 0x19FFFF	512K Free
-; Disk memory
+; Storage memory
 ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
 ahci_CLB:		equ 0x0000000000140000	; 0x140000 -> 0x147FFF	32K AHCI Command List Base (1K per port)
 ahci_FB:		equ 0x0000000000148000	; 0x148000 -> 0x167FFF	128K AHCI FIS Base (4K per port)
@@ -105,8 +105,8 @@ os_NetActivity_TX:	equ os_SystemVariables + 779
 os_NetActivity_RX:	equ os_SystemVariables + 780
 os_EthernetBuffer_C1:	equ os_SystemVariables + 781	; Counter 1 for the Ethernet RX Ring Buffer
 os_EthernetBuffer_C2:	equ os_SystemVariables + 782	; Counter 2 for the Ethernet RX Ring Buffer
-os_DiskEnabled:		equ os_SystemVariables + 783
-os_DiskActivity:	equ os_SystemVariables + 784
+os_StorageEnabled:	equ os_SystemVariables + 783
+os_StorageActivity:	equ os_SystemVariables + 784
 os_NVMeIRQ:		equ os_SystemVariables + 785
 os_NVMeMJR:		equ os_SystemVariables + 786
 os_NVMeMNR:		equ os_SystemVariables + 787

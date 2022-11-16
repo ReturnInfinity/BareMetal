@@ -9,11 +9,11 @@
 b_input			equ 0x0000000000100010	; Scans keyboard for input. OUT: AL = 0 if no key pressed, otherwise ASCII code
 b_output		equ 0x0000000000100018	; Displays a number of characters. IN: RSI = message location, RCX = number of characters
 
-b_ethernet_tx		equ 0x0000000000100020	; Transmit a packet via Ethernet. IN: RSI = Memory location where data is stored, RDI = Pointer to 48 bit destination address, BX = Type of packet (If set to 0 then the EtherType will be set to the length of data), CX = Length of data
-b_ethernet_rx		equ 0x0000000000100028	; Polls the Ethernet card for received data. IN: RDI = Memory location where packet will be stored. OUT: RCX = Length of packet
+b_net_tx		equ 0x0000000000100020	; Transmit a packet via a network interface. IN: RSI = Memory location where data is stored, RDI = Pointer to 48 bit destination address, BX = Type of packet (If set to 0 then the EtherType will be set to the length of data), CX = Length of data
+b_net_rx		equ 0x0000000000100028	; Polls the network interface for received data. IN: RDI = Memory location where packet will be stored. OUT: RCX = Length of packet
 
-b_disk_read		equ 0x0000000000100030	; Read from the disk.
-b_disk_write		equ 0x0000000000100038	; Write to the disk.
+b_storage_read		equ 0x0000000000100030	; Read data from a drive. IN: RAX = Starting sector, RCX = Number of sectors to read, RDX = Drive, RDI = Memory location to store data
+b_storage_write		equ 0x0000000000100038	; Write data to a drive. IN: RAX = Starting sector, RCX = Number of sectors to write, RDX = Drive, RSI = Memory location of data to store
 
 b_config		equ 0x0000000000100040	; View/modify configuration. IN: RCX = Function, RAX = Variable 1, RDX = Variable 2. OUT: RAX = Result
 b_system		equ 0x0000000000100048	; Call a system function. IN: RCX = Function, RAX = Variable 1, RDX = Variable 2. Out: RAX = Result 1, RDX = Result 2
@@ -42,7 +42,7 @@ debug_dump_rax		equ 5
 get_argc		equ 6
 get_argv		equ 7
 delay			equ 6
-ethernet_status		equ 7
+net_status		equ 7
 mem_get_free		equ 8
 smp_numcores		equ 9
 smp_set			equ 10

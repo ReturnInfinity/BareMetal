@@ -17,26 +17,26 @@ void b_output(const char *str, unsigned long nbr) {
 }
 
 
-void b_ethernet_tx(void *mem, unsigned long len, unsigned long iid) {
+void b_net_tx(void *mem, unsigned long len, unsigned long iid) {
 	asm volatile ("call *0x00100020" : : "S"(mem), "c"(len), "d"(iid));
 }
 
-unsigned long b_ethernet_rx(void *mem, unsigned long iid) {
+unsigned long b_net_rx(void *mem, unsigned long iid) {
 	unsigned long tlong;
 	asm volatile ("call *0x00100028" : "=c"(tlong) : "D"(mem), "d"(iid));
 	return tlong;
 }
 
 
-unsigned long b_disk_read(void *mem, unsigned long start, unsigned long num, unsigned long disknum) {
+unsigned long b_storage_read(void *mem, unsigned long start, unsigned long num, unsigned long drivenum) {
 	unsigned long tlong;
-	asm volatile ("call *0x00100030" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "D"(mem));
+	asm volatile ("call *0x00100030" : "=c"(tlong) : "a"(start), "c"(num), "d"(drivenum), "D"(mem));
 	return tlong;
 }
 
-unsigned long b_disk_write(void *mem, unsigned long start, unsigned long num, unsigned long disknum) {
+unsigned long b_storage_write(void *mem, unsigned long start, unsigned long num, unsigned long drivenum) {
 	unsigned long tlong = 0;
-	asm volatile ("call *0x00100038" : "=c"(tlong) : "a"(start), "c"(num), "d"(disknum), "S"(mem));
+	asm volatile ("call *0x00100038" : "=c"(tlong) : "a"(start), "c"(num), "d"(drivenum), "S"(mem));
 	return tlong;
 }
 

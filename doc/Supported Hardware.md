@@ -28,7 +28,7 @@
 * [Software Developer's Manual](https://www.intel.com/content/dam/doc/manual/pci-pci-x-family-gbe-controllers-software-dev-manual.pdf)
 
 
-## Disk
+## Storage
 
 
 ### AHCI for Serial ATA
