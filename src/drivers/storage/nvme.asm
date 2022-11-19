@@ -91,6 +91,8 @@ nvme_init_reset_wait:
 	mov [rsi+NVMe_CC], eax		; Write the new CC value and enable controller
 nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
+	bt eax, 1			; CSTS.CFS should be 0. If not the controller has had a fatal error
+	jc nvme_init_error
 	bt eax, 0			; Wait for CSTS.RDY to become '1'
 	jnc nvme_init_enable_wait
 	
@@ -187,7 +189,12 @@ nvme_init_LBA_end:
 	mov [rdi+0x100C], eax		; Write the head
 	mov [rdi+0x1008], eax		; Write the tail
 
-nvme_init_not_found:
+	mov byte [os_NVMeEnabled], 1	; Set the flag as NVMe has been initialized
+
+nvme_init_not_found:	
+	ret
+
+nvme_init_error:
 	ret
 ; -----------------------------------------------------------------------------
 

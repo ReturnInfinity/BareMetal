@@ -117,6 +117,7 @@ os_NVMe_iotail:		equ os_SystemVariables + 791
 os_AHCIMJR:		equ os_SystemVariables + 792
 os_AHCIMNR:		equ os_SystemVariables + 792
 os_AHCIIRQ:		equ os_SystemVariables + 793
+os_NVMeEnabled:		equ os_SystemVariables + 794
 
 
 ; Misc
