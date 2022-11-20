@@ -129,6 +129,7 @@ ahci_init_config_active_skip:
 	jmp ahci_init_config_active
 
 ahci_init_config_active_done:
+	mov byte [os_AHCIEnabled], 1
 
 ahci_init_not_found:
 	ret
