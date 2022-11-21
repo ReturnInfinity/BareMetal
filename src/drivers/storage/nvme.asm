@@ -60,19 +60,8 @@ nvme_init_found:
 
 	; Disable the controller
 	mov eax, [rsi+NVMe_CC]
-	btc eax, 0			; Clear CC.EN bit to '0'
+	btc eax, 0			; Clear CC.EN (0) bit to '0'
 	mov [rsi+NVMe_CC], eax
-
-	; Reset the controller (if supported)
-	mov rax, [rsi+NVMe_CAP]
-	bt rax, 58			; CAP.NSSS
-	jnc nvme_init_reset_wait
-	mov eax, 0x4E564D65		; String is "NVMe"
-	mov [rsi+NVMe_NSSR], eax	; Reset
-nvme_init_reset_wait:
-	mov eax, [rsi+NVMe_CSTS]
-	bt eax, 0			; Wait for CSTS.RDY to become '0'
-	jc nvme_init_reset_wait
 
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x003F003F		; 64 commands each for ACQS (27:16) and ASQS (11:00)
@@ -91,9 +80,9 @@ nvme_init_reset_wait:
 	mov [rsi+NVMe_CC], eax		; Write the new CC value and enable controller
 nvme_init_enable_wait:
 	mov eax, [rsi+NVMe_CSTS]
-	bt eax, 1			; CSTS.CFS should be 0. If not the controller has had a fatal error
+	bt eax, 1			; CSTS.CFS (1) should be 0. If not the controller has had a fatal error
 	jc nvme_init_error
-	bt eax, 0			; Wait for CSTS.RDY to become '1'
+	bt eax, 0			; Wait for CSTS.RDY (0) to become '1'
 	jnc nvme_init_enable_wait
 	
 	; Create I/O Completion Queue
