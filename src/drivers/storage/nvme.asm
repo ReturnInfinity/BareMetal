@@ -58,12 +58,12 @@ nvme_init_found:
 	bts eax, 2
 	call os_pci_write
 
-	; Disable the controller
+	; Disable the controller if it's enabled
 	mov eax, [rsi+NVMe_CC]
 	btc eax, 0			; Clear CC.EN (0) bit to '0'
-	jnc nvme_init_alreadydisabled	; The controller is already disabled. Skip writing it back
+	jnc nvme_init_disabled		; Skip writing to CC if it's already disabled
 	mov [rsi+NVMe_CC], eax
-nvme_init_alreadydisabled:
+nvme_init_disabled:
 
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x003F003F		; 64 commands each for ACQS (27:16) and ASQS (11:00)
@@ -174,12 +174,7 @@ nvme_init_LBA_skip:
 nvme_init_LBA_end:
 	mov [os_NVMeLBA], bl		; Store the highest LBADS
 
-	; Set the I/O Submission Queue head and tail
-	mov rdi, [os_NVMe_Base]
-	mov eax, 0
-	mov [rdi+0x100C], eax		; Write the head
-	mov [rdi+0x1008], eax		; Write the tail
-
+nvme_init_done:
 	mov byte [os_NVMeEnabled], 1	; Set the flag as NVMe has been initialized
 
 nvme_init_not_found:	
@@ -259,11 +254,11 @@ nvme_admin_savetail:
 	add rcx, 8			; Add 8 for DW3
 	add rdi, rcx
 nvme_admin_wait:
-	mov eax, [rdi]
-	cmp eax, 0x0
+	mov rax, [rdi]
+	cmp rax, 0x0
 	je nvme_admin_wait
 	xor eax, eax
-	stosd				; Overwrite the old entry
+	stosq				; Overwrite the old entry
 
 	pop rax
 	pop rbx
@@ -389,11 +384,11 @@ nvme_io_savetail:
 	add rcx, 8			; Add 8 for DW3
 	add rdi, rcx
 nvme_io_wait:
-	mov eax, [rdi]
-	cmp eax, 0x0
+	mov rax, [rdi]
+	cmp rax, 0x0
 	je nvme_io_wait
 	xor eax, eax
-	stosd				; Overwrite the old entry
+	stosq				; Overwrite the old entry
 
 nvme_io_error:
 	pop rbx
