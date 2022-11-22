@@ -61,7 +61,9 @@ nvme_init_found:
 	; Disable the controller
 	mov eax, [rsi+NVMe_CC]
 	btc eax, 0			; Clear CC.EN (0) bit to '0'
+	jnc nvme_init_alreadydisabled	; The controller is already disabled. Skip writing it back
 	mov [rsi+NVMe_CC], eax
+nvme_init_alreadydisabled:
 
 	; Configure AQA, ASQ, and ACQ
 	mov eax, 0x003F003F		; 64 commands each for ACQS (27:16) and ASQS (11:00)
