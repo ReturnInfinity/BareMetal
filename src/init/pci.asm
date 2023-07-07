@@ -17,7 +17,7 @@ init_pci:
 	mov byte [os_PCIEnabled], 1
 
 ; Build a table of known PCI devices
-; Bytes 0-3	Base PCI value used for os_pci_read/write (points to Register 0)
+; Bytes 0-3	Base PCI value used for os_pci_read/write (See PCI driver)
 ; Bytes 4-5	Device ID
 ; Bytes 6-7	Vendor ID
 ; Bytes 8-9	Unused (set to 0x0000)

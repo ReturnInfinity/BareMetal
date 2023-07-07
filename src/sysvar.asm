@@ -34,8 +34,8 @@ os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 
 ; System memory
-pci_table:		equ 0x0000000000120000
-						; 0x120000 -> 0x19FFFF	512K Free
+pci_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K PCI Table
+						; 0x130000 -> 0x13FFFF	64K Free
 ; Storage memory
 ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
 ahci_CLB:		equ 0x0000000000140000	; 0x140000 -> 0x147FFF	32K AHCI Command List Base (1K per port)
@@ -57,6 +57,7 @@ os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit
 os_PacketBuffers:	equ 0x00000000001B0000	;
 os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
 app_start:		equ 0xFFFF800000000000	; Location of application memory
+
 
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0
