@@ -79,17 +79,28 @@ QEMU has a built in monitor to allow you to query the state of the VM.
 
 Some useful commands:
 
+	info version		QEMU version (latest as of the writing of this doc was 8.0.2)
 	info registers		the CPU registers
 	info cpus		list the CPUs
 	info mem		list the active virtual memory mappings
 	info block		block devices such as hard drives, floppy drives, cdrom
 	info blockstats		read and write statistics on block devices
+	info pci		list pci information
+	info network		list network information
 
 Dumping memory:
+
+The 'x' command dumps virtual memory and the 'xp' command dumps physical memory. It takes a format option via '/' as well as a memory address.
+
+Example:
 
 	xp /8xb 0x100000
 
 Dump 8 bytes in hexadecimal format starting at address 0x100000
+
+The "count" parameter is the number of items to be dumped.
+The "format" can be x (hex), d (signed decimal), u (unsigned decimal), o (octal), c (char) or i (assembly instruction).
+The "size" parameter can be b (8 bits), h (16 bits), w (32 bits) or g (64 bits).
 
 
 ## GDB instructions
@@ -101,9 +112,9 @@ Dump some memory
 
 ## Capturing QEMU network traffic
 
-Add the following to the qemu start command in run_x86_64.sh
+Add the following to the network definition
 
-	-net nic,model=e1000 -net dump,file=net.pcap
+	-net dump,file=net.pcap
 
 
 ## Connecting two QEMU VMs via network

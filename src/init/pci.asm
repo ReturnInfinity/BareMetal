@@ -18,18 +18,18 @@ init_pci:
 
 ; Build a table of known PCI devices
 ; Bytes 0-3	Base PCI value used for os_pci_read/write (See PCI driver)
-; Bytes 4-5	Device ID
-; Bytes 6-7	Vendor ID
-; Bytes 8-9	Unused (set to 0x0000)
-; Byte 10	Class code
-; Byte 11	Subclass code
-; Bytes 12-15	Unused (set to 0x0000)
+; Bytes 4-5	Vendor ID
+; Bytes 6-7	Device ID
+; Byte 8	Class code
+; Byte 9	Subclass code
+; Bytes 10-15	Cleared to 0x00
+; Byte 15 will be set to 0x01 later if a driver enabled it
 
 	mov rdi, pci_table		; Address of PCI Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
 
 init_pci_probe:
-	call os_pci_read
+	call os_pci_read		; Read a Device ID/Vendor ID
 	cmp eax, 0xFFFFFFFF		; 0xFFFFFFFF is returned for an non-existent device
 	jne init_pci_probe_found	; Found a device
 init_pci_probe_next:

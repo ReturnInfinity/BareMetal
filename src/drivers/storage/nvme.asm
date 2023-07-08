@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2022 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
 ;
 ; NVMe Driver
 ; =============================================================================
@@ -8,20 +8,12 @@
 
 ; -----------------------------------------------------------------------------
 nvme_init:
-	; Probe for an NVMe controller
-	mov edx, 0x00000002		; Start at register 2 of the first device
+	push rsi			; Used in init_storage
+	push rdx			; EDX should already point to a supported device for os_pci_read/write
 
-nvme_init_probe_next:
-	call os_pci_read
-	shr eax, 16			; Move the Class/Subclass code to AX
-	cmp ax, 0x0108			; Mass Storage Controller (01) / NVMe Controller (08)
-	je nvme_init_found		; Found a NVMe Controller
-	add edx, 0x00000100		; Skip to next PCI device
-	cmp edx, 0x00FFFF00		; Maximum of 65536 devices
-	jge nvme_init_not_found
-	jmp nvme_init_probe_next
+	cmp byte [os_NVMeEnabled], 1	; TODO - support multiple NVMe controllers
+	je nvme_init_error
 
-nvme_init_found:
 	mov dl, 4			; Read register 4 for BAR0
 	xor eax, eax
 	call os_pci_read		; BAR0 (NVMe Base Address Register)
@@ -40,7 +32,7 @@ nvme_init_found:
 	mov eax, [rsi+NVMe_VS]
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
-	jl nvme_init_not_found
+	jl nvme_init_error
 	mov [os_NVMeMJR], al
 	rol eax, 8			; Rotate EAX so MNR is bits 07:00
 	mov [os_NVMeMNR], al
@@ -175,12 +167,17 @@ nvme_init_LBA_end:
 	mov [os_NVMeLBA], bl		; Store the highest LBADS
 
 nvme_init_done:
-	mov byte [os_NVMeEnabled], 1	; Set the flag as NVMe has been initialized
-
-nvme_init_not_found:	
+	mov byte [os_NVMeEnabled], 1	; Set the flag that NVMe has been initialized
+	pop rdx
+	pop rsi
+	add rsi, 15
+	mov byte [rsi], 1		; Mark driver as installed in PCI Table
+	sub rsi, 15
 	ret
 
 nvme_init_error:
+	pop rdx
+	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 

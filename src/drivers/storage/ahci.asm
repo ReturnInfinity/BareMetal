@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2022 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
 ;
 ; AHCI Driver
 ; =============================================================================
@@ -8,20 +8,12 @@
 
 ; -----------------------------------------------------------------------------
 ahci_init:
-	; Probe for an AHCI hard drive controller
-	mov edx, 0x00000002		; Start at register 2 of the first device
+	push rsi			; Used in init_storage
+	push rdx			; EDX should already point to a supported device for os_pci_read/write
 
-ahci_init_probe_next:
-	call os_pci_read
-	shr eax, 16			; Move the Class/Subclass code to AX
-	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
-	je ahci_init_found		; Found a SATA Controller
-	add edx, 0x00000100		; Skip to next PCI device
-	cmp edx, 0x00FFFF00		; Maximum of 65536 devices
-	jge ahci_init_not_found
-	jmp ahci_init_probe_next
+	cmp byte [os_AHCIEnabled], 1	; TODO - support multiple AHCI controllers
+	je ahci_init_error
 
-ahci_init_found:
 	mov dl, 9			; Read register 9 for BAR5
 	xor eax, eax
 	call os_pci_read		; BAR5 (AHCI Base Address Register)
@@ -30,7 +22,7 @@ ahci_init_found:
 	mov rsi, rax			; RSI holds the ABAR
 
 	; Mark memory as uncacheable
-	; TODO cleanup to do it automatically (for AHCI too!)
+	; TODO cleanup to do it automatically (for NVMe too!)
 ;	mov rdi, 0x00013fa8
 ;	mov rax, [rdi]
 ;	bts rax, 4	; Set PCD to disable caching
@@ -40,7 +32,7 @@ ahci_init_found:
 	mov eax, [rsi+AHCI_VS]
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
-	jl ahci_init_not_found
+	jl ahci_init_error
 	mov [os_AHCIMJR], al
 	rol eax, 8			; Rotate EAX so MNR is bits 07:00
 	mov [os_AHCIMNR], al
@@ -86,7 +78,7 @@ ahci_init_search_ports_done:
 	xor ecx, ecx
 ahci_init_config_active:
 	cmp ecx, 32			; Maximum number of AHCI ports
-	je ahci_init_config_active_done
+	je ahci_init_done
 	bt edx, ecx			; Is this port marked as active?
 	jnc ahci_init_config_active_skip
 
@@ -127,11 +119,19 @@ ahci_init_config_active:
 ahci_init_config_active_skip:
 	inc rcx
 	jmp ahci_init_config_active
+	
+ahci_init_done:
+	mov byte [os_AHCIEnabled], 1	; Set the flag that AHCI has been initialized
+	pop rdx
+	pop rsi
+	add rsi, 15
+	mov byte [rsi], 1		; Mark driver as installed in PCI Table
+	sub rsi, 15
+	ret
 
-ahci_init_config_active_done:
-	mov byte [os_AHCIEnabled], 1
-
-ahci_init_not_found:
+ahci_init_error:
+	pop rdx
+	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
