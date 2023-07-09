@@ -380,44 +380,44 @@ ahci_id_error:
 ; 0x1080 - 0x10FF	Port 31
 
 ; Generic Host Control
-AHCI_CAP		equ 0x0000 ; HBA Capabilities
-AHCI_GHC		equ 0x0004 ; Global HBA Control
-AHCI_IS			equ 0x0008 ; Interrupt Status Register
-AHCI_PI			equ 0x000C ; Ports Implemented
-AHCI_VS			equ 0x0010 ; AHCI Version
-AHCI_CCC_CTL		equ 0x0014 ; Command Completion Coalescing Control
-AHCI_CCC_PORTS		equ 0x0018 ; Command Completion Coalescing Ports
-AHCI_EM_LOC		equ 0x001C ; Enclosure Management Location
-AHCI_EM_CTL		equ 0x0020 ; Enclosure Management Control
-AHCI_CAP2		equ 0x0024 ; HBA Capabilities Extended
-AHCI_BOHC		equ 0x0028 ; BIOS/OS Handoff Control and Status
+AHCI_CAP	equ 0x0000	; 4-byte HBA Capabilities
+AHCI_GHC	equ 0x0004	; 4-byte Global HBA Control
+AHCI_IS		equ 0x0008	; 4-byte Interrupt Status Register
+AHCI_PI		equ 0x000C	; 4-byte Ports Implemented
+AHCI_VS		equ 0x0010	; 4-byte AHCI Version
+AHCI_CCC_CTL	equ 0x0014	; 4-byte Command Completion Coalescing Control
+AHCI_CCC_PORTS	equ 0x0018	; 4-byte Command Completion Coalescing Ports
+AHCI_EM_LOC	equ 0x001C	; 4-byte Enclosure Management Location
+AHCI_EM_CTL	equ 0x0020	; 4-byte Enclosure Management Control
+AHCI_CAP2	equ 0x0024	; 4-byte HBA Capabilities Extended
+AHCI_BOHC	equ 0x0028	; 4-byte BIOS/OS Handoff Control and Status
 
 ; Port Registers
 ; Port 0 starts at 100h, port 1 starts at 180h, port 2 starts at 200h, port 3 at 280h, etc.
-AHCI_PxCLB		equ 0x0000 ; Port x Command List Base Address
-AHCI_PxCLBU		equ 0x0004 ; Port x Command List Base Address Upper 32-bits
-AHCI_PxFB		equ 0x0008 ; Port x FIS Base Address
-AHCI_PxFBU		equ 0x000C ; Port x FIS Base Address Upper 32-bits
-AHCI_PxIS		equ 0x0010 ; Port x Interrupt Status
-AHCI_PxIE		equ 0x0014 ; Port x Interrupt Enable
-AHCI_PxCMD		equ 0x0018 ; Port x Command and Status
-AHCI_PxTFD		equ 0x0020 ; Port x Task File Data
-AHCI_PxSIG		equ 0x0024 ; Port x Signature
-AHCI_PxSSTS		equ 0x0028 ; Port x Serial ATA Status (SCR0: SStatus)
-AHCI_PxSCTL		equ 0x002C ; Port x Serial ATA Control (SCR2: SControl)
-AHCI_PxSERR		equ 0x0030 ; Port x Serial ATA Error (SCR1: SError)
-AHCI_PxSACT		equ 0x0034 ; Port x Serial ATA Active (SCR3: SActive)
-AHCI_PxCI		equ 0x0038 ; Port x Command Issue
-AHCI_PxSNTF		equ 0x003C ; Port x Serial ATA Notification (SCR4: SNotification)
-AHCI_PxFBS		equ 0x0040 ; Port x FIS-based Switching Control
-AHCI_PxDEVSLP		equ 0x0044 ; Port x Device Sleep
+AHCI_PxCLB	equ 0x0000	; 4-byte Port x Command List Base Address
+AHCI_PxCLBU	equ 0x0004	; 4-byte Port x Command List Base Address Upper 32-bits
+AHCI_PxFB	equ 0x0008	; 4-byte Port x FIS Base Address
+AHCI_PxFBU	equ 0x000C	; 4-byte Port x FIS Base Address Upper 32-bits
+AHCI_PxIS	equ 0x0010	; 4-byte Port x Interrupt Status
+AHCI_PxIE	equ 0x0014	; 4-byte Port x Interrupt Enable
+AHCI_PxCMD	equ 0x0018	; 8-byte Port x Command and Status
+AHCI_PxTFD	equ 0x0020	; 4-byte Port x Task File Data
+AHCI_PxSIG	equ 0x0024	; 4-byte Port x Signature
+AHCI_PxSSTS	equ 0x0028	; 4-byte Port x Serial ATA Status (SCR0: SStatus)
+AHCI_PxSCTL	equ 0x002C	; 4-byte Port x Serial ATA Control (SCR2: SControl)
+AHCI_PxSERR	equ 0x0030	; 4-byte Port x Serial ATA Error (SCR1: SError)
+AHCI_PxSACT	equ 0x0034	; 4-byte Port x Serial ATA Active (SCR3: SActive)
+AHCI_PxCI	equ 0x0038	; 4-byte Port x Command Issue
+AHCI_PxSNTF	equ 0x003C	; 4-byte Port x Serial ATA Notification (SCR4: SNotification)
+AHCI_PxFBS	equ 0x0040	; 4-byte Port x FIS-based Switching Control
+AHCI_PxDEVSLP	equ 0x0044	; 4-byte Port x Device Sleep
 ; 0x0048 - 0x006F	Reserved
 ; 0x0070 - 0x007F	Port x Vendor Specific
 
 ; Opcodes for AHCI Commands
-AHCI_Write		equ 0x35
-AHCI_Read		equ 0x25
-AHCI_Identify		equ 0xEC
+AHCI_Write	equ 0x35
+AHCI_Read	equ 0x25
+AHCI_Identify	equ 0xEC
 
 
 ; =============================================================================

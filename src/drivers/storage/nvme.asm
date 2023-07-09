@@ -407,43 +407,43 @@ nvme_identify:
 
 
 ; Register list
-NVMe_CAP		equ 0x00 ; Controller Capabilities
-NVMe_VS			equ 0x08 ; Version
-NVMe_INTMS		equ 0x0C ; Interrupt Mask Set
-NVMe_INTMC		equ 0x10 ; Interrupt Mask Clear
-NVMe_CC			equ 0x14 ; Controller Configuration
-NVMe_CSTS		equ 0x1C ; Controller Status
-NVMe_NSSR		equ 0x20 ; NSSR – NVM Subsystem Reset
-NVMe_AQA		equ 0x24 ; Admin Queue Attributes
-NVMe_ASQ		equ 0x28 ; Admin Submission Queue Base Address
-NVMe_ACQ		equ 0x30 ; Admin Completion Queue Base Address
-NVMe_CMBLOC		equ 0x38 ; Controller Memory Buffer Location
-NVMe_CMBSZ		equ 0x3C ; Controller Memory Buffer Size
-NVMe_BPINFO		equ 0x40 ; Boot Partition Information
-NVMe_BPRSEL		equ 0x44 ; Boot Partition Read Select
-NVMe_BPMBL		equ 0x48 ; Boot Partition Memory Buffer Location
-NVMe_CMBMSC		equ 0x50 ; Controller Memory Buffer Memory Space Control
-NVMe_CMBSTS		equ 0x58 ; Controller Memory Buffer Status
-NVMe_CMBEBS		equ 0x5C ; Controller Memory Buffer Elasticity Buffer Size
-NVMe_CMBSWTP		equ 0x60 ; Controller Memory Buffer Sustained Write Throughput
-NVMe_NSSD		equ 0x64 ; NVM Subsystem Shutdown
-NVMe_CRTO		equ 0x68 ; Controller Ready Timeouts
-NVMe_PMRCAP		equ 0xE00 ; Persistent Memory Region Capabilities
-NVMe_PMRCTL		equ 0xE04 ; Persistent Memory Region Control
-NVMe_PMRSTS		equ 0xE08 ; Persistent Memory Region Status
-NVMe_PMREBS		equ 0xE0C ; Persistent Memory Region Elasticity Buffer Size
-NVMe_PMRSWTP		equ 0xE10 ; Persistent Memory Region Sustained Write Throughput 
-NVMe_PMRMSCL		equ 0xE14 ; Persistent Memory Region Memory Space Control Lower
-NVMe_PMRMSCU		equ 0xE18 ; Persistent Memory Region Memory Space Control Upper
+NVMe_CAP	equ 0x00	; 8-byte Controller Capabilities
+NVMe_VS		equ 0x08	; 4-byte Version
+NVMe_INTMS	equ 0x0C	; 4-byte Interrupt Mask Set
+NVMe_INTMC	equ 0x10	; 4-byte Interrupt Mask Clear
+NVMe_CC		equ 0x14	; 4-byte Controller Configuration
+NVMe_CSTS	equ 0x1C	; 4-byte Controller Status
+NVMe_NSSR	equ 0x20	; 4-byte NSSR – NVM Subsystem Reset
+NVMe_AQA	equ 0x24	; 4-byte Admin Queue Attributes
+NVMe_ASQ	equ 0x28	; 8-byte Admin Submission Queue Base Address
+NVMe_ACQ	equ 0x30	; 8-byte Admin Completion Queue Base Address
+NVMe_CMBLOC	equ 0x38	; 4-byte Controller Memory Buffer Location
+NVMe_CMBSZ	equ 0x3C	; 4-byte Controller Memory Buffer Size
+NVMe_BPINFO	equ 0x40	; 4-byte Boot Partition Information
+NVMe_BPRSEL	equ 0x44	; 4-byte Boot Partition Read Select
+NVMe_BPMBL	equ 0x48	; 8-byte Boot Partition Memory Buffer Location
+NVMe_CMBMSC	equ 0x50	; 8-byte Controller Memory Buffer Memory Space Control
+NVMe_CMBSTS	equ 0x58	; 4-byte Controller Memory Buffer Status
+NVMe_CMBEBS	equ 0x5C	; 4-byte Controller Memory Buffer Elasticity Buffer Size
+NVMe_CMBSWTP	equ 0x60	; 4-byte Controller Memory Buffer Sustained Write Throughput
+NVMe_NSSD	equ 0x64	; 4-byte NVM Subsystem Shutdown
+NVMe_CRTO	equ 0x68	; 4-byte Controller Ready Timeouts
+NVMe_PMRCAP	equ 0xE00	; 4-byte Persistent Memory Region Capabilities
+NVMe_PMRCTL	equ 0xE04	; 4-byte Persistent Memory Region Control
+NVMe_PMRSTS	equ 0xE08	; 4-byte Persistent Memory Region Status
+NVMe_PMREBS	equ 0xE0C	; 4-byte Persistent Memory Region Elasticity Buffer Size
+NVMe_PMRSWTP	equ 0xE10	; 4-byte Persistent Memory Region Sustained Write Throughput 
+NVMe_PMRMSCL	equ 0xE14	; 4-byte Persistent Memory Region Memory Space Control Lower
+NVMe_PMRMSCU	equ 0xE18	; 4-byte Persistent Memory Region Memory Space Control Upper
 
 ; Command list
-NVMe_ID_NS		equ 0x00 ; Identify Namespace data structure for the specified NSID
-NVMe_ID_CTRL		equ 0x01 ; Identify Controller data structure for the controller
-NVMe_ANS		equ 0x02 ; Active Namespace ID list
+NVMe_ID_NS	equ 0x00	; Identify Namespace data structure for the specified NSID
+NVMe_ID_CTRL	equ 0x01	; Identify Controller data structure for the controller
+NVMe_ANS	equ 0x02	; Active Namespace ID list
 
 ; Opcodes for NVM Commands
-NVMe_Write		equ 0x01
-NVMe_Read		equ 0x02
+NVMe_Write	equ 0x01
+NVMe_Read	equ 0x02
 
 
 ; =============================================================================
