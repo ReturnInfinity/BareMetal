@@ -8,23 +8,23 @@
 
 ; -----------------------------------------------------------------------------
 init_net:
-	; Search for a supported NIC
-	mov edx, 0x00000002		; Register 2 for Class code/Subclass
-
-init_net_probe_next:
-	call os_pci_read
-	shr eax, 16			; Move the Class/Subclass code to AX
+	; Check PCI Table for a supported controller
+	mov rsi, pci_table		; Load PCI Table address to RSI
+	sub rsi, 16
+	add rsi, 8			; Add offset to Class Code
+init_net_check_pci:
+	add rsi, 16			; Increment to next record in memory
+	mov ax, [rsi]			; Load Class Code / Subclass Code
+	cmp ax, 0xFFFF			; Check if at end of list
+	je init_net_probe_not_found
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
-	je init_net_probe_find_driver	; Found a Network Controller... now search for a driver
-	add edx, 0x00000100		; Skip to next PCI device
-	cmp edx, 0x00FFFF00		; Maximum of 65536 devices
-	jge init_net_probe_not_found
-	jmp init_net_probe_next
+	je init_net_probe_find_driver
+	jmp init_net_check_pci	; Check PCI Table again
 
 init_net_probe_find_driver:
-	mov dl, 0x00			; Register 0 for Device/Vendor ID
-	call os_pci_read		; Read the Device/Vendor ID from the PCI device
-	mov r8d, eax			; Save the Device/Vendor ID in R8D
+	sub rsi, 8			; Move RSI back to start of PCI record
+	mov edx, [rsi]			; Load value for os_pci_read/write
+	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
 	mov rsi, NIC_DeviceVendor_ID
 	lodsd				; Load a driver ID - Low half must be 0xFFFF
 init_net_probe_find_next_driver:
