@@ -182,7 +182,7 @@ ahci_io:
 	mov eax, 0x00010005		; 1 PRDTL Entry, Command FIS Length = 20 bytes
 	cmp ebx, 0x35			; Was a write requested?
 	jne ahci_io_skip_writebit	; If not, skip setting the write flag
-	bts abx, 6			; Set the write flag (bit 6)
+	bts eax, 6			; Set the write flag (bit 6)
 ahci_io_skip_writebit:
 	stosd				; DW 0 - Description Information
 	xor eax, eax
