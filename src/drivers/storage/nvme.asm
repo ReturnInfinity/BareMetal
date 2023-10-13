@@ -276,7 +276,7 @@ nvme_admin_wait:
 ;	RBX = I/O Opcode
 ;	RCX = number of sectors
 ;	RDX = drive #
-;	RDI = memory location to store data
+;	RDI = memory location used for reading/writing data from/to device
 ; OUT:	Nothing
 ;	All other registers preserved
 nvme_io:

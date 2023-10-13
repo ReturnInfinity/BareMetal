@@ -11,7 +11,7 @@
 ; IN:	RAX = Starting sector
 ;	RCX = Number of sectors to read
 ;	RDX = Drive
-;	RDI = Memory location to store data
+;	RDI = Memory address to store data
 ; OUT:	RCX = Number of sectors read
 ;	All other registers preserved
 b_storage_read:
@@ -58,14 +58,17 @@ b_storage_read_fail:
 ; IN:	RAX = Starting sector
 ;	RCX = Number of sectors to write
 ;	RDX = Drive
-;	RSI = Memory location of data to store
+;	RSI = Memory address of data to store
 ; OUT:	RCX = Number of sectors written
 ;	All other registers preserved
 b_storage_write:
+	push rdi
 	push rsi
 	push rcx
 	push rbx
 	push rax
+
+	mov rdi, rsi			; The I/O functions only use RDI for the memory address
 
 	cmp rcx, 0
 	je b_storage_write_fail		; Bail out if instructed to write nothing
@@ -81,6 +84,7 @@ b_storage_write_done:
 	pop rbx
 	pop rcx
 	pop rsi
+	pop rdi
 	ret
 
 b_storage_write_nvme:
@@ -95,6 +99,7 @@ b_storage_write_fail:
 	pop rbx
 	pop rcx
 	pop rsi
+	pop rdi
 	xor ecx, ecx
 	ret
 ; -----------------------------------------------------------------------------
