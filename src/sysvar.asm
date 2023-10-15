@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2022 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
 ;
 ; System Variables
 ; =============================================================================
@@ -32,7 +32,10 @@ sys_pdh:		equ 0x0000000000020000	; 0x020000 -> 0x05FFFF	256K Page directory high
 sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
 os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
-						; 0x120000 -> 0x19FFFF	512K Free
+
+; System memory
+pci_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K PCI Table
+						; 0x130000 -> 0x13FFFF	64K Free
 ; Storage memory
 ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
 ahci_CLB:		equ 0x0000000000140000	; 0x140000 -> 0x147FFF	32K AHCI Command List Base (1K per port)
@@ -54,6 +57,7 @@ os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit
 os_PacketBuffers:	equ 0x00000000001B0000	;
 os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
 app_start:		equ 0xFFFF800000000000	; Location of application memory
+
 
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0

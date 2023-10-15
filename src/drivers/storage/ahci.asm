@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2022 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
 ;
 ; AHCI Driver
 ; =============================================================================
@@ -8,20 +8,12 @@
 
 ; -----------------------------------------------------------------------------
 ahci_init:
-	; Probe for an AHCI hard drive controller
-	mov edx, 0x00000002		; Start at register 2 of the first device
+	push rsi			; Used in init_storage
+	push rdx			; EDX should already point to a supported device for os_pci_read/write
 
-ahci_init_probe_next:
-	call os_pci_read
-	shr eax, 16			; Move the Class/Subclass code to AX
-	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
-	je ahci_init_found		; Found a SATA Controller
-	add edx, 0x00000100		; Skip to next PCI device
-	cmp edx, 0x00FFFF00		; Maximum of 65536 devices
-	jge ahci_init_not_found
-	jmp ahci_init_probe_next
+	cmp byte [os_AHCIEnabled], 1	; TODO - support multiple AHCI controllers
+	je ahci_init_error
 
-ahci_init_found:
 	mov dl, 9			; Read register 9 for BAR5
 	xor eax, eax
 	call os_pci_read		; BAR5 (AHCI Base Address Register)
@@ -30,7 +22,7 @@ ahci_init_found:
 	mov rsi, rax			; RSI holds the ABAR
 
 	; Mark memory as uncacheable
-	; TODO cleanup to do it automatically (for AHCI too!)
+	; TODO cleanup to do it automatically (for NVMe too!)
 ;	mov rdi, 0x00013fa8
 ;	mov rax, [rdi]
 ;	bts rax, 4	; Set PCD to disable caching
@@ -40,7 +32,7 @@ ahci_init_found:
 	mov eax, [rsi+AHCI_VS]
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
-	jl ahci_init_not_found
+	jl ahci_init_error
 	mov [os_AHCIMJR], al
 	rol eax, 8			; Rotate EAX so MNR is bits 07:00
 	mov [os_AHCIMNR], al
@@ -86,7 +78,7 @@ ahci_init_search_ports_done:
 	xor ecx, ecx
 ahci_init_config_active:
 	cmp ecx, 32			; Maximum number of AHCI ports
-	je ahci_init_config_active_done
+	je ahci_init_done
 	bt edx, ecx			; Is this port marked as active?
 	jnc ahci_init_config_active_skip
 
@@ -127,11 +119,19 @@ ahci_init_config_active:
 ahci_init_config_active_skip:
 	inc rcx
 	jmp ahci_init_config_active
+	
+ahci_init_done:
+	mov byte [os_AHCIEnabled], 1	; Set the flag that AHCI has been initialized
+	pop rdx
+	pop rsi
+	add rsi, 15
+	mov byte [rsi], 1		; Mark driver as installed in PCI Table
+	sub rsi, 15
+	ret
 
-ahci_init_config_active_done:
-	mov byte [os_AHCIEnabled], 1
-
-ahci_init_not_found:
+ahci_init_error:
+	pop rdx
+	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -380,44 +380,44 @@ ahci_id_error:
 ; 0x1080 - 0x10FF	Port 31
 
 ; Generic Host Control
-AHCI_CAP		equ 0x0000 ; HBA Capabilities
-AHCI_GHC		equ 0x0004 ; Global HBA Control
-AHCI_IS			equ 0x0008 ; Interrupt Status Register
-AHCI_PI			equ 0x000C ; Ports Implemented
-AHCI_VS			equ 0x0010 ; AHCI Version
-AHCI_CCC_CTL		equ 0x0014 ; Command Completion Coalescing Control
-AHCI_CCC_PORTS		equ 0x0018 ; Command Completion Coalescing Ports
-AHCI_EM_LOC		equ 0x001C ; Enclosure Management Location
-AHCI_EM_CTL		equ 0x0020 ; Enclosure Management Control
-AHCI_CAP2		equ 0x0024 ; HBA Capabilities Extended
-AHCI_BOHC		equ 0x0028 ; BIOS/OS Handoff Control and Status
+AHCI_CAP	equ 0x0000	; 4-byte HBA Capabilities
+AHCI_GHC	equ 0x0004	; 4-byte Global HBA Control
+AHCI_IS		equ 0x0008	; 4-byte Interrupt Status Register
+AHCI_PI		equ 0x000C	; 4-byte Ports Implemented
+AHCI_VS		equ 0x0010	; 4-byte AHCI Version
+AHCI_CCC_CTL	equ 0x0014	; 4-byte Command Completion Coalescing Control
+AHCI_CCC_PORTS	equ 0x0018	; 4-byte Command Completion Coalescing Ports
+AHCI_EM_LOC	equ 0x001C	; 4-byte Enclosure Management Location
+AHCI_EM_CTL	equ 0x0020	; 4-byte Enclosure Management Control
+AHCI_CAP2	equ 0x0024	; 4-byte HBA Capabilities Extended
+AHCI_BOHC	equ 0x0028	; 4-byte BIOS/OS Handoff Control and Status
 
 ; Port Registers
 ; Port 0 starts at 100h, port 1 starts at 180h, port 2 starts at 200h, port 3 at 280h, etc.
-AHCI_PxCLB		equ 0x0000 ; Port x Command List Base Address
-AHCI_PxCLBU		equ 0x0004 ; Port x Command List Base Address Upper 32-bits
-AHCI_PxFB		equ 0x0008 ; Port x FIS Base Address
-AHCI_PxFBU		equ 0x000C ; Port x FIS Base Address Upper 32-bits
-AHCI_PxIS		equ 0x0010 ; Port x Interrupt Status
-AHCI_PxIE		equ 0x0014 ; Port x Interrupt Enable
-AHCI_PxCMD		equ 0x0018 ; Port x Command and Status
-AHCI_PxTFD		equ 0x0020 ; Port x Task File Data
-AHCI_PxSIG		equ 0x0024 ; Port x Signature
-AHCI_PxSSTS		equ 0x0028 ; Port x Serial ATA Status (SCR0: SStatus)
-AHCI_PxSCTL		equ 0x002C ; Port x Serial ATA Control (SCR2: SControl)
-AHCI_PxSERR		equ 0x0030 ; Port x Serial ATA Error (SCR1: SError)
-AHCI_PxSACT		equ 0x0034 ; Port x Serial ATA Active (SCR3: SActive)
-AHCI_PxCI		equ 0x0038 ; Port x Command Issue
-AHCI_PxSNTF		equ 0x003C ; Port x Serial ATA Notification (SCR4: SNotification)
-AHCI_PxFBS		equ 0x0040 ; Port x FIS-based Switching Control
-AHCI_PxDEVSLP		equ 0x0044 ; Port x Device Sleep
+AHCI_PxCLB	equ 0x0000	; 4-byte Port x Command List Base Address
+AHCI_PxCLBU	equ 0x0004	; 4-byte Port x Command List Base Address Upper 32-bits
+AHCI_PxFB	equ 0x0008	; 4-byte Port x FIS Base Address
+AHCI_PxFBU	equ 0x000C	; 4-byte Port x FIS Base Address Upper 32-bits
+AHCI_PxIS	equ 0x0010	; 4-byte Port x Interrupt Status
+AHCI_PxIE	equ 0x0014	; 4-byte Port x Interrupt Enable
+AHCI_PxCMD	equ 0x0018	; 8-byte Port x Command and Status
+AHCI_PxTFD	equ 0x0020	; 4-byte Port x Task File Data
+AHCI_PxSIG	equ 0x0024	; 4-byte Port x Signature
+AHCI_PxSSTS	equ 0x0028	; 4-byte Port x Serial ATA Status (SCR0: SStatus)
+AHCI_PxSCTL	equ 0x002C	; 4-byte Port x Serial ATA Control (SCR2: SControl)
+AHCI_PxSERR	equ 0x0030	; 4-byte Port x Serial ATA Error (SCR1: SError)
+AHCI_PxSACT	equ 0x0034	; 4-byte Port x Serial ATA Active (SCR3: SActive)
+AHCI_PxCI	equ 0x0038	; 4-byte Port x Command Issue
+AHCI_PxSNTF	equ 0x003C	; 4-byte Port x Serial ATA Notification (SCR4: SNotification)
+AHCI_PxFBS	equ 0x0040	; 4-byte Port x FIS-based Switching Control
+AHCI_PxDEVSLP	equ 0x0044	; 4-byte Port x Device Sleep
 ; 0x0048 - 0x006F	Reserved
 ; 0x0070 - 0x007F	Port x Vendor Specific
 
 ; Opcodes for AHCI Commands
-AHCI_Write		equ 0x35
-AHCI_Read		equ 0x25
-AHCI_Identify		equ 0xEC
+AHCI_Write	equ 0x35
+AHCI_Read	equ 0x25
+AHCI_Identify	equ 0xEC
 
 
 ; =============================================================================

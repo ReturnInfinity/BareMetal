@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2022 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
 ;
 ; Storage Functions
 ; =============================================================================
@@ -22,8 +22,10 @@ b_storage_read:
 
 	cmp rcx, 0
 	je b_storage_read_fail		; Bail out if instructed to read nothing
-	cmp rdx, 100
-	jge b_storage_read_nvme
+
+	; TODO rework how drive numbering works
+	cmp byte [os_NVMeEnabled], 1
+	je b_storage_read_nvme
 
 b_storage_read_ahci:
 	mov ebx, AHCI_Read
@@ -37,10 +39,10 @@ b_storage_read_done:
 	ret
 
 b_storage_read_nvme:
-	sub rdx, 99			; To BareMetal the first NVMe drive is 100. Internally it is 1
+	add rdx, 1			; To BareMetal the first NVMe drive is 0. Internally it is 1
 	mov ebx, NVMe_Read
 	call nvme_io
-	add rdx, 99
+	sub rdx, 1
 	jmp b_storage_read_done
 
 b_storage_read_fail:
@@ -69,8 +71,10 @@ b_storage_write:
 
 	cmp rcx, 0
 	je b_storage_write_fail		; Bail out if instructed to write nothing
-	cmp rdx, 100
-	jge b_storage_write_nvme
+
+	; TODO rework how drive numbering works
+	cmp byte [os_NVMeEnabled], 1
+	je b_storage_write_nvme
 
 b_storage_write_ahci:
 	mov ebx, AHCI_Write
@@ -84,10 +88,10 @@ b_storage_write_done:
 	ret
 
 b_storage_write_nvme:
-	sub rdx, 99			; To BareMetal the first NVMe drive is 100. Internally it is 1
+	add rdx, 1			; To BareMetal the first NVMe drive is 0. Internally it is 1
 	mov ebx, NVMe_Write
 	call nvme_io
-	add rdx, 99
+	sub rdx, 1
 	jmp b_storage_write_done
 
 b_storage_write_fail:
