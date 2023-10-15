@@ -142,7 +142,7 @@ ahci_init_error:
 ;	RBX = I/O Opcode
 ;	RCX = number of sectors
 ;	RDX = drive #
-;	RDI = memory location
+;	RDI = memory location used for reading/writing data from/to device
 ; OUT:	Nothing
 ;	All other registers preserved
 ahci_io:
