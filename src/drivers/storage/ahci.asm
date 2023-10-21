@@ -21,12 +21,15 @@ ahci_init:
 	mov [ahci_base], rax
 	mov rsi, rax			; RSI holds the ABAR
 
-	; Mark memory as uncacheable
-	; TODO cleanup to do it automatically (for NVMe too!)
-;	mov rdi, 0x00013fa8
-;	mov rax, [rdi]
-;	bts rax, 4	; Set PCD to disable caching
-;	mov [rdi], rax
+	; Mark controller memory as uncacheable
+	shr rax, 18
+	and al, 0b11111000		; Clear the last 3 bits
+	mov rdi, 0x10000		; Base of low PDE
+	add rdi, rax
+	mov rax, [rdi]
+	btc rax, 3			; Clear PWT to disable caching
+	bts rax, 4			; Set PCD to disable caching
+	mov [rdi], rax
 
 	; Check for a valid version number (Bits 31:16 should be greater than 0)
 	mov eax, [rsi+AHCI_VS]
