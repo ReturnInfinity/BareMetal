@@ -35,6 +35,7 @@ start:
 	call init_pci			; Initialize the PCI bus
 	call init_storage		; Initialize storage
 	call init_net			; Initialize the network
+	call init_video			; Initialize video
 
 	mov rsi, readymsg
 	mov rcx, 13
