@@ -35,7 +35,7 @@ init_bga:
 	mov ax, VBE_DISPI_INDEX_XRES
 	mov dx, VBE_DISPI_IOPORT_INDEX
 	out dx, ax
-	mov ax, 800
+	mov ax, screen_x
 	mov dx, VBE_DISPI_IOPORT_DATA
 	out dx, ax
 
@@ -43,7 +43,7 @@ init_bga:
 	mov ax, VBE_DISPI_INDEX_YRES
 	mov dx, VBE_DISPI_IOPORT_INDEX
 	out dx, ax
-	mov ax, 600
+	mov ax, screen_y
 	mov dx, VBE_DISPI_IOPORT_DATA
 	out dx, ax
 
@@ -51,7 +51,7 @@ init_bga:
 	mov ax, VBE_DISPI_INDEX_BPP
 	mov dx, VBE_DISPI_IOPORT_INDEX
 	out dx, ax
-	mov ax, 32
+	mov ax, screen_bpp
 	mov dx, VBE_DISPI_IOPORT_DATA
 	out dx, ax
 
@@ -76,32 +76,34 @@ init_bga:
 	mov rdi, 0x5080
 	mov eax, ebx			; Frame Buffer Address
 	stosd
-	mov eax, 800
+	mov eax, screen_x
 	stosw
-	mov eax, 600
+	mov eax, screen_y
 	stosw
-	mov eax, 32
+	mov eax, screen_bpp
 	stosw
 
 	ret
 ; -----------------------------------------------------------------------------
 
 
-; Register list
+; BGA Ports
 VBE_DISPI_IOPORT_INDEX		equ 0x01CE
 VBE_DISPI_IOPORT_DATA		equ 0x01CF
 
-VBE_DISPI_INDEX_ID		equ 0x00	; 
-VBE_DISPI_INDEX_XRES		equ 0x01	; 
-VBE_DISPI_INDEX_YRES		equ 0x02	; 
-VBE_DISPI_INDEX_BPP		equ 0x03	; 
-VBE_DISPI_INDEX_ENABLE		equ 0x04	; 
-VBE_DISPI_INDEX_BANK		equ 0x05	; 
-VBE_DISPI_INDEX_VIRT_WIDTH	equ 0x06	; 
-VBE_DISPI_INDEX_VIRT_HEIGHT	equ 0x07	; 
-VBE_DISPI_INDEX_X_OFFSET	equ 0x08	; 
-VBE_DISPI_INDEX_Y_OFFSET	equ 0x09	; 
+; BGA Registers
+VBE_DISPI_INDEX_ID		equ 0x00
+VBE_DISPI_INDEX_XRES		equ 0x01
+VBE_DISPI_INDEX_YRES		equ 0x02
+VBE_DISPI_INDEX_BPP		equ 0x03
+VBE_DISPI_INDEX_ENABLE		equ 0x04
+VBE_DISPI_INDEX_BANK		equ 0x05
+VBE_DISPI_INDEX_VIRT_WIDTH	equ 0x06
+VBE_DISPI_INDEX_VIRT_HEIGHT	equ 0x07
+VBE_DISPI_INDEX_X_OFFSET	equ 0x08
+VBE_DISPI_INDEX_Y_OFFSET	equ 0x09
 
+; BGA Values
 VBE_DISPI_DISABLED		equ 0x00
 VBE_DISPI_ENABLED		equ 0x01
 VBE_DISPI_GETCAPS		equ 0x02

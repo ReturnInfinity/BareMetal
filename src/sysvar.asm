@@ -8,6 +8,9 @@
 
 ; Constants
 hextable: 		db '0123456789ABCDEF'
+screen_x		equ 640
+screen_y		equ 480
+screen_bpp		equ 32
 
 
 ; Strings
