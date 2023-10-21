@@ -27,7 +27,7 @@ init_bga:
 	mov ax, VBE_DISPI_INDEX_ENABLE
 	mov dx, VBE_DISPI_IOPORT_INDEX
 	out dx, ax
-	mov ax, 0x00
+	mov ax, VBE_DISPI_DISABLED
 	mov dx, VBE_DISPI_IOPORT_DATA
 	out dx, ax
 
@@ -59,7 +59,7 @@ init_bga:
 	mov ax, VBE_DISPI_INDEX_ENABLE
 	mov dx, VBE_DISPI_IOPORT_INDEX
 	out dx, ax
-	mov ax, 0x41			; Bit 6 (LFB), Bit 0 (Enabled)
+	mov ax, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED
 	mov dx, VBE_DISPI_IOPORT_DATA
 	out dx, ax
 
@@ -69,7 +69,7 @@ init_bga:
 	out dx, ax
 	mov dx, VBE_DISPI_IOPORT_DATA
 	in ax, dx
-	cmp ax, 0x41			; Bit 6 (LFB), Bit 0 (Enabled)
+	cmp ax, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED
 	jne init_video_fail
 
 	; Overwrite values from Pure64
