@@ -21,7 +21,7 @@ init_bga:
 	out dx, ax
 	mov dx, VBE_DISPI_IOPORT_DATA
 	in ax, dx
-	; TODO - Check that AX is >= 0xB0C0 and <= 0xB0C6
+	; TODO - Check that AX is >= 0xB0C0 and <= 0xB0C5
 
 	; Disable video
 	mov ax, VBE_DISPI_INDEX_ENABLE
@@ -72,6 +72,15 @@ init_bga:
 	cmp ax, VBE_DISPI_ENABLED | VBE_DISPI_LFB_ENABLED
 	jne init_video_fail
 
+	; Get LFB length (supported in BGA version 0xB0C5)
+	mov ax, VBE_DISPI_INDEX_VIDEO_MEMORY_64K
+	mov dx, VBE_DISPI_IOPORT_INDEX
+	out dx, ax
+	mov dx, VBE_DISPI_IOPORT_DATA
+	in ax, dx
+	shl rax, 16			; LFB length in bytes
+	; TODO - Save the LFB length value
+
 	; Overwrite values from Pure64
 	mov rdi, 0x5080
 	mov eax, ebx			; Frame Buffer Address
@@ -88,28 +97,29 @@ init_bga:
 
 
 ; BGA Ports
-VBE_DISPI_IOPORT_INDEX		equ 0x01CE
-VBE_DISPI_IOPORT_DATA		equ 0x01CF
+VBE_DISPI_IOPORT_INDEX			equ 0x01CE
+VBE_DISPI_IOPORT_DATA			equ 0x01CF
 
 ; BGA Registers
-VBE_DISPI_INDEX_ID		equ 0x00
-VBE_DISPI_INDEX_XRES		equ 0x01
-VBE_DISPI_INDEX_YRES		equ 0x02
-VBE_DISPI_INDEX_BPP		equ 0x03
-VBE_DISPI_INDEX_ENABLE		equ 0x04
-VBE_DISPI_INDEX_BANK		equ 0x05
-VBE_DISPI_INDEX_VIRT_WIDTH	equ 0x06
-VBE_DISPI_INDEX_VIRT_HEIGHT	equ 0x07
-VBE_DISPI_INDEX_X_OFFSET	equ 0x08
-VBE_DISPI_INDEX_Y_OFFSET	equ 0x09
+VBE_DISPI_INDEX_ID			equ 0x00	; Return version
+VBE_DISPI_INDEX_XRES			equ 0x01	; Set/Return X resolution
+VBE_DISPI_INDEX_YRES			equ 0x02	; Set/Return Y resolution
+VBE_DISPI_INDEX_BPP			equ 0x03	; Set/Return bit depth
+VBE_DISPI_INDEX_ENABLE			equ 0x04
+VBE_DISPI_INDEX_BANK			equ 0x05
+VBE_DISPI_INDEX_VIRT_WIDTH		equ 0x06
+VBE_DISPI_INDEX_VIRT_HEIGHT		equ 0x07
+VBE_DISPI_INDEX_X_OFFSET		equ 0x08
+VBE_DISPI_INDEX_Y_OFFSET		equ 0x09
+VBE_DISPI_INDEX_VIDEO_MEMORY_64K	equ 0x0A	; Returns LFB size in 64KiB blocks
 
 ; BGA Values
-VBE_DISPI_DISABLED		equ 0x00
-VBE_DISPI_ENABLED		equ 0x01
-VBE_DISPI_GETCAPS		equ 0x02
-VBE_DISPI_8BIT_DAC		equ 0x20
-VBE_DISPI_LFB_ENABLED		equ 0x40
-VBE_DISPI_NOCLEARMEM		equ 0x80
+VBE_DISPI_DISABLED			equ 0x00
+VBE_DISPI_ENABLED			equ 0x01
+VBE_DISPI_GETCAPS			equ 0x02	; For returning max when reading XRES, YRES, and BPP
+VBE_DISPI_8BIT_DAC			equ 0x20
+VBE_DISPI_LFB_ENABLED			equ 0x40
+VBE_DISPI_NOCLEARMEM			equ 0x80
 
 
 ; =============================================================================
