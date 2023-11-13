@@ -23,6 +23,9 @@ b_storage_read:
 	cmp rcx, 0
 	je b_storage_read_fail		; Bail out if instructed to read nothing
 
+	; Calculate where in physical memory the data should be read to
+	call os_virt_to_phys
+
 	; TODO rework how drive numbering works
 	cmp byte [os_NVMeEnabled], 1
 	je b_storage_read_nvme
