@@ -23,8 +23,10 @@ b_storage_read:
 	cmp rcx, 0
 	je b_storage_read_fail		; Bail out if instructed to read nothing
 
-	; Calculate where in physical memory the data should be read to
+	; Calculate where in physical memory the data should be written to
+	xchg rax, rdi
 	call os_virt_to_phys
+	xchg rax, rdi
 
 	; TODO rework how drive numbering works
 	cmp byte [os_NVMeEnabled], 1
@@ -77,6 +79,11 @@ b_storage_write:
 
 	cmp rcx, 0
 	je b_storage_write_fail		; Bail out if instructed to write nothing
+
+	; Calculate where in physical memory the data should be read from
+	xchg rax, rsi
+	call os_virt_to_phys
+	xchg rax, rsi
 
 	; TODO rework how drive numbering works
 	cmp byte [os_NVMeEnabled], 1

@@ -150,18 +150,26 @@ reboot:
 ;	range for free memory
 os_virt_to_phys:
 	push r15
-	mov r15, 0xFFFF800000000000	; Starting address of the higher half
-	cmp rdi, r15			; Check if RDI is in the upper canonical range
-	jg os_virt_to_phys_done		; If not, it is already a physical address - bail out
+	push rbx
 
-	sub rdi, r15
+	mov r15, 0xFFFF800000000000	; Starting address of the higher half
+	cmp rax, r15			; Check if RAX is in the upper canonical range
+	jb os_virt_to_phys_done		; If not, it is already a physical address - bail out
+	mov rbx, rax			; Save RAX
+	and rbx, 0x1FFFFF		; Save the low 20 bits
+	mov r15, 0x7FFFFFFFFFFF
+	and rax, r15
 	mov r15, sys_pdh		; Location of virtual memory PDs
-	shr rdi, 18			; Convert 2MB page to entry
-	mov rdi, [r15]			; Load the entry into RDI
-	shr rdi, 8			; Clear the low 8 bits
-	shl rdi, 8
+	shr rax, 21			; Convert 2MB page to entry
+	shl rax, 3
+	add r15, rax
+	mov rax, [r15]			; Load the entry into RAX
+	shr rax, 8			; Clear the low 8 bits
+	shl rax, 8
+	add rax, rbx
 
 os_virt_to_phys_done:
+	pop rbx
 	pop r15
 	ret
 ; -----------------------------------------------------------------------------
