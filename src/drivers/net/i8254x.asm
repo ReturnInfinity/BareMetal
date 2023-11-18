@@ -184,6 +184,12 @@ net_i8254x_reset:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
+; Note:	This driver uses the "legacy format" so TDESC.DEXT is set to 0
+;	Descriptor Format:
+;	Bytes 7:0 - Buffer Address
+;	Bytes 9:8 - Length
+;	Bytes 13:10 - Flags
+;	Bytes 15:14 - Special
 net_i8254x_transmit:
 	push rdi
 	push rax
@@ -192,9 +198,9 @@ net_i8254x_transmit:
 	mov rax, rsi
 	stosq					; Store the data location
 	mov rax, rcx				; The packet size is in CX
-	bts rax, 24				; EOP
-	bts rax, 25				; IFCS
-	bts rax, 27				; RS
+	bts rax, 24				; TDESC.CMD.EOP - End Of Packet
+	bts rax, 25				; TDESC.CMD.IFCS - Insert FCS
+	bts rax, 27				; TDESC.CMD.RS - Report Status
 	stosq
 	mov rdi, [os_NetIOBaseMem]
 	xor eax, eax
@@ -212,6 +218,11 @@ net_i8254x_transmit:
 ; net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
+; Note:	Descriptor Format:
+;	Bytes 7:0 - Buffer Address
+;	Bytes 9:8 - Length
+;	Bytes 13:10 - Flags
+;	Bytes 15:14 - Special
 net_i8254x_poll:
 	push rdi
 	push rsi
@@ -230,7 +241,7 @@ net_i8254x_poll:
 	inc eax
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
 
-	; Reset the Receive Descriptor for a new packet
+	; Reset the Receive Descriptor Buffer Address for a new packet
 	mov rdi, os_rx_desc
 	mov rax, os_PacketBuffers		; Packet will go here
 	add rax, 2				; Room for packet length
