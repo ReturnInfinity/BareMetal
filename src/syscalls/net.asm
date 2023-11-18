@@ -104,7 +104,6 @@ b_net_rx:
 	pop rcx
 
 b_net_rx_fail:
-
 	pop rax
 	pop rsi
 	pop rdi

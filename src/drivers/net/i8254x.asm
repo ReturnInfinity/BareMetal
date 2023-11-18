@@ -134,7 +134,7 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_RDBAL], eax		; Receive Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+I8254X_REG_RDBAH], eax		; Receive Descriptor Base Address High
-	mov eax, (32 * 8)			; Multiples of 8, each desciptor is 16 bytes
+	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
 	mov [rsi+I8254X_REG_RDLEN], eax		; Receive Descriptor Length
 	xor eax, eax
 	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
@@ -154,7 +154,7 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_TDBAL], eax		; Transmit Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+I8254X_REG_TDBAH], eax		; Transmit Descriptor Base Address High
-	mov eax, (32 * 8)			; Multiples of 8, each desciptor is 16 bytes
+	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
 	mov [rsi+I8254X_REG_TDLEN], eax		; Transmit Descriptor Length
 	xor eax, eax
 	mov [rsi+I8254X_REG_TDH], eax		; Transmit Descriptor Head
@@ -222,16 +222,21 @@ net_i8254x_poll:
 	mov rdi, os_PacketBuffers
 	mov [rdi], word cx
 
+	; Reset the descriptor head and tail
+	; TODO - Fix this to actually make use of all the available descriptors
 	mov rsi, [os_NetIOBaseMem]
 	xor eax, eax
 	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
 	inc eax
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
 
+	; Reset the Receive Descriptor for a new packet
 	mov rdi, os_rx_desc
 	mov rax, os_PacketBuffers		; Packet will go here
 	add rax, 2				; Room for packet length
 	stosd
+	mov rax, [os_PacketBuffers]
+	call os_debug_dump_rax
 
 	pop rax
 	pop rsi
