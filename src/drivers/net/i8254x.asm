@@ -235,8 +235,6 @@ net_i8254x_poll:
 	mov rax, os_PacketBuffers		; Packet will go here
 	add rax, 2				; Room for packet length
 	stosd
-	mov rax, [os_PacketBuffers]
-	call os_debug_dump_rax
 
 	pop rax
 	pop rsi
