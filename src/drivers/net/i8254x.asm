@@ -15,7 +15,7 @@ net_i8254x_init:
 	push rcx
 	push rax
 
-	; Read BAR4, If BAR4 is all 0'z then we are using 32-bit addresses
+	; Read BAR4, If BAR4 is all zeros then we are using 32-bit addresses
 
 	; Grab the Base I/O Address of the device
 	mov dl, 0x04				; BAR0
