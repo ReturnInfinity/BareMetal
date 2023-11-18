@@ -58,6 +58,11 @@ b_net_tx_maxcheck:
 	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
 	call b_smp_lock
 
+	; Calculate where in physical memory the data should be read from
+	xchg rax, rsi
+	call os_virt_to_phys
+	xchg rax, rsi
+
 	inc qword [os_net_TXPackets]
 	add qword [os_net_TXBytes], rcx
 	call qword [os_net_transmit]	; Call the driver
