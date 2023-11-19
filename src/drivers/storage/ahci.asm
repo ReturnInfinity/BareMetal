@@ -11,9 +11,6 @@ ahci_init:
 	push rsi			; Used in init_storage
 	push rdx			; EDX should already point to a supported device for os_pci_read/write
 
-	cmp byte [os_AHCIEnabled], 1	; TODO - support multiple AHCI controllers
-	je ahci_init_error
-
 	mov dl, 9			; Read register 9 for BAR5
 	xor eax, eax
 	call os_pci_read		; BAR5 (AHCI Base Address Register)
@@ -21,7 +18,7 @@ ahci_init:
 	mov [ahci_base], rax
 	mov rsi, rax			; RSI holds the ABAR
 
-	; Mark controller memory as uncacheable
+	; Mark controller memory as un-cacheable
 	shr rax, 18
 	and al, 0b11111000		; Clear the last 3 bits
 	mov rdi, 0x10000		; Base of low PDE
@@ -124,7 +121,12 @@ ahci_init_config_active_skip:
 	jmp ahci_init_config_active
 	
 ahci_init_done:
-	mov byte [os_AHCIEnabled], 1	; Set the flag that AHCI has been initialized
+	bts word [os_StorageVar], 1	; Set the bit flag that AHCI has been initialized
+	mov rdi, os_storage_io
+	mov rax, ahci_io
+	stosq
+	mov rax, ahci_id
+	stosq
 	pop rdx
 	pop rsi
 	add rsi, 15
@@ -156,6 +158,20 @@ ahci_io:
 	push rcx
 	push rax
 
+	cmp bx, 1
+	je ahci_io_write
+	cmp bx, 2
+	je ahci_io_read
+	jmp achi_io_error
+
+ahci_io_write:
+	mov bx, AHCI_Write
+	jmp ahci_io_prep
+
+ahci_io_read:
+	mov bx, AHCI_Read
+
+ahci_io_prep:
 	shl rax, 3			; Convert to 512B starting sector
 	shl rcx, 3			; Convert 4K sectors to 512B sectors
 

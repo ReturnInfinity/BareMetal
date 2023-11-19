@@ -11,8 +11,9 @@
 %include "drivers/pic.asm"
 
 ; Storage
-%include "drivers/storage/ahci.asm"
 %include "drivers/storage/nvme.asm"
+%include "drivers/storage/ahci.asm"
+%include "drivers/storage/ata.asm"
 
 ; Network
 %include "drivers/net/i8254x.asm"

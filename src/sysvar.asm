@@ -85,6 +85,8 @@ os_net_RXPackets:	equ os_SystemVariables + 160
 os_hdd_BytesRead:	equ os_SystemVariables + 168
 os_hdd_BytesWrite:	equ os_SystemVariables + 176
 os_NVMe_Base:		equ os_SystemVariables + 180
+os_storage_io:		equ os_SystemVariables + 188
+os_storage_id:		equ os_SystemVariables + 196
 
 
 ; DD - Starting at offset 256, increments by 4
@@ -99,6 +101,7 @@ os_NumCores:		equ os_SystemVariables + 512
 os_CoreSpeed:		equ os_SystemVariables + 514
 os_NetIOAddress:	equ os_SystemVariables + 522
 os_NetLock:		equ os_SystemVariables + 524
+os_StorageVar:		equ os_SystemVariables + 526
 
 
 ; DB - Starting at offset 768, increments by 1
@@ -122,10 +125,8 @@ os_NVMeLBA:		equ os_SystemVariables + 789
 os_NVMe_atail:		equ os_SystemVariables + 790
 os_NVMe_iotail:		equ os_SystemVariables + 791
 os_AHCIMJR:		equ os_SystemVariables + 792
-os_AHCIMNR:		equ os_SystemVariables + 792
-os_AHCIIRQ:		equ os_SystemVariables + 793
-os_NVMeEnabled:		equ os_SystemVariables + 794
-os_AHCIEnabled:		equ os_SystemVariables + 795
+os_AHCIMNR:		equ os_SystemVariables + 793
+os_AHCIIRQ:		equ os_SystemVariables + 794
 
 
 ; Misc

@@ -11,9 +11,6 @@ nvme_init:
 	push rsi			; Used in init_storage
 	push rdx			; EDX should already point to a supported device for os_pci_read/write
 
-	cmp byte [os_NVMeEnabled], 1	; TODO - support multiple NVMe controllers
-	je nvme_init_error
-
 	mov dl, 4			; Read register 4 for BAR0
 	xor eax, eax
 	call os_pci_read		; BAR0 (NVMe Base Address Register)
@@ -21,7 +18,7 @@ nvme_init:
 	mov [os_NVMe_Base], rax
 	mov rsi, rax			; RSI holds the ABAR
 
-	; Mark controller memory as uncacheable
+	; Mark controller memory as un-cacheable
 	shr rax, 18
 	and al, 0b11111000		; Clear the last 3 bits
 	mov rdi, 0x10000		; Base of low PDE
@@ -170,7 +167,12 @@ nvme_init_LBA_end:
 	mov [os_NVMeLBA], bl		; Store the highest LBADS
 
 nvme_init_done:
-	mov byte [os_NVMeEnabled], 1	; Set the flag that NVMe has been initialized
+	bts word [os_StorageVar], 0	; Set the bit flag that NVMe has been initialized
+	mov rdi, os_storage_io
+	mov rax, nvme_io
+	stosq
+	mov rax, nvme_id
+	stosq
 	pop rdx
 	pop rsi
 	add rsi, 15
@@ -286,6 +288,8 @@ nvme_io:
 
 	push rax			; Save the starting sector
 
+	add rdx, 1			; NVMe drives start at 1, not 0
+
 	cmp rcx, 0			; Error if no data was requested
 	je nvme_io_error
 
@@ -390,21 +394,30 @@ nvme_io_wait:
 	xor eax, eax
 	stosq				; Overwrite the old entry
 
-nvme_io_error:
+nvme_io_done:
+	sub rdx, 1			; Set drive number back to what OS expects
 	pop rbx
 	pop rcx
 	pop rdi
+	ret
+
+nvme_io_error:
+	sub rdx, 1			; Set drive number back to what OS expects
+	pop rbx
+	pop rcx
+	pop rdi
+	xor rcx, rcx
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; nvme_identify -- Identify a NVMe device
+; nvme_id -- Identify a NVMe device
 ; IN:	RBX = NameSpace ID
 ;	RDI = memory location to store data
 ; OUT:	Nothing
 ;	All other registers preserved
-nvme_identify:
+nvme_id:
 	ret
 ; -----------------------------------------------------------------------------
 

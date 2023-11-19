@@ -7,6 +7,7 @@
 
 
 ; -----------------------------------------------------------------------------
+; init_net -- Configure the first network device it finds
 init_net:
 	; Check PCI Table for a supported controller
 	mov rsi, pci_table		; Load PCI Table address to RSI
