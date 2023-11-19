@@ -141,5 +141,39 @@ reboot:
 ; -----------------------------------------------------------------------------
 
 
+; -----------------------------------------------------------------------------
+; os_virt_to_phys -- Function to convert a virtual address to a physical address
+; IN:	RAX = Virtual Memory Address
+; OUT:	RAX = Physical Memory Address
+;	All other registers preserved
+; NOTE: BareMetal uses two ranges of memory. One physical 1-to-1 map and one virtual
+;	range for free memory
+os_virt_to_phys:
+	push r15
+	push rbx
+
+	mov r15, 0xFFFF800000000000	; Starting address of the higher half
+	cmp rax, r15			; Check if RAX is in the upper canonical range
+	jb os_virt_to_phys_done		; If not, it is already a physical address - bail out
+	mov rbx, rax			; Save RAX
+	and rbx, 0x1FFFFF		; Save the low 20 bits
+	mov r15, 0x7FFFFFFFFFFF
+	and rax, r15
+	mov r15, sys_pdh		; Location of virtual memory PDs
+	shr rax, 21			; Convert 2MB page to entry
+	shl rax, 3
+	add r15, rax
+	mov rax, [r15]			; Load the entry into RAX
+	shr rax, 8			; Clear the low 8 bits
+	shl rax, 8
+	add rax, rbx
+
+os_virt_to_phys_done:
+	pop rbx
+	pop r15
+	ret
+; -----------------------------------------------------------------------------
+
+
 ; =============================================================================
 ; EOF
