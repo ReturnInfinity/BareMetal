@@ -10,7 +10,7 @@
 serial_init:
 	; Disable Interrupts
 	mov dx, COM_PORT_INTERRUPT_ENABLE
-	mov al, 0x00			; Disable all interrupts
+	mov al, 0			; Disable all interrupts
 	out dx, al
 
 	; Enable divisor register for setting baud rate
@@ -38,7 +38,7 @@ serial_init:
 
 	; Set FIFO
 	mov dx, COM_PORT_FIFO_CONTROL
-	mov al, 0xC7			; Enable FIFO, clear them, with 14-byte threshold
+	mov al, 0xC7			; Enable FIFO, clear them, 14-byte threshold
 	out dx, al
 
 	ret
@@ -46,6 +46,9 @@ serial_init:
 
 
 ; -----------------------------------------------------------------------------
+; serial_send -- Send a character via the configured serial port
+;  IN:	AL = Character to send
+; OUT:	All registers preserved
 serial_send:
 	push rdx
 	push rax
@@ -55,7 +58,7 @@ serial_send_wait:
 	in al, dx
 	and al, 0x20			; Bit 5
 	cmp al, 0
-	jne serial_send_wait
+	je serial_send_wait
 
 	; Restore the byte and write to the serial port
 	pop rax
@@ -68,6 +71,9 @@ serial_send_wait:
 
 
 ; -----------------------------------------------------------------------------
+; serial_recv -- Receives a character via the configured serial port
+;  IN:	Nothing
+; OUT:	AL = Character received
 serial_recv:
 	push rdx
 
@@ -85,7 +91,6 @@ serial_recv_wait:
 	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
-
 
 
 ; Port Registers
