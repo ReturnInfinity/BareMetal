@@ -9,7 +9,7 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
-	; Check PCI Table for a supported controller
+	; Check PCI Table for a Ethernet device
 	mov rsi, pci_table		; Load PCI Table address to RSI
 	sub rsi, 16
 	add rsi, 8			; Add offset to Class Code
@@ -20,30 +20,34 @@ init_net_check_pci:
 	je init_net_probe_not_found
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver
-	jmp init_net_check_pci	; Check PCI Table again
+	jmp init_net_check_pci		; Check PCI Table again
 
+	; Check the Ethernet device to see if it has a driver
 init_net_probe_find_driver:
 	sub rsi, 8			; Move RSI back to start of PCI record
 	mov edx, [rsi]			; Load value for os_pci_read/write
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
+	rol r8d, 16			; Swap the Device ID / Vendor ID
 	mov rsi, NIC_DeviceVendor_ID
-	lodsd				; Load a driver ID - Low half must be 0xFFFF
 init_net_probe_find_next_driver:
-	mov rbx, rax			; Save the driver ID
+	lodsw				; Load a driver ID
+	mov bx, ax			; Save the driver ID
+	lodsw				; Load the vendor ID
+	cmp eax, 0			; Check for a 0x0000 driver and vendor ID
+	je init_net_probe_not_found
+	rol eax, 16			; Shift the vendor to the upper 16 bits
 init_net_probe_find_next_device:
-	lodsd				; Load a device and vendor ID from our list of supported NICs
-	test eax, eax			; 0x00000000 means we have reached the end of the list
-	jz init_net_probe_not_found	; No supported NIC found
-	cmp ax, 0xFFFF			; New driver ID?
+	lodsw				; Load a device and vendor ID from our list of supported NICs
+	cmp ax, 0x0000			; Check for end of device list
 	je init_net_probe_find_next_driver	; We found the next driver type
 	cmp eax, r8d
 	je init_net_probe_found		; If Carry is clear then we found a supported NIC
 	jmp init_net_probe_find_next_device	; Check the next device
 
 init_net_probe_found:
-	cmp ebx, 0x8254FFFF
+	cmp bx, 0x8254
 	je init_net_probe_found_i8254x
-	cmp ebx, 0x1AF4FFFF
+	cmp bx, 0x1AF4
 	je init_net_probe_found_virtio
 	jmp init_net_probe_not_found
 
