@@ -38,18 +38,19 @@ b_output:
 	push rax			; AL is used for the serial port output
 
 	cld				; Clear the direction flag.. we want to increment through the string
-	mov dx, 0x03F8			; Address of first serial port
+;	mov dx, 0x03F8			; Address of first serial port
 
 b_output_nextchar:
 	jrcxz b_output_done		; If RCX is 0 then the function is complete
-	add dx, 5			; Offset to Line Status Register
-	in al, dx
-	sub dx, 5			; Back to to base
-	cmp al, 0
-	je b_output_nextchar
+;	add dx, 5			; Offset to Line Status Register
+;	in al, dx
+;	sub dx, 5			; Back to to base
+;	cmp al, 0
+;	je b_output_nextchar
 	dec rcx
 	lodsb				; Get char from string and store in AL
-	out dx, al			; Send the char to the serial port
+;	out dx, al			; Send the char to the serial port
+	call serial_send
 	jmp b_output_nextchar
 
 b_output_done:

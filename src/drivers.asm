@@ -9,6 +9,7 @@
 ; Internal
 %include "drivers/pci.asm"
 %include "drivers/pic.asm"
+%include "drivers/serial.asm"
 
 ; Storage
 %include "drivers/storage/nvme.asm"

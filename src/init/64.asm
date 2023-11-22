@@ -8,6 +8,9 @@
 
 ; -----------------------------------------------------------------------------
 init_64:
+	; Configure the serial port
+	call serial_init
+
 	; Set the temporary stack
 
 	; Clear all memory after the kernel up to 2MiB
