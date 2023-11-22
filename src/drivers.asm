@@ -23,17 +23,16 @@
 %include "drivers/video/bga.asm"
 
 NIC_DeviceVendor_ID:	; The supported list of NICs
-; The ID's are Device/Vendor
 
 ; Virtio
-;dw 0x1AF4		; Driver marker
-;dw 0x1AF4		; Vendor
-;dw 0x1000		; Device
-;dw 0x0000
+dw 0x1AF4		; Driver ID
+dw 0x1AF4		; Vendor ID
+dw 0x1000		; Device
+dw 0x0000
 
 ; Intel 8254x/8257x Gigabit Ethernet
-dw 0x8254		; Driver marker
-dw 0x8086		; Vendor
+dw 0x8254		; Driver ID
+dw 0x8086		; Vendor ID
 dw 0x1000		; 82542 (Fiber)
 dw 0x1001		; 82543GC (Fiber)
 dw 0x1004		; 82543GC (Copper)
@@ -99,7 +98,7 @@ dw 0x1107		; 82544EI
 dw 0x1112		; 82544GC
 dw 0x0000
 
-dw 0x0000		; End of list
+; End of list
 dw 0x0000
 dw 0x0000
 

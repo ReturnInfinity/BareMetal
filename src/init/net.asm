@@ -27,20 +27,18 @@ init_net_probe_find_driver:
 	sub rsi, 8			; Move RSI back to start of PCI record
 	mov edx, [rsi]			; Load value for os_pci_read/write
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
-	rol r8d, 16
+	rol r8d, 16			; Swap the Device ID / Vendor ID
 	mov rsi, NIC_DeviceVendor_ID
 init_net_probe_find_next_driver:
 	lodsw				; Load a driver ID
 	mov bx, ax			; Save the driver ID
 	lodsw				; Load the vendor ID
+	cmp eax, 0			; Check for a 0x0000 driver and vendor ID
+	je init_net_probe_not_found
 	rol eax, 16			; Shift the vendor to the upper 16 bits
 init_net_probe_find_next_device:
 	lodsw				; Load a device and vendor ID from our list of supported NICs
-	call os_debug_dump_eax
-;	jmp $
-;	test eax, eax			; 0x00000000 means we have reached the end of the list
-;	jz init_net_probe_not_found	; No supported NIC found
-	cmp ax, 0x0000			; New driver ID?
+	cmp ax, 0x0000			; Check for end of device list
 	je init_net_probe_find_next_driver	; We found the next driver type
 	cmp eax, r8d
 	je init_net_probe_found		; If Carry is clear then we found a supported NIC
