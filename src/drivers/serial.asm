@@ -87,15 +87,25 @@ serial_recv:
 	; Read from the serial port
 	mov dx, COM_PORT_DATA
 	in al, dx
-	cmp al, 0x0D			; Enter key?
-	jne serial_recv_store
-	mov al, 0x1C			; Adjust it to the same value as a keyboard
+	cmp al, 0x0D			; Enter via serial?
+	je serial_recv_enter
+	cmp al, 0x7F			; Backspace via serial?
+	je serial_recv_backspace
+
+	; Store the receive character to the key var
 serial_recv_store:
 	mov [key], al
 
 serial_recv_nochar:
 	pop rdx
 	ret
+
+serial_recv_enter:
+	mov al, 0x1C			; Adjust it to the same value as a keyboard
+	jmp serial_recv_store
+serial_recv_backspace:
+	mov al, 0x0E			; Adjust it to the same value as a keyboard
+	jmp serial_recv_store
 ; -----------------------------------------------------------------------------
 
 
