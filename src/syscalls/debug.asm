@@ -31,17 +31,24 @@ os_debug_dump_ax:
 	call os_debug_dump_al
 	rol ax, 8
 os_debug_dump_al:
-	push rbx
 	push rax
-	mov rbx, hextable
-	push rax			; Save RAX since we work in 2 parts
-	shr al, 4			; Shift high 4 bits into low 4 bits
-	xlatb
-	mov [tchar+0], al
+	push ax				; Save AX for the low nibble
+	shr al, 4			; Shift the high 4 bits into the low 4, high bits cleared
+	or al, '0'			; Add "0"
+	cmp al, '9'+1			; Digit?
+	jl os_debug_dump_al_h		; Yes, store it
+	add al, 7			; Add offset for character "A"
+os_debug_dump_al_h:
+	mov [tchar+0], al		; Store first character
+	pop ax				; Restore AX
+	and al, 0x0F			; Keep only the low 4 bits
+	or al, '0'			; Add "0"
+	cmp al, '9'+1			; Digit?
+	jl os_debug_dump_al_l		; Yes, store it
+	add al, 7			; Add offset for character "A"
+os_debug_dump_al_l:
+	mov [tchar+1], al		; Store second character
 	pop rax
-	and al, 0x0f			; Clear the high 4 bits
-	xlatb
-	mov [tchar+1], al
 	push rsi
 	push rcx
 	mov rsi, tchar
@@ -49,8 +56,6 @@ os_debug_dump_al:
 	call b_output
 	pop rcx
 	pop rsi
-	pop rax
-	pop rbx
 	ret
 ; -----------------------------------------------------------------------------
 
