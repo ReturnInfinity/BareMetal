@@ -77,19 +77,35 @@ serial_send_wait:
 serial_recv:
 	push rdx
 
-serial_recv_wait:
+	; Check if serial port has pending data
 	mov dx, COM_PORT_LINE_STATUS
 	in al, dx
-	and al, 0x01			; Bit 1
+	and al, 0x01			; Bit 0
 	cmp al, 0
-	je serial_recv_wait
+	je serial_recv_nochar
 
 	; Read from the serial port
 	mov dx, COM_PORT_DATA
 	in al, dx
+	cmp al, 0x0D			; Enter via serial?
+	je serial_recv_enter
+	cmp al, 0x7F			; Backspace via serial?
+	je serial_recv_backspace
 
+	; Store the receive character to the key var
+serial_recv_store:
+	mov [key], al
+
+serial_recv_nochar:
 	pop rdx
 	ret
+
+serial_recv_enter:
+	mov al, 0x1C			; Adjust it to the same value as a keyboard
+	jmp serial_recv_store
+serial_recv_backspace:
+	mov al, 0x0E			; Adjust it to the same value as a keyboard
+	jmp serial_recv_store
 ; -----------------------------------------------------------------------------
 
 

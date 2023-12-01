@@ -21,6 +21,7 @@ b_input:
 	ret
 
 b_input_no_key:
+	call serial_recv		; Try from the serial port
 	clc				; clear the carry flag
 	ret
 ; -----------------------------------------------------------------------------
