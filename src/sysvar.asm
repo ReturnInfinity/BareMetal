@@ -7,16 +7,15 @@
 
 
 ; Constants
-screen_x		equ 640
-screen_y		equ 480
-screen_bpp		equ 32
+screen_x:		equ 640
+screen_y:		equ 480
+screen_bpp:		equ 32
 
 
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
 readymsg:		db 'BareMetal OK'	; This string falls thru to newline
 newline:		db 10, 0
-memory_message:		db 'Not enough system memory for CPU stacks! System halted.', 0
 
 
 ; Memory addresses
