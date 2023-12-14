@@ -81,16 +81,11 @@ init_bga:
 	shl rax, 16			; LFB length in bytes
 	; TODO - Save the LFB length value
 
-	; Overwrite values from Pure64
-	mov rdi, 0x5080
-	mov eax, ebx			; Frame Buffer Address
-	stosd
-	mov eax, screen_x
-	stosw
-	mov eax, screen_y
-	stosw
-	mov eax, screen_bpp
-	stosw
+	; Set kernel values
+	mov qword [os_screen_lfb], rbx
+	mov word [os_screen_x], screen_x
+	mov word [os_screen_y], screen_y
+	mov byte [os_screen_bpp], screen_bpp
 
 	ret
 ; -----------------------------------------------------------------------------

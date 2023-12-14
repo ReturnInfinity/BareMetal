@@ -95,6 +95,16 @@ make_interrupt_gate_stubs:
 	mov esi, 0x00005040
 	lodsq
 	mov [os_HPETAddress], rax
+	mov esi, 0x00005080		; Save screen values
+	xor eax, eax
+	lodsd
+	mov [os_screen_lfb], rax
+	lodsw
+	mov [os_screen_x], ax
+	lodsw
+	mov [os_screen_y], ax
+	lodsb
+	mov [os_screen_bpp], al
 	pop rax				; Restore free RAM size
 
 	; Configure the Stack base

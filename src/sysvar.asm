@@ -61,70 +61,74 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 
 
 ; DQ - Starting at offset 0, increments by 8
-os_LocalAPICAddress:	equ os_SystemVariables + 0
-os_IOAPICAddress:	equ os_SystemVariables + 8
-os_ClockCounter:	equ os_SystemVariables + 16
-os_PacketAddress:	equ os_SystemVariables + 24
-os_StackBase:		equ os_SystemVariables + 40
-os_net_transmit:	equ os_SystemVariables + 48
-os_net_poll:		equ os_SystemVariables + 56
-os_net_ackint:		equ os_SystemVariables + 64
-os_NetIOBaseMem:	equ os_SystemVariables + 72
-os_NetMAC:		equ os_SystemVariables + 80
-os_HPETAddress:		equ os_SystemVariables + 88
-ahci_base:		equ os_SystemVariables + 96
-os_NetworkCallback:	equ os_SystemVariables + 104
-os_KeyboardCallback:	equ os_SystemVariables + 120
-os_ClockCallback:	equ os_SystemVariables + 128
-os_net_TXBytes:		equ os_SystemVariables + 136
-os_net_TXPackets:	equ os_SystemVariables + 144
-os_net_RXBytes:		equ os_SystemVariables + 152
-os_net_RXPackets:	equ os_SystemVariables + 160
-os_hdd_BytesRead:	equ os_SystemVariables + 168
-os_hdd_BytesWrite:	equ os_SystemVariables + 176
-os_NVMe_Base:		equ os_SystemVariables + 180
-os_storage_io:		equ os_SystemVariables + 188
-os_storage_id:		equ os_SystemVariables + 196
+os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
+os_IOAPICAddress:	equ os_SystemVariables + 0x0008
+os_ClockCounter:	equ os_SystemVariables + 0x0010
+os_PacketAddress:	equ os_SystemVariables + 0x0018
+os_StackBase:		equ os_SystemVariables + 0x0020
+os_net_transmit:	equ os_SystemVariables + 0x0028
+os_net_poll:		equ os_SystemVariables + 0x0030
+os_net_ackint:		equ os_SystemVariables + 0x0038
+os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
+os_NetMAC:		equ os_SystemVariables + 0x0048
+os_HPETAddress:		equ os_SystemVariables + 0x0050
+ahci_base:		equ os_SystemVariables + 0x0058
+os_NetworkCallback:	equ os_SystemVariables + 0x0060
+os_KeyboardCallback:	equ os_SystemVariables + 0x0068
+os_ClockCallback:	equ os_SystemVariables + 0x0070
+os_net_TXBytes:		equ os_SystemVariables + 0x0078
+os_net_TXPackets:	equ os_SystemVariables + 0x0080
+os_net_RXBytes:		equ os_SystemVariables + 0x0088
+os_net_RXPackets:	equ os_SystemVariables + 0x0090
+os_hdd_BytesRead:	equ os_SystemVariables + 0x0098
+os_hdd_BytesWrite:	equ os_SystemVariables + 0x00A0
+os_NVMe_Base:		equ os_SystemVariables + 0x00A8
+os_storage_io:		equ os_SystemVariables + 0x00B0
+os_storage_id:		equ os_SystemVariables + 0x00B8
+os_screen_lfb:		equ os_SystemVariables + 0x00C0
 
 
 ; DD - Starting at offset 256, increments by 4
-os_HPETRate:		equ os_SystemVariables + 260
-os_MemAmount:		equ os_SystemVariables + 264	; in MiB
-ahci_PA:		equ os_SystemVariables + 268	; Each set bit is an active port
-os_NVMeTotalLBA:	equ os_SystemVariables + 272
+os_HPETRate:		equ os_SystemVariables + 0x0100
+os_MemAmount:		equ os_SystemVariables + 0x0104	; in MiB
+ahci_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
+os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 
 
 ; DW - Starting at offset 512, increments by 2
-os_NumCores:		equ os_SystemVariables + 512
-os_CoreSpeed:		equ os_SystemVariables + 514
-os_NetIOAddress:	equ os_SystemVariables + 522
-os_NetLock:		equ os_SystemVariables + 524
-os_StorageVar:		equ os_SystemVariables + 526
+os_NumCores:		equ os_SystemVariables + 0x0200
+os_CoreSpeed:		equ os_SystemVariables + 0x0202
+os_NetIOAddress:	equ os_SystemVariables + 0x0204
+os_NetLock:		equ os_SystemVariables + 0x0206
+os_StorageVar:		equ os_SystemVariables + 0x0208
+os_screen_x:		equ os_SystemVariables + 0x020A
+os_screen_y:		equ os_SystemVariables + 0x020C
 
 
 ; DB - Starting at offset 768, increments by 1
-scancode:		equ os_SystemVariables + 770
-key:			equ os_SystemVariables + 771
-key_shift:		equ os_SystemVariables + 772
-os_PCIEnabled:		equ os_SystemVariables + 775	; 1 if PCI is detected
-os_NetEnabled:		equ os_SystemVariables + 776	; 1 if a supported network card was enabled
-os_NetIRQ:		equ os_SystemVariables + 778	; Set to Interrupt line that NIC is connected to
-os_NetActivity_TX:	equ os_SystemVariables + 779
-os_NetActivity_RX:	equ os_SystemVariables + 780
-os_EthernetBuffer_C1:	equ os_SystemVariables + 781	; Counter 1 for the Ethernet RX Ring Buffer
-os_EthernetBuffer_C2:	equ os_SystemVariables + 782	; Counter 2 for the Ethernet RX Ring Buffer
-os_StorageEnabled:	equ os_SystemVariables + 783
-os_StorageActivity:	equ os_SystemVariables + 784
-os_NVMeIRQ:		equ os_SystemVariables + 785
-os_NVMeMJR:		equ os_SystemVariables + 786
-os_NVMeMNR:		equ os_SystemVariables + 787
-os_NVMeTER:		equ os_SystemVariables + 788
-os_NVMeLBA:		equ os_SystemVariables + 789
-os_NVMe_atail:		equ os_SystemVariables + 790
-os_NVMe_iotail:		equ os_SystemVariables + 791
-os_AHCIMJR:		equ os_SystemVariables + 792
-os_AHCIMNR:		equ os_SystemVariables + 793
-os_AHCIIRQ:		equ os_SystemVariables + 794
+scancode:		equ os_SystemVariables + 0x0300
+key:			equ os_SystemVariables + 0x0301
+key_shift:		equ os_SystemVariables + 0x0302
+os_PCIEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is detected
+os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
+os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is connected to
+os_NetActivity_TX:	equ os_SystemVariables + 0x0306
+os_NetActivity_RX:	equ os_SystemVariables + 0x0307
+os_EthernetBuffer_C1:	equ os_SystemVariables + 0x0308	; Counter 1 for the Ethernet RX Ring Buffer
+os_EthernetBuffer_C2:	equ os_SystemVariables + 0x0309	; Counter 2 for the Ethernet RX Ring Buffer
+os_StorageEnabled:	equ os_SystemVariables + 0x030A
+os_StorageActivity:	equ os_SystemVariables + 0x030B
+os_NVMeIRQ:		equ os_SystemVariables + 0x030C
+os_NVMeMJR:		equ os_SystemVariables + 0x030D
+os_NVMeMNR:		equ os_SystemVariables + 0x030E
+os_NVMeTER:		equ os_SystemVariables + 0x030F
+os_NVMeLBA:		equ os_SystemVariables + 0x0310
+os_NVMe_atail:		equ os_SystemVariables + 0x0311
+os_NVMe_iotail:		equ os_SystemVariables + 0x0312
+os_AHCIMJR:		equ os_SystemVariables + 0x0313
+os_AHCIMNR:		equ os_SystemVariables + 0x0314
+os_AHCIIRQ:		equ os_SystemVariables + 0x0315
+os_screen_bpp:		equ os_SystemVariables + 0x0316
 
 
 ; Misc

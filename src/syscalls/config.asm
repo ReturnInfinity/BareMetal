@@ -14,26 +14,40 @@
 ; OUT:	RAX = Result
 ;	All other registers preserved
 b_config:
-	cmp rcx, 0
+	xor eax, eax
+	cmp rcx, 0x00
 	je b_config_timecounter
-	cmp rcx, 1
+	cmp rcx, 0x01
 	je b_config_smp_get_id
-	cmp rcx, 3
+	cmp rcx, 0x03
 	je b_config_networkcallback_get
-	cmp rcx, 4
+	cmp rcx, 0x04
 	je b_config_networkcallback_set
-	cmp rcx, 5
+	cmp rcx, 0x05
 	je b_config_clockcallback_get
-	cmp rcx, 6
+	cmp rcx, 0x06
 	je b_config_clockcallback_set
+
+; Video
+	cmp rcx, 0x20
+	je b_config_screen_lfb_get
+	cmp rcx, 0x21
+	je b_config_screen_x_get
+	cmp rcx, 0x22
+	je b_config_screen_y_get
+	cmp rcx, 0x23
+	je b_config_screen_bpp_get
+
 	cmp rcx, 30
 	je b_config_mac
-	; PCI
+
+; PCI
 	cmp rcx, 0x40
 	je b_config_pci_read
 	cmp rcx, 0x41
 	je b_config_pci_write
-	; Standard Output
+
+; Standard Output
 	cmp rcx, 0x42
 	je b_config_stdout_set
 	cmp rcx, 0x43
@@ -64,6 +78,24 @@ b_config_clockcallback_get:
 
 b_config_clockcallback_set:
 	mov qword [os_ClockCallback], rax
+	ret
+
+; Video
+
+b_config_screen_lfb_get:
+	mov rax, [os_screen_lfb]
+	ret
+
+b_config_screen_x_get:
+	mov ax, [os_screen_x]
+	ret
+
+b_config_screen_y_get:
+	mov ax, [os_screen_y]
+	ret
+
+b_config_screen_bpp_get:
+	mov al, [os_screen_bpp]
 	ret
 
 b_config_mac:
