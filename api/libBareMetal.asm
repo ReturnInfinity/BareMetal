@@ -26,11 +26,11 @@ networkcallback_get	equ 0x03
 networkcallback_set	equ 0x04
 clockcallback_get	equ 0x05
 clockcallback_set	equ 0x06
-mac			equ 30
 screen_lfb_get		equ 0x20
 screen_x_get		equ 0x21
 screen_y_get		equ 0x22
 screen_bpp_get		equ 0x23
+mac_get			equ 0x30
 pci_read		equ 0x40
 pci_write		equ 0x41
 stdout_set		equ 0x42

@@ -26,13 +26,17 @@ unsigned long b_config(unsigned long function, unsigned long var);
 void b_system(unsigned long function, void *var1, void *var2);
 
 // Index for b_config calls
-#define TIMECOUNTER		0
-#define SMP_GET_ID		1
-#define NETWORKCALLBACK_GET	3
-#define NETWORKCALLBACK_SET	4
-#define CLOCKCALLBACK_GET	5
-#define CLOCKCALLBACK_SET	6
-#define MAC			30
+#define TIMECOUNTER		0x00
+#define SMP_GET_ID		0x01
+#define NETWORKCALLBACK_GET	0x03
+#define NETWORKCALLBACK_SET	0x04
+#define CLOCKCALLBACK_GET	0x05
+#define CLOCKCALLBACK_SET	0x06
+#define SCREEN_LFB_GET		0x20
+#define SCREEN_X_GET		0x21
+#define SCREEN_Y_GET		0x22
+#define SCREEN_BPP_GET		0x23
+#define MAC_GET			0x30
 #define PCI_READ		0x40
 #define PCI_WRITE		0x41
 #define STDOUT_SET		0x42

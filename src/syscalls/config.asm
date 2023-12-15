@@ -38,8 +38,9 @@ b_config:
 	cmp rcx, 0x23
 	je b_config_screen_bpp_get
 
-	cmp rcx, 30
-	je b_config_mac
+; Network
+	cmp rcx, 0x30
+	je b_config_mac_get
 
 ; PCI
 	cmp rcx, 0x40
@@ -98,9 +99,13 @@ b_config_screen_bpp_get:
 	mov al, [os_screen_bpp]
 	ret
 
-b_config_mac:
+; Network
+
+b_config_mac_get:
 	call b_net_status
 	ret
+
+; PCI
 
 b_config_pci_read:
 	call os_pci_read
