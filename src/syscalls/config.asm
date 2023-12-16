@@ -14,7 +14,6 @@
 ; OUT:	RAX = Result
 ;	All other registers preserved
 b_config:
-	xor eax, eax
 	cmp rcx, 0x00
 	je b_config_timecounter
 	cmp rcx, 0x01
