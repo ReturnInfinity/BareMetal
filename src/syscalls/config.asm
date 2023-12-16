@@ -87,14 +87,17 @@ b_config_screen_lfb_get:
 	ret
 
 b_config_screen_x_get:
+	xor eax, eax
 	mov ax, [os_screen_x]
 	ret
 
 b_config_screen_y_get:
+	xor eax, eax
 	mov ax, [os_screen_y]
 	ret
 
 b_config_screen_bpp_get:
+	xor eax, eax
 	mov al, [os_screen_bpp]
 	ret
 
