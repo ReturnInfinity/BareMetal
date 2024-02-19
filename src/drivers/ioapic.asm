@@ -36,6 +36,26 @@ os_ioapic_write:
 ; -----------------------------------------------------------------------------
 
 
+; -----------------------------------------------------------------------------
+; os_ioapic_mask_clear -- Clear a mask on the I/O APIC
+;  IN:	ECX  = IRQ #
+;	EAX  = Interrupt #
+; OUT:	All registers preserved
+os_ioapic_mask_clear:
+	push rcx
+	push rax
+	shl ecx, 1
+	add ecx, 0x10			; Value is 0x10 + (IRQ * 2)
+	call os_ioapic_write		; Write the low 32 bits
+	add ecx, 1			; Increment for next register
+	xor eax, eax
+	call os_ioapic_write		; Write the high 32 bits
+	pop rax
+	pop rcx
+	ret
+; -----------------------------------------------------------------------------
+
+
 ; Register list
 IOAPICID	equ 0x00		; Bits 27:24 - APIC ID
 IOAPICVER	equ 0x01		; Bits 23:16 - Max Redirection Entry, 7:0 - I/O APIC Version

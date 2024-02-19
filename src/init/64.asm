@@ -139,12 +139,18 @@ skip_ap:
 no_more_aps:
 
 	; Enable specific interrupts
-	mov al, 0x01			; Keyboard IRQ
-	call os_pic_mask_clear
-	mov al, 0x02			; Cascade IRQ
-	call os_pic_mask_clear
-	mov al, 0x08			; RTC IRQ
-	call os_pic_mask_clear
+	mov ecx, 1			; Keyboard IRQ
+	mov eax, 0x21			; Keyboard Interrupt
+	call os_ioapic_mask_clear
+	mov ecx, 8			; RTC IRQ
+	mov eax, 0x28			; RTC Interrupt
+	call os_ioapic_mask_clear
+;	mov al, 0x01			; Keyboard IRQ
+;	call os_pic_mask_clear
+;	mov al, 0x02			; Cascade IRQ
+;	call os_pic_mask_clear
+;	mov al, 0x08			; RTC IRQ
+;	call os_pic_mask_clear
 
 	ret
 ; -----------------------------------------------------------------------------

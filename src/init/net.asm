@@ -83,8 +83,13 @@ init_net_probe_found_finish:
 	call create_gate
 
 	; Enable the Network IRQ
+	xor eax, eax
 	mov al, [os_NetIRQ]
-	call os_pic_mask_clear
+	mov ecx, eax
+	add eax, 0x20
+	call os_ioapic_mask_clear
+;	mov al, [os_NetIRQ]
+;	call os_pic_mask_clear
 
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
 	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
