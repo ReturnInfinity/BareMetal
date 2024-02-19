@@ -39,7 +39,7 @@ os_ioapic_write:
 ; -----------------------------------------------------------------------------
 ; os_ioapic_mask_clear -- Clear a mask on the I/O APIC
 ;  IN:	ECX  = IRQ #
-;	EAX  = Interrupt #
+;	EAX  = Interrupt Vector
 ; OUT:	All registers preserved
 os_ioapic_mask_clear:
 	push rcx

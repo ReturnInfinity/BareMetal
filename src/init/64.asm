@@ -140,10 +140,10 @@ no_more_aps:
 
 	; Enable specific interrupts
 	mov ecx, 1			; Keyboard IRQ
-	mov eax, 0x21			; Keyboard Interrupt
+	mov eax, 0x21			; Keyboard Interrupt Vector
 	call os_ioapic_mask_clear
 	mov ecx, 8			; RTC IRQ
-	mov eax, 0x28			; RTC Interrupt
+	mov eax, 0x28			; RTC Interrupt Vector
 	call os_ioapic_mask_clear
 ;	mov al, 0x01			; Keyboard IRQ
 ;	call os_pic_mask_clear
