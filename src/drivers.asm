@@ -10,6 +10,7 @@
 %include "drivers/pci.asm"
 %include "drivers/pic.asm"
 %include "drivers/serial.asm"
+%include "drivers/ioapic.asm"
 
 ; Storage
 %include "drivers/storage/nvme.asm"
