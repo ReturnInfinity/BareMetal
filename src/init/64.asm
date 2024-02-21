@@ -13,6 +13,11 @@ init_64:
 
 	; Set the temporary stack
 
+	; Mask all PIC interrupts
+	mov al, 0xFF
+	out 0x21, al
+	out 0xA1, al
+
 	; Clear all memory after the kernel up to 2MiB
 	mov edi, os_SystemVariables
 	mov ecx, 122880			; Clear 960 KiB
