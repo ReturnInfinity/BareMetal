@@ -44,8 +44,8 @@ os_ioapic_write:
 os_ioapic_mask_clear:
 	push rcx
 	push rax
-	shl ecx, 1
-	add ecx, 0x10			; Value is 0x10 + (IRQ * 2)
+	shl ecx, 1			; Quick multiply by 2
+	add ecx, 0x10			; Add offset to start of IOAPICREDTBL
 	call os_ioapic_write		; Write the low 32 bits
 	add ecx, 1			; Increment for next register
 	xor eax, eax

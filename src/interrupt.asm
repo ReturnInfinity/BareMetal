@@ -86,8 +86,12 @@ keyboard_noshift:
 	jmp keyboard_done
 
 keyboard_done:
-	mov al, 0x20			; Acknowledge the IRQ
-	out 0x20, al
+;	mov al, 0x20			; Acknowledge the IRQ
+;	out 0x20, al
+	mov rdi, [os_LocalAPICAddress]
+	add rdi, 0xB0			; Add offset to EOI register
+	xor eax, eax
+	stosd				; Acknowledge the IRQ
 	call b_smp_wakeup_all		; A terrible hack
 
 	popfq
@@ -100,15 +104,15 @@ keyboard_done:
 
 ; -----------------------------------------------------------------------------
 ; Cascade interrupt. IRQ 0x02, INT 0x22
-align 8
-cascade:
-	push rax
-
-	mov al, 0x20			; Acknowledge the IRQ
-	out 0x20, al
-
-	pop rax
-	iretq
+;align 8
+;cascade:
+;	push rax
+;
+;	mov al, 0x20			; Acknowledge the IRQ
+;	out 0x20, al
+;
+;	pop rax
+;	iretq
 ; -----------------------------------------------------------------------------
 
 
@@ -163,9 +167,15 @@ rtc_end:
 	out 0x70, al			; Port 0x70 is the RTC index, and 0x71 is the RTC data
 	in al, 0x71			; Read the value in register C
 
-	mov al, 0x20			; Acknowledge the IRQ
-	out 0xA0, al
-	out 0x20, al
+;	mov al, 0x20			; Acknowledge the IRQ
+;	out 0xA0, al
+;	out 0x20, al
+	push rdi
+	mov rdi, [os_LocalAPICAddress]
+	add rdi, 0xB0			; Add offset to EOI register
+	xor eax, eax
+	stosd				; Acknowledge the IRQ
+	pop rdi
 
 	popfq
 	pop rax
