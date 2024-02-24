@@ -7,6 +7,22 @@
 
 
 ; -----------------------------------------------------------------------------
+; os_ioapic_init -- Initialize the I/O APIC
+;  IN:	Nothing
+; OUT:	Nothing
+;	All other registers preserved
+os_ioapic_init:
+	mov ecx, IOAPICVER
+	call os_ioapic_read
+	call os_debug_dump_eax
+	mov [os_ioapic_ver], al
+	shr eax, 16
+	mov [os_ioapic_mde], al
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; os_ioapic_read -- Read from a register in the I/O APIC
 ;  IN:	ECX = Register to read
 ; OUT:	EAX = Register value
@@ -45,7 +61,7 @@ os_ioapic_mask_clear:
 	push rcx
 	push rax
 	shl ecx, 1			; Quick multiply by 2
-	add ecx, 0x10			; Add offset to start of IOAPICREDTBL
+	add ecx, IOAPICREDTBL		; Add offset
 	call os_ioapic_write		; Write the low 32 bits
 	add ecx, 1			; Increment for next register
 	xor eax, eax

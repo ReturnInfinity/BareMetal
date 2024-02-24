@@ -129,6 +129,8 @@ os_AHCIMJR:		equ os_SystemVariables + 0x0313
 os_AHCIMNR:		equ os_SystemVariables + 0x0314
 os_AHCIIRQ:		equ os_SystemVariables + 0x0315
 os_screen_bpp:		equ os_SystemVariables + 0x0316
+os_ioapic_ver:		equ os_SystemVariables + 0x0317
+os_ioapic_mde:		equ os_SystemVariables + 0x0318
 
 
 ; Misc

@@ -128,6 +128,9 @@ make_interrupt_gate_stubs:
 	add rax, rbx
 	mov [os_StackBase], rax
 
+	; Initialize the I/O APIC
+	call os_ioapic_init
+
 	; Initialize all AP's to run our reset code. Skip the BSP
 	xor eax, eax
 	mov esi, 0x00005100		; Location in memory of the Pure64 CPU data
