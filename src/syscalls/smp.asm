@@ -22,6 +22,15 @@ b_smp_reset:
 	mov al, 0x81		; Execute interrupt 0x81
 	mov [rdi+0x0300], eax	; Then write to the low bits
 
+; 	cli
+; 	mov rcx, APIC_ICRH
+;	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
+;	call os_apic_write	; Write to the high bits first
+; 	mov rcx, APIC_ICRL
+;	mov eax, 0x81		; Execute interrupt 0x81
+;	call os_apic_write	; Then write to the low bits
+;	sti
+
 	pop rax
 	pop rdi
 	ret
@@ -43,6 +52,15 @@ b_smp_wakeup:
 	mov al, 0x80		; Execute interrupt 0x80
 	mov [rdi+0x0300], eax	; Then write to the low bits
 
+; 	cli
+; 	mov rcx, APIC_ICRH
+;	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
+;	call os_apic_write	; Write to the high bits first
+; 	mov rcx, APIC_ICRL
+;	mov eax, 0x80		; Execute interrupt 0x81
+;	call os_apic_write	; Then write to the low bits
+;	sti
+
 	pop rax
 	pop rdi
 	ret
@@ -63,6 +81,15 @@ b_smp_wakeup_all:
 	mov eax, 0x000C0080	; Execute interrupt 0x80
 	mov [rdi+0x0300], eax	; Then write to the low bits
 
+; 	cli
+; 	mov rcx, APIC_ICRH
+;	xor eax, eax
+;	call os_apic_write	; Write to the high bits first
+; 	mov rcx, APIC_ICRL
+;	mov eax, 0x000C0080	; Execute interrupt 0x80
+;	call os_apic_write	; Then write to the low bits
+;	sti
+
 	pop rax
 	pop rdi
 	ret
@@ -81,6 +108,10 @@ b_smp_get_id:
 	add rsi, 0x20		; Add the offset for the APIC ID location
 	lodsd			; APIC ID is stored in bits 31:24
 	shr rax, 24		; AL now holds the CPU's APIC ID (0 - 255)
+
+; 	mov rcx, APIC_ID
+;	call os_apic_read	; Write to the high bits first
+;	shr rax, 24		; AL now holds the CPU's APIC ID (0 - 255)
 
 	pop rsi
 	ret

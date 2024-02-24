@@ -86,12 +86,13 @@ keyboard_noshift:
 	jmp keyboard_done
 
 keyboard_done:
-;	mov al, 0x20			; Acknowledge the IRQ
-;	out 0x20, al
-	mov rdi, [os_LocalAPICAddress]
-	add rdi, 0xB0			; Add offset to EOI register
+	; Acknowledge the IRQ
+	push rcx
+	mov rcx, APIC_EOI
 	xor eax, eax
-	stosd				; Acknowledge the IRQ
+	call os_apic_write
+	pop rcx
+
 	call b_smp_wakeup_all		; A terrible hack
 
 	popfq
@@ -99,20 +100,6 @@ keyboard_done:
 	pop rbx
 	pop rdi
 	iretq
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; Cascade interrupt. IRQ 0x02, INT 0x22
-;align 8
-;cascade:
-;	push rax
-;
-;	mov al, 0x20			; Acknowledge the IRQ
-;	out 0x20, al
-;
-;	pop rax
-;	iretq
 ; -----------------------------------------------------------------------------
 
 
@@ -167,15 +154,12 @@ rtc_end:
 	out 0x70, al			; Port 0x70 is the RTC index, and 0x71 is the RTC data
 	in al, 0x71			; Read the value in register C
 
-;	mov al, 0x20			; Acknowledge the IRQ
-;	out 0xA0, al
-;	out 0x20, al
-	push rdi
-	mov rdi, [os_LocalAPICAddress]
-	add rdi, 0xB0			; Add offset to EOI register
+	; Acknowledge the IRQ
+	push rcx
+	mov rcx, APIC_EOI
 	xor eax, eax
-	stosd				; Acknowledge the IRQ
-	pop rdi
+	call os_apic_write
+	pop rcx
 
 	popfq
 	pop rax
@@ -238,12 +222,10 @@ network_tx:
 	jc network_rx_as_well
 
 network_end:
-	mov al, 0x20			; Acknowledge the IRQ on the PIC(s)
-	cmp byte [os_NetIRQ], 8
-	jl network_ack_only_low		; If the network IRQ is less than 8 then the other PIC does not need to be ack'ed
-	out 0xA0, al
-network_ack_only_low:
-	out 0x20, al
+	; Acknowledge the IRQ
+	mov rcx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
 
 	popfq
 	pop rax
@@ -282,16 +264,16 @@ clock_callback:
 ; A simple interrupt that just acknowledges an IPI. Useful for getting an AP past a 'hlt' in the code.
 align 8
 ap_wakeup:
-	push rdi
+	push rcx
 	push rax
 
-	mov rdi, [os_LocalAPICAddress]	; Acknowledge the IPI
-	add rdi, 0xB0
+	; Acknowledge the IPI
+	mov rcx, APIC_EOI
 	xor eax, eax
-	stosd
+	call os_apic_write
 
 	pop rax
-	pop rdi
+	pop rcx
 	iretq				; Return from the IPI.
 ; -----------------------------------------------------------------------------
 
@@ -300,6 +282,7 @@ ap_wakeup:
 ; Resets a CPU to execute ap_clear
 align 8
 ap_reset:
+	; Don't use 'os_apic_write' as we can't guarantee the state of the stack
 	mov rax, ap_clear		; Set RAX to the address of ap_clear
 	mov [rsp], rax			; Overwrite the return address on the CPU's stack
 	mov rdi, [os_LocalAPICAddress]	; Acknowledge the IPI

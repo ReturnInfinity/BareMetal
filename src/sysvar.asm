@@ -93,6 +93,7 @@ os_HPETRate:		equ os_SystemVariables + 0x0100
 os_MemAmount:		equ os_SystemVariables + 0x0104	; in MiB
 ahci_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
+os_apic_ver:		equ os_SystemVariables + 0x0110
 
 
 ; DW - Starting at offset 512, increments by 2

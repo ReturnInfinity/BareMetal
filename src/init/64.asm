@@ -128,6 +128,9 @@ make_interrupt_gate_stubs:
 	add rax, rbx
 	mov [os_StackBase], rax
 
+	; Initialize the APIC
+	call os_apic_init
+
 	; Initialize the I/O APIC
 	call os_ioapic_init
 
