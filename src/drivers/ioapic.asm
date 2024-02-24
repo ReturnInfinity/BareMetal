@@ -14,7 +14,6 @@
 os_ioapic_init:
 	mov ecx, IOAPICVER
 	call os_ioapic_read
-	call os_debug_dump_eax
 	mov [os_ioapic_ver], al
 	shr eax, 16
 	mov [os_ioapic_mde], al
