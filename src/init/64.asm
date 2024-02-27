@@ -84,8 +84,6 @@ make_interrupt_gate_stubs:
 	mov esi, 0x00005060
 	lodsq
 	mov [os_LocalAPICAddress], rax
-	lodsq
-	mov [os_IOAPICAddress], rax
 	mov esi, 0x00005010
 	lodsw
 	mov [os_CoreSpeed], ax
@@ -110,6 +108,10 @@ make_interrupt_gate_stubs:
 	mov [os_screen_y], ax
 	lodsb
 	mov [os_screen_bpp], al
+	xor eax, eax
+	mov esi, 0x00005604
+	lodsd
+	mov [os_IOAPICAddress], rax
 	pop rax				; Restore free RAM size
 
 	; Configure the Stack base
