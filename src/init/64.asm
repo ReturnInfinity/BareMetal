@@ -58,9 +58,6 @@ make_interrupt_gate_stubs:
 	mov edi, 0x21
 	mov rax, keyboard
 	call create_gate
-;	mov edi, 0x22
-;	mov rax, cascade
-;	call create_gate
 	mov edi, 0x28
 	mov rax, rtc
 	call create_gate
@@ -77,7 +74,6 @@ make_interrupt_gate_stubs:
 	xor ecx, ecx
 	mov esi, 0x00005008		; BSP_ID
 	lodsd				; Load the BSP ID
-	mov ebx, eax			; Save it to EBX
 	mov esi, 0x00005012
 	lodsw				; Load the number of activated cores
 	mov cx, ax			; Save it to CX
@@ -137,7 +133,10 @@ make_interrupt_gate_stubs:
 	call os_ioapic_init
 
 	; Initialize all AP's to run our reset code. Skip the BSP
+	call b_smp_get_id
+	mov ebx, eax
 	xor eax, eax
+	mov cx, 255
 	mov esi, 0x00005100		; Location in memory of the Pure64 CPU data
 next_ap:
 	test cx, cx
@@ -152,12 +151,6 @@ skip_ap:
 no_more_aps:
 
 	; Enable specific interrupts
-;	mov al, 0x01			; Keyboard IRQ
-;	call os_pic_mask_clear
-;	mov al, 0x02			; Cascade IRQ
-;	call os_pic_mask_clear
-;	mov al, 0x08			; RTC IRQ
-;	call os_pic_mask_clear
 	mov ecx, 1			; Keyboard IRQ
 	mov eax, 0x21			; Keyboard Interrupt Vector
 	call os_ioapic_mask_clear

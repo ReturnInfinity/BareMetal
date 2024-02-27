@@ -22,6 +22,9 @@ b_smp_reset:
 	mov al, 0x81		; Execute interrupt 0x81
 	mov [rdi+0x0300], eax	; Then write to the low bits
 
+;	mov eax, [rdi+0x0300]
+;	call os_debug_dump_eax
+	
 ; 	cli
 ; 	mov rcx, APIC_ICRH
 ;	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
