@@ -75,30 +75,30 @@ make_interrupt_gate_stubs:
 	xor eax, eax
 	xor ebx, ebx
 	xor ecx, ecx
-	mov esi, 0x00005008
+	mov esi, 0x00005008		; BSP_ID
 	lodsd				; Load the BSP ID
 	mov ebx, eax			; Save it to EBX
 	mov esi, 0x00005012
 	lodsw				; Load the number of activated cores
 	mov cx, ax			; Save it to CX
-	mov esi, 0x00005060
+	mov esi, 0x00005060		; LAPIC
 	lodsq
 	mov [os_LocalAPICAddress], rax
-	mov esi, 0x00005010
+	mov esi, 0x00005010		; CPUSPEED
 	lodsw
 	mov [os_CoreSpeed], ax
-	mov esi, 0x00005012
+	mov esi, 0x00005012		; CORES_ACTIVE
 	lodsw
 	mov [os_NumCores], ax
-	mov esi, 0x00005020
+	mov esi, 0x00005020		; RAMAMOUNT
 	lodsd
 	sub eax, 2			; Save 2 MiB for the CPU stacks
 	push rax			; Save the free RAM size
 	mov [os_MemAmount], eax		; In MiB's
-	mov esi, 0x00005040
+	mov esi, 0x00005040		; HPET
 	lodsq
 	mov [os_HPETAddress], rax
-	mov esi, 0x00005080		; Save screen values
+	mov esi, 0x00005080		; VIDEO_*
 	xor eax, eax
 	lodsd
 	mov [os_screen_lfb], rax
@@ -109,7 +109,7 @@ make_interrupt_gate_stubs:
 	lodsb
 	mov [os_screen_bpp], al
 	xor eax, eax
-	mov esi, 0x00005604
+	mov esi, 0x00005604		; IOAPIC
 	lodsd
 	mov [os_IOAPICAddress], rax
 	pop rax				; Restore free RAM size
