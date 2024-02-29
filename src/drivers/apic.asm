@@ -15,15 +15,6 @@ os_apic_init:
 	mov ecx, APIC_VER
 	call os_apic_read
 	mov [os_apic_ver], eax
-	mov ecx, APIC_TPR
-	mov eax, 0x00000020
-	call os_apic_write			; Disable softint delivery
-	mov ecx, APIC_LVT_TMR
-	mov eax, 0x00010000
-	call os_apic_write			; Disable timer interrupts
-	mov ecx, APIC_LVT_PERF
-	mov eax, 0x00010000
-	call os_apic_write			; Disable performance counter interrupts
 	ret
 ; -----------------------------------------------------------------------------
 
