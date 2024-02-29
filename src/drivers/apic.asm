@@ -12,16 +12,17 @@
 ; OUT:	Nothing
 ;	All other registers preserved
 os_apic_init:
-	mov rcx, APIC_VER
+	mov ecx, APIC_VER
 	call os_apic_read
 	mov [os_apic_ver], eax
-	mov rcx, APIC_TPR
-	mov eax, 0x20
+	mov ecx, APIC_TPR
+	mov eax, 0x00000020
 	call os_apic_write			; Disable softint delivery
-	mov rcx, APIC_LVT_TMR
-	mov eax, 0x10000
+	mov ecx, APIC_LVT_TMR
+	mov eax, 0x00010000
 	call os_apic_write			; Disable timer interrupts
-	mov rcx, APIC_LVT_PERF
+	mov ecx, APIC_LVT_PERF
+	mov eax, 0x00010000
 	call os_apic_write			; Disable performance counter interrupts
 	ret
 ; -----------------------------------------------------------------------------
