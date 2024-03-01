@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; System Variables
 ; =============================================================================
@@ -93,6 +93,7 @@ os_HPETRate:		equ os_SystemVariables + 0x0100
 os_MemAmount:		equ os_SystemVariables + 0x0104	; in MiB
 ahci_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
+os_apic_ver:		equ os_SystemVariables + 0x0110
 
 
 ; DW - Starting at offset 512, increments by 2
@@ -129,6 +130,8 @@ os_AHCIMJR:		equ os_SystemVariables + 0x0313
 os_AHCIMNR:		equ os_SystemVariables + 0x0314
 os_AHCIIRQ:		equ os_SystemVariables + 0x0315
 os_screen_bpp:		equ os_SystemVariables + 0x0316
+os_ioapic_ver:		equ os_SystemVariables + 0x0317
+os_ioapic_mde:		equ os_SystemVariables + 0x0318
 
 
 ; Misc

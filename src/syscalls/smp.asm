@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; SMP Functions
 ; =============================================================================
@@ -12,18 +12,25 @@
 ; OUT:	Nothing. All registers preserved.
 ; Note:	This code resets an AP for set-up use only.
 b_smp_reset:
-	push rdi
+	push rcx
 	push rax
 
-	mov rdi, [os_LocalAPICAddress]
+	cli
+	mov ecx, APIC_ICRH
 	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
-	mov [rdi+0x0310], eax	; Write to the high bits first
+	call os_apic_write	; Write to the high bits first
+	mov ecx, APIC_ICRL
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x81		; Execute interrupt 0x81
-	mov [rdi+0x0300], eax	; Then write to the low bits
+	call os_apic_write	; Then write to the low bits
+	sti
+
+;	mov ecx, APIC_ICRL
+;	call os_apic_read
+;	call os_debug_dump_eax
 
 	pop rax
-	pop rdi
+	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -33,18 +40,21 @@ b_smp_reset:
 ;  IN:	AL = CPU #
 ; OUT:	Nothing. All registers preserved.
 b_smp_wakeup:
-	push rdi
+	push rcx
 	push rax
 
-	mov rdi, [os_LocalAPICAddress]
+	cli
+	mov ecx, APIC_ICRH
 	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
-	mov [rdi+0x0310], eax	; Write to the high bits first
+	call os_apic_write	; Write to the high bits first
+	mov ecx, APIC_ICRL
 	xor eax, eax		; Clear EAX, namely bits 31:24
-	mov al, 0x80		; Execute interrupt 0x80
-	mov [rdi+0x0300], eax	; Then write to the low bits
+	mov al, 0x80		; Execute interrupt 0x81
+	call os_apic_write	; Then write to the low bits
+	sti
 
 	pop rax
-	pop rdi
+	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -54,17 +64,20 @@ b_smp_wakeup:
 ;  IN:	Nothing.
 ; OUT:	Nothing. All registers preserved.
 b_smp_wakeup_all:
-	push rdi
+	push rcx
 	push rax
 
-	mov rdi, [os_LocalAPICAddress]
+	cli
+	mov ecx, APIC_ICRH
 	xor eax, eax
-	mov [rdi+0x0310], eax	; Write to the high bits first
+	call os_apic_write	; Write to the high bits first
+	mov ecx, APIC_ICRL
 	mov eax, 0x000C0080	; Execute interrupt 0x80
-	mov [rdi+0x0300], eax	; Then write to the low bits
+	call os_apic_write	; Then write to the low bits
+	sti
 
 	pop rax
-	pop rdi
+	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -74,15 +87,13 @@ b_smp_wakeup_all:
 ;  IN:	Nothing
 ; OUT:	RAX = CPU's APIC ID number, All other registers preserved.
 b_smp_get_id:
-	push rsi
+	push rcx
 
-	xor eax, eax
-	mov rsi, [os_LocalAPICAddress]
-	add rsi, 0x20		; Add the offset for the APIC ID location
-	lodsd			; APIC ID is stored in bits 31:24
+	mov ecx, APIC_ID
+	call os_apic_read	; Write to the high bits first
 	shr rax, 24		; AL now holds the CPU's APIC ID (0 - 255)
 
-	pop rsi
+	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -178,6 +189,51 @@ b_smp_setflag:
 
 b_smp_setflag_done:
 	pop rax
+	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; b_smp_busy -- Check if CPU cores are busy
+;  IN:	Nothing
+; OUT:	RAX = 1 if CPU cores are busy, 0 if not.
+;	All other registers preserved.
+; Note:	This ignores the core it is running on
+b_smp_busy:
+	push rsi
+	push rcx
+	push rbx
+
+	call b_smp_get_id
+	mov bl, al		; Store local APIC ID in BL
+	xor ecx, ecx
+	mov rsi, os_SMP
+
+b_smp_busy_read:
+	lodsq			; Load a single CPU entry. Flags are in AL
+	cmp bl, cl		; Compare entry to local APIC ID
+	je b_smp_busy_skip	; Skip the entry for the current CPU
+	inc cx
+	cmp al, 0x01		; Bit 0 (Present) can be 0 or 1
+	jg b_smp_busy_yes
+	cmp cx, 0x100		; Only read up to 256 CPU cores
+	jne b_smp_busy_read
+
+b_smp_busy_no:
+	xor eax, eax
+	jmp b_smp_busy_end
+
+b_smp_busy_skip:
+	inc cx
+	jmp b_smp_busy_read
+
+b_smp_busy_yes:
+	mov eax, 1
+
+b_smp_busy_end:
+	pop rbx
+	pop rcx
 	pop rsi
 	ret
 ; -----------------------------------------------------------------------------

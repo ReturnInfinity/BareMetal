@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; PIC Functions
 ; =============================================================================
@@ -31,7 +31,7 @@ os_pic_mask_clear_write:
 	pop ax
 	pop bx
 	pop dx
-ret
+	ret
 ; -----------------------------------------------------------------------------
 
 

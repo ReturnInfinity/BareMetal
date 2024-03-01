@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; 64-bit initialization
 ; =============================================================================
@@ -12,6 +12,11 @@ init_64:
 	call serial_init
 
 	; Set the temporary stack
+
+	; Mask all PIC interrupts
+	mov al, 0xFF
+	out 0x21, al
+	out 0xA1, al
 
 	; Clear all memory after the kernel up to 2MiB
 	mov edi, os_SystemVariables
@@ -53,9 +58,6 @@ make_interrupt_gate_stubs:
 	mov edi, 0x21
 	mov rax, keyboard
 	call create_gate
-	mov edi, 0x22
-	mov rax, cascade
-	call create_gate
 	mov edi, 0x28
 	mov rax, rtc
 	call create_gate
@@ -70,32 +72,29 @@ make_interrupt_gate_stubs:
 	xor eax, eax
 	xor ebx, ebx
 	xor ecx, ecx
-	mov esi, 0x00005008
+	mov esi, 0x00005008		; BSP_ID
 	lodsd				; Load the BSP ID
-	mov ebx, eax			; Save it to EBX
 	mov esi, 0x00005012
 	lodsw				; Load the number of activated cores
 	mov cx, ax			; Save it to CX
-	mov esi, 0x00005060
+	mov esi, 0x00005060		; LAPIC
 	lodsq
 	mov [os_LocalAPICAddress], rax
-	lodsq
-	mov [os_IOAPICAddress], rax
-	mov esi, 0x00005010
+	mov esi, 0x00005010		; CPUSPEED
 	lodsw
 	mov [os_CoreSpeed], ax
-	mov esi, 0x00005012
+	mov esi, 0x00005012		; CORES_ACTIVE
 	lodsw
 	mov [os_NumCores], ax
-	mov esi, 0x00005020
+	mov esi, 0x00005020		; RAMAMOUNT
 	lodsd
 	sub eax, 2			; Save 2 MiB for the CPU stacks
 	push rax			; Save the free RAM size
 	mov [os_MemAmount], eax		; In MiB's
-	mov esi, 0x00005040
+	mov esi, 0x00005040		; HPET
 	lodsq
 	mov [os_HPETAddress], rax
-	mov esi, 0x00005080		; Save screen values
+	mov esi, 0x00005080		; VIDEO_*
 	xor eax, eax
 	lodsd
 	mov [os_screen_lfb], rax
@@ -105,6 +104,10 @@ make_interrupt_gate_stubs:
 	mov [os_screen_y], ax
 	lodsb
 	mov [os_screen_bpp], al
+	xor eax, eax
+	mov esi, 0x00005604		; IOAPIC
+	lodsd
+	mov [os_IOAPICAddress], rax
 	pop rax				; Restore free RAM size
 
 	; Configure the Stack base
@@ -123,8 +126,17 @@ make_interrupt_gate_stubs:
 	add rax, rbx
 	mov [os_StackBase], rax
 
+	; Initialize the APIC
+	call os_apic_init
+
+	; Initialize the I/O APIC
+	call os_ioapic_init
+
 	; Initialize all AP's to run our reset code. Skip the BSP
+	call b_smp_get_id
+	mov ebx, eax
 	xor eax, eax
+	mov cx, 255
 	mov esi, 0x00005100		; Location in memory of the Pure64 CPU data
 next_ap:
 	test cx, cx
@@ -139,12 +151,12 @@ skip_ap:
 no_more_aps:
 
 	; Enable specific interrupts
-	mov al, 0x01			; Keyboard IRQ
-	call os_pic_mask_clear
-	mov al, 0x02			; Cascade IRQ
-	call os_pic_mask_clear
-	mov al, 0x08			; RTC IRQ
-	call os_pic_mask_clear
+	mov ecx, 1			; Keyboard IRQ
+	mov eax, 0x21			; Keyboard Interrupt Vector
+	call os_ioapic_mask_clear
+	mov ecx, 8			; RTC IRQ
+	mov eax, 0x28			; RTC Interrupt Vector
+	call os_ioapic_mask_clear
 
 	ret
 ; -----------------------------------------------------------------------------

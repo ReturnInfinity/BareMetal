@@ -1,15 +1,17 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; Driver Includes
 ; =============================================================================
 
 
 ; Internal
+%include "drivers/apic.asm"
 %include "drivers/pci.asm"
-%include "drivers/pic.asm"
+;%include "drivers/pic.asm"
 %include "drivers/serial.asm"
+%include "drivers/ioapic.asm"
 
 ; Storage
 %include "drivers/storage/nvme.asm"

@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2023 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; Initialize network
 ; =============================================================================
@@ -83,8 +83,23 @@ init_net_probe_found_finish:
 	call create_gate
 
 	; Enable the Network IRQ
+	xor eax, eax
 	mov al, [os_NetIRQ]
-	call os_pic_mask_clear
+	mov ecx, eax
+	add eax, 0x20			; Offset to start of Interrupts
+;	call os_ioapic_mask_clear
+	push rcx
+	push rax
+	shl ecx, 1			; Quick multiply by 2
+	add ecx, IOAPICREDTBL		; Add offset
+	bts eax, 13			; Active low
+	bts eax, 15			; Level
+	call os_ioapic_write		; Write the low 32 bits
+	add ecx, 1			; Increment for next register
+	xor eax, eax
+	call os_ioapic_write		; Write the high 32 bits
+	pop rax
+	pop rcx
 
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
 	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
