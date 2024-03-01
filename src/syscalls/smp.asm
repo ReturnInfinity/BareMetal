@@ -206,23 +206,27 @@ b_smp_busy:
 	push rbx
 
 	call b_smp_get_id
-	mov rbx, rax
+	mov bl, al		; Store local APIC ID in BL
 	xor ecx, ecx
 	mov rsi, os_SMP
 
 b_smp_busy_read:
-	lodsq
-	cmp ebx, ecx		; Compare entry to local APIC ID
+	lodsq			; Load a single CPU entry. Flags are in AL
+	cmp bl, cl		; Compare entry to local APIC ID
+	je b_smp_busy_skip	; Skip the entry for the current CPU
 	inc cx
-	je b_smp_busy_read	; Skip the entry for the current CPU
-	cmp al, 0x01
+	cmp al, 0x01		; Bit 0 (Present) can be 0 or 1
 	jg b_smp_busy_yes
-	cmp cx, 0x100		; Only read 
+	cmp cx, 0x100		; Only read up to 256 CPU cores
 	jne b_smp_busy_read
 
 b_smp_busy_no:
 	xor eax, eax
 	jmp b_smp_busy_end
+
+b_smp_busy_skip:
+	inc cx
+	jmp b_smp_busy_read
 
 b_smp_busy_yes:
 	mov eax, 1
