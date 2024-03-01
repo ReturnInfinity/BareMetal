@@ -50,6 +50,7 @@ net_status		equ 7
 mem_get_free		equ 8
 smp_numcores		equ 9
 smp_set			equ 10
+smp_busy		equ 11
 reset			equ 256
 
 ; =============================================================================

@@ -34,6 +34,8 @@ b_system:
 	je b_system_smp_numcores
 	cmp rcx, 10
 	je b_system_smp_set
+	cmp rcx, 11
+	je b_system_smp_busy
 	cmp rcx, 256
 	je b_system_reset
 	ret
@@ -83,6 +85,10 @@ b_system_smp_set:
 	mov rcx, rdx
 	call b_smp_set
 	pop rcx
+	ret
+
+b_system_smp_busy:
+	call b_smp_busy
 	ret
 
 b_system_reset:

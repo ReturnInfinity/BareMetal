@@ -195,6 +195,47 @@ b_smp_setflag_done:
 
 
 ; -----------------------------------------------------------------------------
+; b_smp_busy -- Check if CPU cores are busy
+;  IN:	Nothing
+; OUT:	RAX = 1 if CPU cores are busy, 0 if not.
+;	All other registers preserved.
+; Note:	This ignores the core it is running on
+b_smp_busy:
+	push rsi
+	push rcx
+	push rbx
+
+	call b_smp_get_id
+	mov rbx, rax
+	xor ecx, ecx
+	mov rsi, os_SMP
+
+b_smp_busy_read:
+	lodsq
+	cmp ebx, ecx		; Compare entry to local APIC ID
+	inc cx
+	je b_smp_busy_read	; Skip the entry for the current CPU
+	cmp al, 0x01
+	jg b_smp_busy_yes
+	cmp cx, 0x100		; Only read 
+	jne b_smp_busy_read
+
+b_smp_busy_no:
+	xor eax, eax
+	jmp b_smp_busy_end
+
+b_smp_busy_yes:
+	mov eax, 1
+
+b_smp_busy_end:
+	pop rbx
+	pop rcx
+	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; b_smp_config -- Just a stub for now
 ;  IN:	Nothing
 ; OUT:	Nothing. All registers preserved.
