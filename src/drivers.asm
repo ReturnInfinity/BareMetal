@@ -9,7 +9,6 @@
 ; Internal
 %include "drivers/apic.asm"
 %include "drivers/pci.asm"
-;%include "drivers/pic.asm"
 %include "drivers/serial.asm"
 %include "drivers/ioapic.asm"
 
