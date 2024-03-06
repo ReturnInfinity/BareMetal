@@ -108,10 +108,12 @@ make_interrupt_gate_stubs:
 	mov esi, 0x00005604		; IOAPIC
 	lodsd
 	mov [os_IOAPICAddress], rax
-	pop rax				; Restore free RAM size
 
 	; Configure the Stack base
+	; The top 2MB page of RAM is for the stack
+	; Divide it evenly between the available CPUs
 	; Take the last free page of RAM and remap it
+	pop rax				; Restore free RAM size
 	shl rax, 2			; Quick multiply by 2
 	add rax, sys_pdh
 	mov rsi, rax
