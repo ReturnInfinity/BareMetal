@@ -7,7 +7,8 @@
 
 
 %include "init/64.asm"
-%include "init/pci.asm"
+%include "init/bus.asm"
+;%include "init/pci.asm"
 %include "init/storage.asm"
 %include "init/net.asm"
 %include "init/video.asm"

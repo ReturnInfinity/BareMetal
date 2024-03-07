@@ -104,13 +104,14 @@ os_NetLock:		equ os_SystemVariables + 0x0206
 os_StorageVar:		equ os_SystemVariables + 0x0208
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
+os_pcie_count:		equ os_SystemVariables + 0x020E
 
 
 ; DB - Starting at offset 768, increments by 1
 scancode:		equ os_SystemVariables + 0x0300
 key:			equ os_SystemVariables + 0x0301
 key_shift:		equ os_SystemVariables + 0x0302
-os_PCIEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is detected
+os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe is enabled
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
 os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is connected to
 os_NetActivity_TX:	equ os_SystemVariables + 0x0306

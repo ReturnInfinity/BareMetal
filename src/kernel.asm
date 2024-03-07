@@ -32,9 +32,9 @@ align 16
 align 16
 start:
 	call init_64			; After this point we are in a working 64-bit environment
-	call init_pci			; Initialize the PCI bus
+	call init_bus			; Initialize system bus
 	call init_storage		; Initialize storage
-	call init_net			; Initialize the network
+	call init_net			; Initialize network
 	call init_video			; Initialize video
 
 	mov rsi, readymsg
