@@ -78,8 +78,8 @@ PCI_CONFIG_DATA		EQU	0x0CFC
 ; 30 - 24	Reserved = set to 0
 ; 23 - 16	Bus number = 256 options
 ; 15 - 11	Device/Slot number = 32 options
-; 10 - 8	Function number = will leave at 0 (8 options)
-; 7 - 2		Register number = will leave at 0 (64 options) 64 x 4 bytes = 256 bytes worth of accessible registers
+; 10 - 8	Function number = 8 options
+; 7 - 2		Register number = 64 options, 64 x 4 bytes = 256 bytes worth of accessible registers
 ; 1 - 0		Set to 0
 
 

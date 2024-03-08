@@ -6,6 +6,16 @@
 ; =============================================================================
 
 
+; Build a table of known PCIe/PCI devices
+; Bytes 0-5	Base value used for os_bus_read/write (SG SG BS DF)
+; Bytes 6-7	Vendor ID
+; Bytes 8-9	Device ID
+; Byte 10	Class code
+; Byte 11	Subclass code
+; Bytes 12-15	Cleared to 0x00
+; Byte 15 will be set to 0x01 later if a driver enabled it
+
+
 ; -----------------------------------------------------------------------------
 init_bus:
 	; Check for PCIe first
@@ -13,15 +23,6 @@ init_bus:
 	cmp cx, 0
 	jz init_bus_pci
 	mov byte [os_BusEnabled], 2	; Bit 1 set for PCIe
-
-; Build a table of known PCI(/e) devices
-; Bytes 0-5	Base PCI value used for os_pcie_read/write (See PCIe driver)
-; Bytes 6-7	Vendor ID
-; Bytes 8-9	Device ID
-; Byte 10	Class code
-; Byte 11	Subclass code
-; Bytes 12-15	Cleared to 0x00
-; Byte 15 will be set to 0x01 later if a driver enabled it
 
 	mov rdi, pci_table		; Address of PCIe Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
@@ -31,7 +32,7 @@ init_bus_pcie_probe:
 	cmp eax, 0xFFFFFFFF		; 0xFFFFFFFF is returned for an non-existent device
 	jne init_bus_pcie_probe_found	; Found a device
 init_bus_pcie_probe_next:
-	add edx, 0x00000100		; Skip to next PCI device
+	add edx, 0x00000100		; Skip to next PCIe device/function
 	cmp edx, 0x0000FF00		; Maximum of 256 devices per bus
 	jge init_bus_pcie_probe_end
 	jmp init_bus_pcie_probe
@@ -39,8 +40,6 @@ init_bus_pcie_probe_next:
 init_bus_pcie_probe_found:
 	push rax			; Save the result
 	; TODO Fix this
-	xor eax, eax
-	stosw
 	mov rax, rdx			; Move the value used for os_pci_read to RAX
 	stosd				; Store it to the PCI Table
 	pop rax				; Restore the Device ID/Vendor ID
@@ -51,7 +50,7 @@ init_bus_pcie_probe_found:
 	stosd				; Store it to the PCI Table
 	sub edx, 1
 	xor eax, eax
-	stosw				; Pad the PCI Table to 32 bytes
+	stosd				; Pad the PCI Table to 32 bytes
 	jmp init_bus_pcie_probe_next
 
 init_bus_pcie_probe_end:
@@ -84,8 +83,6 @@ init_bus_pci_probe_next:
 
 init_bus_pci_probe_found:
 	push rax			; Save the result
-	xor eax, eax
-	stosw
 	mov rax, rdx			; Move the value used for os_pci_read to RAX
 	stosd				; Store it to the PCI Table
 	pop rax				; Restore the Device ID/Vendor ID
@@ -96,7 +93,7 @@ init_bus_pci_probe_found:
 	stosd				; Store it to the PCI Table
 	sub edx, 2
 	xor eax, eax
-	stosw				; Pad the PCI Table to 32 bytes
+	stosd				; Pad the PCI Table to 32 bytes
 	jmp init_bus_pci_probe_next
 
 init_bus_pci_probe_end:

@@ -12,7 +12,7 @@ init_storage:
 	; Check PCI Table for a supported controller
 	mov rsi, pci_table		; Load PCI Table address to RSI
 	sub rsi, 16
-	add rsi, 10			; Add offset to Class Code
+	add rsi, 8			; Add offset to Class Code
 init_storage_check_pci:
 	add rsi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
