@@ -6,36 +6,21 @@
 ; =============================================================================
 
 
-; Old
-;
-; 0x 00 BS DF RG
-; BS = Bus, 8 bits
-; DF = Device/Function, 8 bits
-; RG = Register, 8 bits, 6 used, upper 2 bits will be cleared if set
-;
-; New
-;
-; RDX format:
-; 0x BS DF RG RG
-; BS = Bus, 8 bits
-; DF = Device/Function, 8 bits (5 bit device, 3 bit function)
-; RG = Register, 16 bits (Using 10 bits for PCIe and 6 bits for PCI)
-
 ; See syscalls/bus.asm for description on RDX format
+
 
 ; -----------------------------------------------------------------------------
 ; os_pci_read -- Read from a register on a PCI device
-;  IN:	EDX = Register to read from
+;  IN:	RDX = Register to read from
 ; OUT:	EAX = Register value that was read
 ;	All other registers preserved
 os_pci_read:
 	push rdx
 
-;	mov eax, edx			; Save EDX for the register value later on
-;	shl al, 2			; Shift PCI register ID left two bits
-;	shr edx, 8			; Shift Bus/Device/Function
-;	mov dl, al			; Restore register value
-	shl dl, 2			; Shift PCI register ID left two bits
+	mov eax, edx			; Save EDX for the register value later on
+	shl al, 2			; Shift PCI register ID left two bits
+	shr edx, 8			; Shift Bus/Device/Function
+	mov dl, al			; Restore register value
 	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
 	or edx, 0x80000000		; Set bit 31
 	mov eax, edx			; We need dx so save value to EAX for use
@@ -52,18 +37,17 @@ os_pci_read:
 
 ; -----------------------------------------------------------------------------
 ; os_pci_write -- Write to a register on a PCI device
-;  IN:	EDX = Register to write to
+;  IN:	RDX = Register to write to
 ;	EAX = Register value to be written
 ; OUT:	Nothing, all registers preserved
 os_pci_write:
 	push rdx
 	push rax			; Save the value to be written
 
-;	mov eax, edx			; Save EDX for the register value later on
-;	shl al, 2			; Shift PCI register ID left two bits
-;	shr edx, 8			; Shift Bus/Device/Function
-;	mov dl, al			; Restore register value
-	shl dl, 2			; Shift PCI register ID left two bits
+	mov eax, edx			; Save EDX for the register value later on
+	shl al, 2			; Shift PCI register ID left two bits
+	shr edx, 8			; Shift Bus/Device/Function
+	mov dl, al			; Restore register value
 	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
 	or edx, 0x80000000		; Set bit 31
 	mov eax, edx			; We need dx so save value to EAX for use

@@ -14,7 +14,7 @@ screen_bpp:		equ 32
 
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
-readymsg:		db 'BareMetal OK'	; This string falls thru to newline
+readymsg:		db 'BareMetal OK'	; This string falls through to newline
 newline:		db 10, 0
 
 

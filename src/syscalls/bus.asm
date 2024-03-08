@@ -11,7 +11,7 @@
 ; SG = PCIe Segment Group, 16 bits (Ignored for PCI)
 ; BS = Bus, 8 bits
 ; DF = Device/Function, 8 bits (5 bit device, 3 bit function)
-; RG = Register, 16 bits (Using 10 bits for PCIe and 6 bits for PCI)
+; RG = Register, 16 bits (Uses 10 bits for PCIe and 6 bits for PCI)
 
 
 ; -----------------------------------------------------------------------------
