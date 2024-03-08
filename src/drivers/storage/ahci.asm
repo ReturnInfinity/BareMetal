@@ -9,7 +9,7 @@
 ; -----------------------------------------------------------------------------
 ahci_init:
 	push rsi			; Used in init_storage
-	push rdx			; EDX should already point to a supported device for os_pci_read/write
+	push rdx			; RDX should already point to a supported device for os_bus_read/write
 
 	mov dl, 9			; Read register 9 for BAR5
 	xor eax, eax

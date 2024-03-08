@@ -8,7 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Initialize an Intel 8254x NIC
-;  IN:	EDX = Packed PCI address (as per pci.asm)
+;  IN:	RDX = Packed PCI address (as per syscalls/bus.asm)
 net_i8254x_init:
 	push rsi
 	push rdx
