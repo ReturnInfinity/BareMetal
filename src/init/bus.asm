@@ -34,7 +34,7 @@ init_bus_pcie_probe:
 init_bus_pcie_probe_next:
 	add edx, 0x00000100		; Skip to next PCIe device/function
 	cmp edx, 0x0000FF00		; Maximum of 256 devices per bus
-	jge init_bus_pcie_probe_end
+	jge init_bus_end
 	jmp init_bus_pcie_probe
 
 init_bus_pcie_probe_found:
@@ -52,12 +52,6 @@ init_bus_pcie_probe_found:
 	xor eax, eax
 	stosd				; Pad the PCI Table to 32 bytes
 	jmp init_bus_pcie_probe_next
-
-init_bus_pcie_probe_end:
-	mov eax, 0xFFFFFFFF
-	mov ecx, 4
-	rep stosd
-	ret				; Return and skip PCI
 
 init_bus_pci:
 	mov eax, 0x80000000
@@ -78,7 +72,7 @@ init_bus_pci_probe:
 init_bus_pci_probe_next:
 	add edx, 0x00000100		; Skip to next PCI device
 	cmp edx, 0x00FFFF00		; Maximum of 65536 devices
-	jge init_bus_pci_probe_end
+	jge init_bus_end
 	jmp init_bus_pci_probe
 
 init_bus_pci_probe_found:
@@ -96,12 +90,13 @@ init_bus_pci_probe_found:
 	stosd				; Pad the PCI Table to 32 bytes
 	jmp init_bus_pci_probe_next
 
-init_bus_pci_probe_end:
+init_bus_pci_not_found:
+	ret
+
+init_bus_end:
 	mov eax, 0xFFFFFFFF
 	mov ecx, 4
 	rep stosd
-
-init_bus_pci_not_found:
 	ret
 ; -----------------------------------------------------------------------------
 
