@@ -9,22 +9,22 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
-	; Check PCI Table for a Ethernet device
-	mov rsi, pci_table		; Load PCI Table address to RSI
+	; Check Bus Table for a Ethernet device
+	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 16
 	add rsi, 8			; Add offset to Class Code
-init_net_check_pci:
+init_net_check_bus:
 	add rsi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_net_probe_not_found
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver
-	jmp init_net_check_pci		; Check PCI Table again
+	jmp init_net_check_bus		; Check Bus Table again
 
 	; Check the Ethernet device to see if it has a driver
 init_net_probe_find_driver:
-	sub rsi, 8			; Move RSI back to start of PCI record
+	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
 	rol r8d, 16			; Swap the Device ID / Vendor ID

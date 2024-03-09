@@ -9,11 +9,11 @@
 ; -----------------------------------------------------------------------------
 ; init_storage -- Configure the first storage device it finds
 init_storage:
-	; Check PCI Table for a supported controller
-	mov rsi, pci_table		; Load PCI Table address to RSI
+	; Check Bus Table for a supported controller
+	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 16
 	add rsi, 8			; Add offset to Class Code
-init_storage_check_pci:
+init_storage_check_bus:
 	add rsi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
@@ -22,17 +22,16 @@ init_storage_check_pci:
 	je init_storage_nvme
 	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
 	je init_storage_ahci
-
-	jmp init_storage_check_pci	; Check PCI Table again
+	jmp init_storage_check_bus	; Check PCI Table again
 
 init_storage_nvme:
-	sub rsi, 8			; Move RSI back to start of PCI record
+	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call nvme_init
 	jmp init_storage_done
 
 init_storage_ahci:
-	sub rsi, 8			; Move RSI back to start of PCI record
+	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call ahci_init
 	jmp init_storage_done

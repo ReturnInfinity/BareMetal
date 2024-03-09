@@ -2,11 +2,11 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
-; Initialize Bus (PCIe or PCI)
+; Initialize Bus
 ; =============================================================================
 
 
-; Build a table of known PCIe/PCI devices
+; Build a table of known devices on the system bus
 ; Bytes 0-3	Base value used for os_bus_read/write (SG SG BS DF)
 ; Bytes 4-5	Vendor ID
 ; Bytes 6-7	Device ID
@@ -19,7 +19,7 @@
 
 ; -----------------------------------------------------------------------------
 init_bus:
-	mov rdi, pci_table		; Address of PCIe Table in memory
+	mov rdi, bus_table		; Address of Bus Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
 
 	; Check for PCIe first
@@ -53,8 +53,10 @@ init_bus_pcie_probe_found:
 	shr eax, 16			; Move the Class/Subclass code to AX
 	stosd				; Store it to the PCI Table
 	sub edx, 2
-	xor eax, eax
-	stosd				; Pad the PCI Table to 32 bytes
+	xor eax, eax			; Pad the Bus Table to 16 bytes
+	stosw
+	bts ax, 1			; Set bit for PCIe
+	stosw
 	jmp init_bus_pcie_probe_next
 
 init_bus_pci:
@@ -88,8 +90,10 @@ init_bus_pci_probe_found:
 	shr eax, 16			; Move the Class/Subclass code to AX
 	stosd				; Store it to the PCI Table
 	sub edx, 2
-	xor eax, eax
-	stosd				; Pad the PCI Table to 32 bytes
+	xor eax, eax			; Pad the Bus Table to 16 bytes
+	stosw
+	bts ax, 0			; Set bit for PCI
+	stosw
 	jmp init_bus_pci_probe_next
 
 init_bus_pci_not_found:
