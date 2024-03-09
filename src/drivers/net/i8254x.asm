@@ -8,7 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Initialize an Intel 8254x NIC
-;  IN:	RDX = Packed PCI address (as per syscalls/bus.asm)
+;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_i8254x_init:
 	push rsi
 	push rdx
@@ -24,7 +24,7 @@ net_i8254x_init:
 	mov dword [os_NetIOBaseMem], eax
 
 	; Grab the IRQ of the device
-	mov dl, 0x0F				; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
+	mov dl, 0x0F				; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
 	call os_bus_read
 	mov [os_NetIRQ], al			; AL holds the IRQ
 

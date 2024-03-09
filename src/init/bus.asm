@@ -45,13 +45,13 @@ init_bus_pcie_probe_found:
 	push rax			; Save the result
 	; TODO Fix this
 	mov rax, rdx			; Move the value used for os_pci_read to RAX
-	stosd				; Store it to the PCI Table
+	stosd				; Store it to the Bus Table
 	pop rax				; Restore the Device ID/Vendor ID
-	stosd				; Store it to the PCI Table
+	stosd				; Store it to the Bus Table
 	add edx, 2			; Register 2 for Class code/Subclass/Prog IF/Revision ID
 	call os_pcie_read
 	shr eax, 16			; Move the Class/Subclass code to AX
-	stosd				; Store it to the PCI Table
+	stosd				; Store it to the Bus Table
 	sub edx, 2
 	xor eax, eax			; Pad the Bus Table to 16 bytes
 	stosw
@@ -82,13 +82,13 @@ init_bus_pci_probe_next:
 init_bus_pci_probe_found:
 	push rax			; Save the result
 	mov rax, rdx			; Move the value used for os_pci_read to RAX
-	stosd				; Store it to the PCI Table
+	stosd				; Store it to the Bus Table
 	pop rax				; Restore the Device ID/Vendor ID
-	stosd				; Store it to the PCI Table
+	stosd				; Store it to the Bus Table
 	add edx, 2			; Register 2 for Class code/Subclass/Prog IF/Revision ID
 	call os_pci_read
 	shr eax, 16			; Move the Class/Subclass code to AX
-	stosd				; Store it to the PCI Table
+	stosd				; Store it to the Bus Table
 	sub edx, 2
 	xor eax, eax			; Pad the Bus Table to 16 bytes
 	stosw

@@ -18,7 +18,7 @@ os_pcie_read:
 	push rsi
 	push rdx
 	; ror rdx, 32			; Move segment to DX
-	; Load RSI with the base memory of the selected PCI Segment
+	; Load RSI with the base memory of the selected PCIe Segment
 	mov rsi, 0xb0000000		; QEMU
 
 	push rdx			; Save RDX for the register

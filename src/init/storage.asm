@@ -22,7 +22,7 @@ init_storage_check_bus:
 	je init_storage_nvme
 	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
 	je init_storage_ahci
-	jmp init_storage_check_bus	; Check PCI Table again
+	jmp init_storage_check_bus	; Check Bus Table again
 
 init_storage_nvme:
 	sub rsi, 8			; Move RSI back to start of Bus record

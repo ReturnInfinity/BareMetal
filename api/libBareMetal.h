@@ -37,8 +37,8 @@ void b_system(unsigned long function, void *var1, void *var2);
 #define SCREEN_Y_GET		0x22
 #define SCREEN_BPP_GET		0x23
 #define MAC_GET			0x30
-#define PCI_READ		0x40
-#define PCI_WRITE		0x41
+#define BUS_READ		0x40
+#define BUS_WRITE		0x41
 #define STDOUT_SET		0x42
 #define STDOUT_GET		0x43
 #define DRIVE_ID		0x50

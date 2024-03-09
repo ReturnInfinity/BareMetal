@@ -20,7 +20,7 @@ init_video_check_bus:
 	je init_video_done
 	cmp ax, 0x0300			; Display controller (03) / VGA compatible controller (00)
 	je init_video_check_id
-	jmp init_video_check_bus	; Check PCI Table again
+	jmp init_video_check_bus	; Check Bus Table again
 
 init_video_check_id:
 	sub rsi, 8			; Move RSI back to start of Bus record

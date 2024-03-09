@@ -31,8 +31,8 @@ screen_x_get		equ 0x21
 screen_y_get		equ 0x22
 screen_bpp_get		equ 0x23
 mac_get			equ 0x30
-pci_read		equ 0x40
-pci_write		equ 0x41
+bus_read		equ 0x40
+bus_write		equ 0x41
 stdout_set		equ 0x42
 stdout_get		equ 0x43
 drive_id		equ 0x50
