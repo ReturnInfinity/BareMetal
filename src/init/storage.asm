@@ -27,13 +27,13 @@ init_storage_check_pci:
 
 init_storage_nvme:
 	sub rsi, 8			; Move RSI back to start of PCI record
-	mov edx, [rsi]			; Load value for os_pci_read/write
+	mov edx, [rsi]			; Load value for os_bus_read/write
 	call nvme_init
 	jmp init_storage_done
 
 init_storage_ahci:
 	sub rsi, 8			; Move RSI back to start of PCI record
-	mov edx, [rsi]			; Load value for os_pci_read/write
+	mov edx, [rsi]			; Load value for os_bus_read/write
 	call ahci_init
 	jmp init_storage_done
 

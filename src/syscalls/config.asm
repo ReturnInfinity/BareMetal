@@ -107,14 +107,14 @@ b_config_mac_get:
 	call b_net_status
 	ret
 
-; PCI
+; Bus
 
 b_config_pci_read:
-	call os_pci_read
+	call os_bus_read
 	ret
 
 b_config_pci_write:
-	call os_pci_write
+	call os_bus_write
 	ret
 
 b_config_stdout_get:

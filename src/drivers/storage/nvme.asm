@@ -13,7 +13,7 @@ nvme_init:
 
 	mov dl, 4			; Read register 4 for BAR0
 	xor eax, eax
-	call os_pci_read		; BAR0 (NVMe Base Address Register)
+	call os_bus_read		; BAR0 (NVMe Base Address Register)
 	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
 	mov [os_NVMe_Base], rax
 	mov rsi, rax			; RSI holds the ABAR
@@ -41,14 +41,14 @@ nvme_init:
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
-	call os_pci_read
+	call os_bus_read
 	mov [os_NVMeIRQ], al		; AL holds the IRQ
 
 	; Enable PCI Bus Mastering
 	mov dl, 0x01			; Get Status/Command
-	call os_pci_read
+	call os_bus_read
 	bts eax, 2
-	call os_pci_write
+	call os_bus_write
 
 	; Disable the controller if it's enabled
 	mov eax, [rsi+NVMe_CC]

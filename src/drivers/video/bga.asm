@@ -11,7 +11,7 @@ init_bga:
 	; Get the base address of the frame buffer
 	mov dl, 4			; Register 4 for BAR0
 	xor eax, eax
-	call os_pci_read
+	call os_bus_read
 	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
 	mov rbx, rax			; Copy frame buffer address
 

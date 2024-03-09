@@ -12,7 +12,8 @@
 ; Bytes 6-7	Device ID
 ; Byte 8	Class code
 ; Byte 9	Subclass code
-; Bytes 10-15	Cleared to 0x00
+; Bytes 10-15	Flags
+; Byte 14 is the bus type (1 for PCI, 2 for PCIe)
 ; Byte 15 will be set to 0x01 later if a driver enabled it
 
 

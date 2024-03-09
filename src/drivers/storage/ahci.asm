@@ -13,7 +13,7 @@ ahci_init:
 
 	mov dl, 9			; Read register 9 for BAR5
 	xor eax, eax
-	call os_pci_read		; BAR5 (AHCI Base Address Register)
+	call os_bus_read		; BAR5 (AHCI Base Address Register)
 	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
 	mov [ahci_base], rax
 	mov rsi, rax			; RSI holds the ABAR
@@ -39,7 +39,7 @@ ahci_init:
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
-	call os_pci_read
+	call os_bus_read
 	mov [os_AHCIIRQ], al		; AL holds the IRQ
 
 	; Enable AHCI
