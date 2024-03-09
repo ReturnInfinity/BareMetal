@@ -8,7 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Initialize a Virtio NIC
-;  IN:	EDX = Packed Bus address (as per syscalls/bus.asm)
+;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_virtio_init:
 	push rsi
 	push rdx
