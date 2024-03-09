@@ -17,13 +17,7 @@
 os_pci_read:
 	push rdx
 
-	mov eax, edx			; Save EDX for the register value later on
-	shl al, 2			; Shift PCI register ID left two bits
-	shr edx, 8			; Shift Bus/Device/Function
-	mov dl, al			; Restore register value
-	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
-	or edx, 0x80000000		; Set bit 31
-	mov eax, edx			; We need dx so save value to EAX for use
+	call os_pci_convert		; Convert RDX to a PCI Address
 
 	mov dx, PCI_CONFIG_ADDRESS
 	out dx, eax
@@ -44,13 +38,7 @@ os_pci_write:
 	push rdx
 	push rax			; Save the value to be written
 
-	mov eax, edx			; Save EDX for the register value later on
-	shl al, 2			; Shift PCI register ID left two bits
-	shr edx, 8			; Shift Bus/Device/Function
-	mov dl, al			; Restore register value
-	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
-	or edx, 0x80000000		; Set bit 31
-	mov eax, edx			; We need dx so save value to EAX for use
+	call os_pci_convert		; Convert RDX to a PCI Address
 
 	mov dx, PCI_CONFIG_ADDRESS
 	out dx, eax
@@ -59,6 +47,23 @@ os_pci_write:
 	out dx, eax
 
 	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_pci_convert -- Convert the value in EDX to what is expected for PCI access
+;  IN:	EDX = Register
+;	EAX = PCI Address
+; OUT:	Nothing, all registers preserved
+os_pci_convert:
+	mov eax, edx			; Save EDX for the register value later on
+	shl al, 2			; Shift PCI register ID left two bits
+	shr edx, 8			; Shift Bus/Device/Function
+	mov dl, al			; Restore register value
+	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
+	or edx, 0x80000000		; Set bit 31
+	mov eax, edx			; We need dx so save value to EAX for use
 	ret
 ; -----------------------------------------------------------------------------
 
