@@ -25,7 +25,7 @@ init_net_check_pci:
 	; Check the Ethernet device to see if it has a driver
 init_net_probe_find_driver:
 	sub rsi, 8			; Move RSI back to start of PCI record
-	mov edx, [rsi]			; Load value for os_pci_read/write
+	mov edx, [rsi]			; Load value for os_bus_read/write
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
 	rol r8d, 16			; Swap the Device ID / Vendor ID
 	mov rsi, NIC_DeviceVendor_ID
