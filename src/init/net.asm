@@ -25,6 +25,7 @@ init_net_check_bus:
 	; Check the Ethernet device to see if it has a driver
 init_net_probe_find_driver:
 	sub rsi, 8			; Move RSI back to start of Bus record
+	mov r9, rsi			; Save start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
 	rol r8d, 16			; Swap the Device ID / Vendor ID
@@ -102,6 +103,8 @@ init_net_probe_found_finish:
 	pop rcx
 
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
+	add r9, 15			; Add offset to driver enabled byte
+	mov byte [r9], 1		; Mark device as having a driver
 	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 init_net_probe_not_found:
