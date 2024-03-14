@@ -51,8 +51,21 @@ os_pcie_convert:
 	push rax
 
 	; Check the submitted Segment Group against known ones
-	mov rsi, [0x5400]
-	
+	mov rsi, 0x5408			; Start of the PCIe info, offset to PCIe Segment Group at 0x8
+	ror rdx, 32			; Rotate PCIe Segment Group to DX
+os_pcie_convert_check_segment:
+	mov ax, [rsi]			; Load a known PCIe Segment Group
+	cmp ax, dx			; Compare the known value to what was provided
+	je os_pcie_convert_valid
+	cmp ax, 0xFFFF			; Compare to the end of the list value
+	je os_pcie_convert_invalid
+	add rsi, 16			; Increment to the next record
+	jmp os_pcie_convert_check_segment
+
+os_pcie_convert_valid:
+	sub rsi, 8			; Set RSI to the location of the memory address at 0x0
+	mov rsi, [rsi]			; Load the memory address to RSI
+	rol rdx, 32			; Rotate PCIe Segment Group back to upper bits
 	; Add offset to the correct device/function/register
 	push rdx			; Save RDX for the register
 	and edx, 0xFFFF0000		; Isolate the device/function
@@ -64,6 +77,13 @@ os_pcie_convert:
 	add rsi, rdx			; Add offset for the register
 	mov rdx, rsi			; Store final memory address in RDX
 
+	pop rax
+	pop rsi
+	ret
+
+os_pcie_convert_invalid:
+	xor edx, edx
+	not rdx				; Set RDX to 0xFFFFFFFFFFFFFFFF
 	pop rax
 	pop rsi
 	ret
