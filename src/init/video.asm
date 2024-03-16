@@ -7,27 +7,28 @@
 
 
 ; -----------------------------------------------------------------------------
+; init_video -- Configure the first video device it finds
 init_video:
-	; Check PCI Table for a supported controller
-	mov rsi, pci_table		; Load PCI Table address to RSI
+	; Check Bus Table for a supported controller
+	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 16
 	add rsi, 8			; Add offset to Class Code
-init_video_check_pci:
+init_video_check_bus:
 	add rsi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_video_done
 	cmp ax, 0x0300			; Display controller (03) / VGA compatible controller (00)
 	je init_video_check_id
-	jmp init_video_check_pci	; Check PCI Table again
+	jmp init_video_check_bus	; Check Bus Table again
 
 init_video_check_id:
-	sub rsi, 8			; Move RSI back to start of PCI record
-	mov edx, [rsi]			; Load value for os_pci_read/write
+	sub rsi, 8			; Move RSI back to start of Bus record
+	mov edx, [rsi]			; Load value for os_bus_read/write
 
 	mov dl, 0			; Register 0 for Device/Vendor IDs
 	xor eax, eax
-	call os_pci_read
+	call os_bus_read
 	cmp eax, 0x11111234		; QEMU/ Bochs
 	je init_video_found_bga
 	cmp eax, 0xBEEF80EE		; VirtualBox

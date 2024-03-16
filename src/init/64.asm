@@ -68,7 +68,7 @@ make_interrupt_gate_stubs:
 	mov rax, ap_reset
 	call create_gate
 
-	; Grab data from Pure64's infomap
+	; Grab data from Pure64's InfoMap
 	xor eax, eax
 	xor ebx, ebx
 	xor ecx, ecx
@@ -104,6 +104,9 @@ make_interrupt_gate_stubs:
 	mov [os_screen_y], ax
 	lodsb
 	mov [os_screen_bpp], al
+	mov esi, 0x00005090		; PCIe bus count
+	lodsw
+	mov [os_pcie_count], ax
 	xor eax, eax
 	mov esi, 0x00005604		; IOAPIC
 	lodsd

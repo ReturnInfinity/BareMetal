@@ -14,7 +14,7 @@ screen_bpp:		equ 32
 
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
-readymsg:		db 'BareMetal OK'	; This string falls thru to newline
+readymsg:		db 'BareMetal OK'	; This string falls through to newline
 newline:		db 10, 0
 
 
@@ -35,7 +35,7 @@ os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 
 ; System memory
-pci_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K PCI Table
+bus_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K Bus Table
 						; 0x130000 -> 0x13FFFF	64K Free
 ; Storage memory
 ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
@@ -104,13 +104,14 @@ os_NetLock:		equ os_SystemVariables + 0x0206
 os_StorageVar:		equ os_SystemVariables + 0x0208
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
+os_pcie_count:		equ os_SystemVariables + 0x020E
 
 
 ; DB - Starting at offset 768, increments by 1
 scancode:		equ os_SystemVariables + 0x0300
 key:			equ os_SystemVariables + 0x0301
 key_shift:		equ os_SystemVariables + 0x0302
-os_PCIEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is detected
+os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe is enabled
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
 os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is connected to
 os_NetActivity_TX:	equ os_SystemVariables + 0x0306

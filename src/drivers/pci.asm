@@ -6,27 +6,18 @@
 ; =============================================================================
 
 
-; The PCI functions below require the bus ID, device/function ID, and register
-; ID to be passed in EDX as shown below:
-;
-; 0x 00 BS DF RG
-; BS = Bus, 8 bits
-; DF = Device/Function, 8 bits
-; RG = Register, 8 bits, 6 used, upper 2 bits will be cleared if set
+; See syscalls/bus.asm for description on RDX format
 
 
 ; -----------------------------------------------------------------------------
 ; os_pci_read -- Read from a register on a PCI device
-;  IN:	EDX = Register to read from
+;  IN:	RDX = Register to read from
 ; OUT:	EAX = Register value that was read
 ;	All other registers preserved
 os_pci_read:
 	push rdx
 
-	shl dl, 2			; Shift PCI register ID left two bits
-	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
-	or edx, 0x80000000		; Set bit 31
-	mov eax, edx			; We need dx so save value to EAX for use
+	call os_pci_convert		; Convert RDX to a PCI Address
 
 	mov dx, PCI_CONFIG_ADDRESS
 	out dx, eax
@@ -40,17 +31,14 @@ os_pci_read:
 
 ; -----------------------------------------------------------------------------
 ; os_pci_write -- Write to a register on a PCI device
-;  IN:	EDX = Register to write to
+;  IN:	RDX = Register to write to
 ;	EAX = Register value to be written
 ; OUT:	Nothing, all registers preserved
 os_pci_write:
 	push rdx
 	push rax			; Save the value to be written
 
-	shl dl, 2			; Shift PCI register ID left two bits
-	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
-	or edx, 0x80000000		; Set bit 31
-	mov eax, edx			; We need dx so save value to EAX for use
+	call os_pci_convert		; Convert RDX to a PCI Address
 
 	mov dx, PCI_CONFIG_ADDRESS
 	out dx, eax
@@ -59,6 +47,23 @@ os_pci_write:
 	out dx, eax
 
 	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_pci_convert -- Convert the value in EDX to what is expected for PCI access
+;  IN:	EDX = Register
+;	EAX = PCI Address
+; OUT:	Nothing, all registers preserved
+os_pci_convert:
+	mov eax, edx			; Save EDX for the register value later on
+	shl al, 2			; Shift PCI register ID left two bits
+	shr edx, 8			; Shift Bus/Device/Function
+	mov dl, al			; Restore register value
+	and edx, 0x00FFFFFC		; Clear bits 31 - 24, 1 - 0
+	or edx, 0x80000000		; Set bit 31
+	mov eax, edx			; We need dx so save value to EAX for use
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -78,8 +83,8 @@ PCI_CONFIG_DATA		EQU	0x0CFC
 ; 30 - 24	Reserved = set to 0
 ; 23 - 16	Bus number = 256 options
 ; 15 - 11	Device/Slot number = 32 options
-; 10 - 8	Function number = will leave at 0 (8 options)
-; 7 - 2		Register number = will leave at 0 (64 options) 64 x 4 bytes = 256 bytes worth of accessible registers
+; 10 - 8	Function number = 8 options
+; 7 - 2		Register number = 64 options, 64 x 4 bytes = 256 bytes worth of accessible registers
 ; 1 - 0		Set to 0
 
 

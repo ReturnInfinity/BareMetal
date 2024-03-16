@@ -9,23 +9,24 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
-	; Check PCI Table for a Ethernet device
-	mov rsi, pci_table		; Load PCI Table address to RSI
+	; Check Bus Table for a Ethernet device
+	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 16
 	add rsi, 8			; Add offset to Class Code
-init_net_check_pci:
+init_net_check_bus:
 	add rsi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_net_probe_not_found
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver
-	jmp init_net_check_pci		; Check PCI Table again
+	jmp init_net_check_bus		; Check Bus Table again
 
 	; Check the Ethernet device to see if it has a driver
 init_net_probe_find_driver:
-	sub rsi, 8			; Move RSI back to start of PCI record
-	mov edx, [rsi]			; Load value for os_pci_read/write
+	sub rsi, 8			; Move RSI back to start of Bus record
+	mov r9, rsi			; Save start of Bus record
+	mov edx, [rsi]			; Load value for os_bus_read/write
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
 	rol r8d, 16			; Swap the Device ID / Vendor ID
 	mov rsi, NIC_DeviceVendor_ID
@@ -102,6 +103,8 @@ init_net_probe_found_finish:
 	pop rcx
 
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
+	add r9, 15			; Add offset to driver enabled byte
+	mov byte [r9], 1		; Mark device as having a driver
 	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 init_net_probe_not_found:

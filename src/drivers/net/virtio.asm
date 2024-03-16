@@ -8,7 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; Initialize a Virtio NIC
-;  IN:	EDX = Packed PCI address (as per pci.asm)
+;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_virtio_init:
 	push rsi
 	push rdx
@@ -17,14 +17,14 @@ net_virtio_init:
 
 	; Grab the Base I/O Address of the device
 	mov dl, 0x04			; BAR0
-	call os_pci_read
+	call os_bus_read
 	; Todo: Make sure bit 0 is 1
 	and eax, 0xFFFFFFFC		; Clear the low two bits
 	mov dword [os_NetIOBaseMem], eax
 
 	; Grab the IRQ of the device
-	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
-	call os_pci_read
+	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
+	call os_bus_read
 	mov [os_NetIRQ], al		; AL holds the IRQ
 
 	; Grab the MAC address
