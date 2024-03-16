@@ -6,12 +6,17 @@
 ; =============================================================================
 
 
-; RDX format:
-; 0x 00 00 SG SG BS DF RG RG
-; SG = PCIe Segment Group, 16 bits (Ignored for PCI)
-; BS = Bus, 8 bits
-; DF = Device/Function, 8 bits (5 bit device, 3 bit function)
-; RG = Register, 16 bits (Uses 10 bits for PCIe and 6 bits for PCI)
+; ┌───────────────────────────────────────────────────────────────┐
+; │                          RDX Format                           │
+; ├───────────────────────────────────────────────────────────────┤
+; │63           48 47           32 31   24 23   16 15            0│
+; ├───────────────┬───────────────┬───────┬───────┬───────────────┤
+; │               │ PCIe Segment  │  Bus  │Device │   Register    │
+; └───────────────┴───────────────┴───────┴───────┴───────────────┘
+; PCIe Segment Group, 16 bits (Ignored for PCI)
+; Bus, 8 bits
+; Device/Function, 8 bits (5 bit device, 3 bit function)
+; Register, 16 bits (Uses 10 bits for PCIe and 6 bits for PCI)
 
 
 ; -----------------------------------------------------------------------------
