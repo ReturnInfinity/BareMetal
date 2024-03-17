@@ -7,6 +7,24 @@
 
 
 ; See syscalls/bus.asm for description on RDX format
+;
+; os_pcie_convert uses the PCIe Table to find the correct memory address
+;
+; ┌───────────────────────────────────────────────────────────────────┐
+; │                         PCIe Table Format                         │
+; ├───┬───────────────────────────────────────────────────────────────┤
+; │0x0│                       PCIe Base Memory                        │
+; ├───┼───────────────┬───────┬───────┬───────────────────────────────┤
+; │0x8│ Group Segment │ Start │  End  │               0               │
+; └───┴───────────────┴───────┴───────┴───────────────────────────────┘
+;
+; Bytes 0-7	Base memory address for a PCIe host bridge
+; Bytes 8-9	This PCIe Group Segment Number for this host bridge
+; Byte 10	Start PCI bus number decoded by this host bridge
+; Byte 11	End PCI bus number decoded by this host bridge
+; Bytes 12-15	0
+;
+; The last record will contain all 0xFF's
 
 
 ; -----------------------------------------------------------------------------

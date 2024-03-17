@@ -13,6 +13,7 @@
 ; ├───────────────┬───────────────┬───────┬───────┬───────────────┤
 ; │               │ PCIe Segment  │  Bus  │Device │   Register    │
 ; └───────────────┴───────────────┴───────┴───────┴───────────────┘
+;
 ; PCIe Segment Group, 16 bits (Ignored for PCI)
 ; Bus, 8 bits
 ; Device/Function, 8 bits (5 bit device, 3 bit function)

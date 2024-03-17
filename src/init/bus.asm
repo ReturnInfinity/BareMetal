@@ -7,6 +7,15 @@
 
 
 ; Build a table of known devices on the system bus
+;
+; ┌───────────────────────────────────────────────────────────────────┐
+; │                         Bus Table Format                          │
+; ├───┬───────────────────────────────┬───────────────┬───────────────┤
+; │0x0│     Base Value for bus_*      │   Vendor ID   │   Device ID   │
+; ├───┼───────┬───────┬───────────────┴───────────────┴───────────────┤
+; │0x8│ Class │ SubCl │                     Flags                     │
+; └───┴───────┴───────┴───────────────────────────────────────────────┘
+;
 ; Bytes 0-3	Base value used for os_bus_read/write (SG SG BS DF)
 ; Bytes 4-5	Vendor ID
 ; Bytes 6-7	Device ID
@@ -28,6 +37,7 @@ init_bus:
 	jz init_bus_pci			; Fall back to PCI if no PCIe was detected
 	mov byte [os_BusEnabled], 2	; Bit 1 set for PCIe
 
+	; TODO
 	; Check which PCIe segments are valid and process only those
 	; For now we will only check against PCIe segment 0
 
@@ -43,8 +53,7 @@ init_bus_pcie_probe_next:
 
 init_bus_pcie_probe_found:
 	push rax			; Save the result
-	; TODO Fix this
-	mov rax, rdx			; Move the value used for os_pci_read to RAX
+	mov rax, rdx			; Move the value used for os_pcie_read to RAX
 	stosd				; Store it to the Bus Table
 	pop rax				; Restore the Device ID/Vendor ID
 	stosd				; Store it to the Bus Table
