@@ -31,7 +31,7 @@ sys_pdl:		equ 0x0000000000010000	; 0x010000 -> 0x01FFFF	64K Page directory low (
 sys_pdh:		equ 0x0000000000020000	; 0x020000 -> 0x05FFFF	256K Page directory high (Maps up to 64GB)
 						; 0x060000 -> 0x09FFFF	256K Free
 sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
-os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
+os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel space
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 
 ; System memory
@@ -53,6 +53,7 @@ os_nvme_NSID:		equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identi
 os_nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
 						; 0x180000 -> 0x19FFFF	128K Free
 ; Network Memory
+os_net_mem:
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
 os_PacketBuffers:	equ 0x00000000001B0000	;
