@@ -25,7 +25,7 @@
 
 ### Virtio
 
-* [Specs](http://docs.oasis-open.org/virtio/virtio/v1.0/virtio-v1.0.pdf)
+* [Specs](https://docs.oasis-open.org/virtio/virtio/v1.2/virtio-v1.2.pdf)
 * [Legacy specs](http://ozlabs.org/~rusty/virtio-spec/virtio-0.9.5.pdf)
 
 ### Intel 8254x (e1000)
