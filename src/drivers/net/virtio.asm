@@ -10,10 +10,10 @@
 ; Initialize a Virtio NIC
 ;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_virtio_init:
-	push rsi
-	push rdx
-	push rcx
-	push rax
+	push rdx			; I/O Port
+	push rcx			; Buffer size
+	push rbx			; # of Queues
+	push rax			; I/O Value
 
 	; Grab the Base I/O Address of the device
 	mov dl, 0x04			; BAR0
@@ -91,28 +91,44 @@ net_virtio_init:
 	; reading and possibly writing the device’s virtio configuration space
 	; population of virtqueues
 
+	xor ebx, ebx			; Counter for number of queues with sizes > 0
+net_virtio_check_queues:
 	; Check the first queue and make sure it has a size > 0
 	mov edx, [os_NetIOBaseMem]
-	add dx, VIRTIO_QUEUEADDRESS
-	mov al, 0			; Only check the first for now
-	out dx, ax
+	add dx, VIRTIO_QUEUESELECT
+	mov ax, bx
+	out dx, ax			; Select the Queue
 	mov edx, [os_NetIOBaseMem]
 	add dx, VIRTIO_QUEUESIZE
+	xor eax, eax
 	in ax, dx			; Return the size of the queue
-	cmp ax, 0
-	je net_virtio_error
-	
+	inc ebx
+	cmp ax, 0			; If the Queue Size in 0 we have reached the end of the queues
+	je net_virtio_end_queues
+
+net_virtio_init_queues:
 	; Set up the required buffers in memory
-	
-	mov edx, [os_NetIOBaseMem]
-	add dx, VIRTIO_QUEUESELECT
-	mov al, 0			; Select Queue 0 for configuration
-	out dx, ax
+	mov ecx, eax			; Store queue size in ECX
+
+	; Figure out home much memory we need for the queue
+;	shl eax, 4			; quick multiply by 16 as each buffer entry is 16 bytes
+					; 256 entries is 2048 bytes
 
 	mov edx, [os_NetIOBaseMem]
 	add dx, VIRTIO_QUEUEADDRESS
 	mov eax, os_net_mem
+	sub ebx, 1
+	shl rbx, 14			; Quick multiply by 16384
+	add rax, rbx
+	shr rbx, 14			; Quick multiply by 16384
+	shr eax, 12
+	add ebx, 1
 	out dx, eax			; Point Queue 0 to os_rx_desc
+	jmp net_virtio_check_queues	; Check the next queue
+
+net_virtio_end_queues:
+	cmp bx, 0
+	je net_virtio_error
 
 	; 3.1.1.8
 	mov edx, [os_NetIOBaseMem]
@@ -124,10 +140,11 @@ net_virtio_init:
 ;	call net_virtio_reset
 
 net_virtio_error:
+net_virtion_init_end:
 	pop rax
+	pop rbx
 	pop rcx
 	pop rdx
-	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
