@@ -111,9 +111,16 @@ net_virtio_init_queues:
 	mov ecx, eax			; Store queue size in ECX
 
 	; Figure out home much memory we need for the queue
+	; A full queue is as follows:
+	; Buffers -> QueueSize * 8
+	; Available -> 8
+	; Align to next 4KB
+	; Used -> 4 + (Ring -> QueueSize * 8) + 2
+
 ;	shl eax, 4			; quick multiply by 16 as each buffer entry is 16 bytes
 					; 256 entries is 2048 bytes
 
+	; TODO This uses hardcoded values which is bad
 	mov edx, [os_NetIOBaseMem]
 	add dx, VIRTIO_QUEUEADDRESS
 	mov eax, os_net_mem
@@ -139,6 +146,37 @@ net_virtio_end_queues:
 	; Reset the device
 ;	call net_virtio_reset
 
+	; Try to send an Ethernet packet
+	push rdi
+	mov rdi, 0x1a4000		; TX Queue
+
+	mov rax, testpacket		; packet header for virtio
+	stosq				; 64-bit address
+	mov eax, 12
+	stosd				; 32-bit length
+	mov ax, 1
+	stosw				; 16-bit Flags
+	stosw				; 16-bit Next
+
+	mov rax, testpacket+12		; actual packet
+	stosq				; 64-bit address
+	mov rax, 500
+	stosd				; 32-bit length
+	mov ax, 0
+	stosw				; 16-bit Flags
+	stosw				; 16-bit Next
+
+	pop rdi
+
+;	mov edx, [os_NetIOBaseMem]
+;	add dx, VIRTIO_QUEUESELECT
+;	mov ax, VIRTIO_NET_QUEUE_TX
+;	out dx, ax			; Select the Queue
+;	mov edx, [os_NetIOBaseMem]
+;	add dx, VIRTIO_QUEUENOTIFY
+;	xor eax, eax
+;	out dx, ax
+
 net_virtio_error:
 net_virtion_init_end:
 	pop rax
@@ -148,6 +186,20 @@ net_virtion_init_end:
 	ret
 ; -----------------------------------------------------------------------------
 
+align 16
+testpacket:
+db 0x02					; 8-bit flags (1 - needs checksum, 2 - data valid)
+db 0x00					; 8-bit gso_type
+dw 0					; 16-bit hdr_len
+dw 0					; 16-bit gso_size
+dw 0					; 16-bit csum_start
+dw 0					; 16-bit csum_offset
+dw 1					; 16-bit num_buffers
+testpacketdata:
+db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+db 0xAB, 0xBA
+db 'this is a test packet'
 
 ; -----------------------------------------------------------------------------
 ; net_virtio_reset - Reset a Virtio NIC
@@ -215,7 +267,14 @@ VIRTIO_NET_MAC3			equ 0x16 ; 8-bit
 VIRTIO_NET_MAC4			equ 0x17 ; 8-bit
 VIRTIO_NET_MAC5			equ 0x18 ; 8-bit
 VIRTIO_NET_MAC6			equ 0x19 ; 8-bit
-VIRTIO_NET_STATUS		equ 0x1A ; ?-bit
+VIRTIO_NET_STATUS		equ 0x1A ; 16-bit
+VIRTIO_NET_MAX_VIRTQ_PAIRS	equ 0x1C ; 16-bit
+VIRTIO_NET_MTU			equ 0x1E ; 16-bit
+VIRTIO_NET_SPEED		equ 0x20 ; 32-bit in units of 1 MBit per second, 0 to 0x7fffffff, or 0xffffffff for unknown
+VIRTIO_NET_DUPLEX		equ 0x24 ; 8-bit 0x01 for full duplex, 0x00 for half duplex
+VIRTIO_NET_RSS_MAX_KEY_SIZE	equ 0x25 ; 8-bit
+VIRTIO_NET_RSS_MAX_INT_TAB_LEN	equ 0x26 ; 16-bit
+VIRTIO_NET_SUPPORTED_HASH_TYPES	equ 0x28 ; 32-bit
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_NET_F_CSUM		equ 0 ; Host handles packets w/ partial checksum
@@ -249,6 +308,15 @@ VIRTIO_STATUS_FEATURES_OK	equ 0x08 ; Indicates that the driver has acknowledged 
 VIRTIO_STATUS_DRIVER_OK		equ 0x04 ; Indicates that the driver is set up and ready to drive the device
 VIRTIO_STATUS_DRIVER		equ 0x02 ; Indicates that the guest OS knows how to drive the device
 VIRTIO_STATUS_ACKNOWLEDGE	equ 0x01 ; Indicates that the guest OS has found the device and recognized it as a valid virtio device.
+
+; VIRTQUEUE Flags
+VIRTQ_DESC_F_NEXT		equ 1
+VIRTQ_DESC_F_WRITE		equ 2
+VIRTQ_DESC_F_INDIRECT		equ 4
+
+; VIRTQUEUES
+VIRTIO_NET_QUEUE_RX		equ 0	; The first of the Receive Queues
+VIRTIO_NET_QUEUE_TX		equ 1	; The first of the Transmit Queues
 
 
 ; =============================================================================
