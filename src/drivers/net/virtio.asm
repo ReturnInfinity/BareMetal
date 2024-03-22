@@ -68,6 +68,7 @@ net_virtio_init:
 	mov edx, [os_NetIOBaseMem]
 	in eax, dx			; Get the device features
 	; Adjust supported features if needed
+	; TODO Disable VIRTIO_NET_F_MQ and VIRTIO_NET_F_CTRL
 	; Read the device-specific fields if needed
 	; Write supported features to HOSTFEATURES
 	add dx, VIRTIO_HOSTFEATURES
@@ -150,6 +151,7 @@ net_virtio_end_queues:
 	push rdi
 	mov rdi, 0x1a4000		; TX Queue
 
+	; Add header and packet to Buffers
 	mov rax, testpacket		; packet header for virtio
 	stosq				; 64-bit address
 	mov eax, 12
@@ -166,16 +168,27 @@ net_virtio_end_queues:
 	stosw				; 16-bit Flags
 	stosw				; 16-bit Next
 
+	; Add entry to Avail
+	mov rdi, 0x1a5000
+	mov ax, 1
+	stosw				; 16-bit flags
+	mov ax, 1
+	stosw				; 16-bit index
+	mov ax, 1
+	stosw				; 16-bit ring
+	mov ax, 2
+	stosw				; 16-bit eventindex
+
 	pop rdi
 
-;	mov edx, [os_NetIOBaseMem]
-;	add dx, VIRTIO_QUEUESELECT
-;	mov ax, VIRTIO_NET_QUEUE_TX
-;	out dx, ax			; Select the Queue
-;	mov edx, [os_NetIOBaseMem]
-;	add dx, VIRTIO_QUEUENOTIFY
-;	xor eax, eax
-;	out dx, ax
+	mov edx, [os_NetIOBaseMem]
+	add dx, VIRTIO_QUEUESELECT
+	mov ax, VIRTIO_NET_QUEUE_TX
+	out dx, ax			; Select the Queue
+	mov edx, [os_NetIOBaseMem]
+	add dx, VIRTIO_QUEUENOTIFY
+	xor eax, eax
+	out dx, ax
 
 net_virtio_error:
 net_virtion_init_end:
@@ -194,7 +207,7 @@ dw 0					; 16-bit hdr_len
 dw 0					; 16-bit gso_size
 dw 0					; 16-bit csum_start
 dw 0					; 16-bit csum_offset
-dw 1					; 16-bit num_buffers
+dw 0					; 16-bit num_buffers
 testpacketdata:
 db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
