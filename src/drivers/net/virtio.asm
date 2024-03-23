@@ -48,44 +48,41 @@ net_virtio_init:
 	in al, dx
 	mov [os_NetMAC+5], al
 
-	; Start to enable the device (section 3.1)
+	; Device Initialization (section 3.1)
 
-	; 3.1.1.1
+	; 3.1.1 - Step 1
 	mov edx, [os_NetIOBaseMem]
 	add dx, VIRTIO_DEVICESTATUS
 	mov al, 0x00
 	out dx, al			; Reset the device (section 2.4)
 
-	; 3.1.1.2
+	; 3.1.1 - Step 2
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE
 	out dx, al			; Tell the device we see it
 
-	; 3.1.1.3
+	; 3.1.1 - Step 3
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER
 	out dx, al			; Tell the device we support it
 
-	; 3.1.1.4
+	; 3.1.1 - Step 4
 	mov edx, [os_NetIOBaseMem]
-	in eax, dx			; Get the device features
-	; Adjust supported features if needed
-	; TODO Disable VIRTIO_NET_F_MQ and VIRTIO_NET_F_CTRL
-	; Read the device-specific fields if needed
-	; Write supported features to HOSTFEATURES
+	in eax, dx			; Read DEVICEFEATURES
+	btc eax, VIRTIO_NET_F_MQ	; Disable Multiqueue support for this driver
 	add dx, VIRTIO_HOSTFEATURES
-	out dx, eax
+	out dx, eax			; Write supported features to HOSTFEATURES
 
-	; 3.1.1.5
+	; 3.1.1 - Step 5
 	mov edx, [os_NetIOBaseMem]
 	add dx, VIRTIO_DEVICESTATUS
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_FEATURES_OK
 	out dx, al
 
-	; 3.1.1.6
+	; 3.1.1 - Step 6
 	in al, dx			; Re-read device status to make sure FEATURES_OK is still set
 	bt ax, 3 ;VIRTIO_STATUS_FEATURES_OK
 	jnc net_virtio_error
 
-	; 3.1.1.7
+	; 3.1.1 - Step 7
 	; Set up the device and the queues
 	; discovery of virtqueues for the device
 	; optional per-bus setup
@@ -138,7 +135,7 @@ net_virtio_end_queues:
 	cmp bx, 0
 	je net_virtio_error
 
-	; 3.1.1.8
+	; 3.1.1 - Step 8
 	mov edx, [os_NetIOBaseMem]
 	add dx, VIRTIO_DEVICESTATUS
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
@@ -160,7 +157,7 @@ net_virtio_end_queues:
 	stosw				; 16-bit Flags
 	stosw				; 16-bit Next
 
-	mov rax, testpacket+12		; actual packet
+	mov rax, testpacketdata		; actual packet
 	stosq				; 64-bit address
 	mov rax, 500
 	stosd				; 32-bit length
@@ -209,8 +206,10 @@ dw 0					; 16-bit csum_start
 dw 0					; 16-bit csum_offset
 dw 0					; 16-bit num_buffers
 testpacketdata:
+db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF		; wut?
+db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF		; wut?
 db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
-db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+db 0x10, 0x11, 0x12, 0x13, 0x14, 0x15
 db 0xAB, 0xBA
 db 'this is a test packet'
 
@@ -290,31 +289,40 @@ VIRTIO_NET_RSS_MAX_INT_TAB_LEN	equ 0x26 ; 16-bit
 VIRTIO_NET_SUPPORTED_HASH_TYPES	equ 0x28 ; 32-bit
 
 ; VIRTIO_DEVICEFEATURES bits
-VIRTIO_NET_F_CSUM		equ 0 ; Host handles packets w/ partial checksum
-VIRTIO_NET_F_GUEST_CSUM		equ 1 ; Guest handles packets w/ partial checksum
-VIRTIO_NET_F_CTRL_GUEST_OFFLOADS	equ 2 ; Dynamic offload configuration
-VIRTIO_NET_F_MTU		equ 3 ; Initial MTU advice
-VIRTIO_NET_F_MAC		equ 5 ; Host has given MAC address
-VIRTIO_NET_F_GSO		equ 6 ; Host handles packets w/ any GSO type
-VIRTIO_NET_F_GUEST_TSO4		equ 7 ; Guest can handle TSOv4 in
-VIRTIO_NET_F_GUEST_TSO6		equ 8 ; Guest can handle TSOv6 in
-VIRTIO_NET_F_GUEST_ECN		equ 9 ; Guest can handle TSO[6] w/ ECN in
-VIRTIO_NET_F_GUEST_UFO		equ 10 ; Guest can handle UFO in
-VIRTIO_NET_F_HOST_TSO4		equ 11 ; Host can handle TSOv4 in
-VIRTIO_NET_F_HOST_TSO6		equ 12 ; Host can handle TSOv6 in
-VIRTIO_NET_F_HOST_ECN		equ 13 ; Host can handle TSO[6] w/ ECN in
-VIRTIO_NET_F_HOST_UFO		equ 14 ; Host can handle UFO in
-VIRTIO_NET_F_MRG_RXBUF		equ 15 ; Host can merge receive buffers
-VIRTIO_NET_F_STATUS		equ 16 ; virtio_net_config.status available
-VIRTIO_NET_F_CTRL_VQ		equ 17 ; Control channel available
+VIRTIO_NET_F_CSUM		equ 0 ; Device handles packets with partial checksum
+VIRTIO_NET_F_GUEST_CSUM		equ 1 ; Driver handles packets with partial checksum
+VIRTIO_NET_F_CTRL_GUEST_OFFLOADS	equ 2 ; Control channel offloads reconfiguration support
+VIRTIO_NET_F_MTU		equ 3 ; Device maximum MTU reporting is supported
+VIRTIO_NET_F_MAC		equ 5 ; Device has given MAC address
+VIRTIO_NET_F_GSO		equ 6 ; LEGACY Device handles packets with any GSO type
+VIRTIO_NET_F_GUEST_TSO4		equ 7 ; Driver can receive TSOv4
+VIRTIO_NET_F_GUEST_TSO6		equ 8 ; Driver can receive TSOv6
+VIRTIO_NET_F_GUEST_ECN		equ 9 ; Driver can receive TSO with ECN
+VIRTIO_NET_F_GUEST_UFO		equ 10 ; Driver can receive UFO
+VIRTIO_NET_F_HOST_TSO4		equ 11 ; Device can receive TSOv4
+VIRTIO_NET_F_HOST_TSO6		equ 12 ; Device can receive TSOv6
+VIRTIO_NET_F_HOST_ECN		equ 13 ; Device can receive TSO with ECN
+VIRTIO_NET_F_HOST_UFO		equ 14 ; Device can receive UFO
+VIRTIO_NET_F_MRG_RXBUF		equ 15 ; Driver can merge receive buffers
+VIRTIO_NET_F_STATUS		equ 16 ; Configuration status field is available
+VIRTIO_NET_F_CTRL_VQ		equ 17 ; Control channel is available
 VIRTIO_NET_F_CTRL_RX		equ 18 ; Control channel RX mode support
 VIRTIO_NET_F_CTRL_VLAN		equ 19 ; Control channel VLAN filtering
-VIRTIO_NET_F_CTRL_RX_EXTRA 	equ 20 ; Extra RX mode control support
-VIRTIO_NET_F_GUEST_ANNOUNCE	equ 21 ; Guest can announce device on the network
-VIRTIO_NET_F_MQ			equ 22 ; Device supports Receive Flow Steering
-VIRTIO_NET_F_CTRL_MAC_ADDR	equ 23 ; Set MAC address
+VIRTIO_NET_F_CTRL_RX_EXTRA	equ 20 ; ???
+VIRTIO_NET_F_GUEST_ANNOUNCE	equ 21 ; Driver can send gratuitous packets
+VIRTIO_NET_F_MQ			equ 22 ; Device supports multiqueue with automatic receive steering
+VIRTIO_NET_F_CTRL_MAC_ADDR	equ 23 ; Set MAC address through control channel
+VIRTIO_NET_F_GUEST_RSC4		equ 41 ; LEGACY Device coalesces TCPIP v4 packets
+VIRTIO_NET_F_GUEST_RSC6		equ 42 ; LEGACY Device coalesces TCPIP v6 packets
+VIRTIO_NET_F_HOST_USO		equ 56 ; Device can receive USO packets
+VIRTIO_NET_F_HASH_REPORT	equ 57 ; Device can report per-packet hash value and a type of calculated hash.
+VIRTIO_NET_F_GUEST_HDRLEN	equ 59 ; Driver can provide the exact hdr_len value. Device benefits from knowing the exact header length.
+VIRTIO_NET_F_RSS		equ 60 ; Device supports RSS (receive-side scaling) with Toeplitz hash calculation and configurable hash parameters for receive steering.
+VIRTIO_NET_F_RSC_EXT		equ 61 ; Device can process duplicated ACKs and report number of coalesced segments and duplicated ACKs.
+VIRTIO_NET_F_STANDBY		equ 62 ; Device may act as a standby for a primary device with the same MAC address.
+VIRTIO_NET_F_SPEED_DUPLEX	equ 63 ; Device reports speed and duplex
 
-; VIRTIO_STATUS bits
+; VIRTIO_STATUS
 VIRTIO_STATUS_FAILED		equ 0x80 ; Indicates that something went wrong in the guest, and it has given up on the device
 VIRTIO_STATUS_DEVICE_NEEDS_RESET	equ 0x40 ; Indicates that the device has experienced an error from which it can’t recover
 VIRTIO_STATUS_FEATURES_OK	equ 0x08 ; Indicates that the driver has acknowledged all the features it understands, and feature negotiation is complete
