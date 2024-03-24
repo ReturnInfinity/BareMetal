@@ -12,10 +12,12 @@
 %include "drivers/pcie.asm"
 %include "drivers/pci.asm"
 %include "drivers/serial.asm"
+%include "drivers/virtio.asm"
 
 ; Storage
 %include "drivers/storage/nvme.asm"
 %include "drivers/storage/ahci.asm"
+%include "drivers/storage/virtio-blk.asm"
 %include "drivers/storage/ata.asm"
 
 ; Network

@@ -22,6 +22,8 @@ init_storage_check_bus:
 	je init_storage_nvme
 	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
 	je init_storage_ahci
+	cmp ax, 0x0100			; Mass Storage Controller (01) / SCSI storage controller (00)
+	je init_storage_virtio_blk
 	jmp init_storage_check_bus	; Check Bus Table again
 
 init_storage_nvme:
@@ -34,6 +36,12 @@ init_storage_ahci:
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call ahci_init
+	jmp init_storage_done
+
+init_storage_virtio_blk:
+	sub rsi, 8			; Move RSI back to start of Bus record
+	mov edx, [rsi]			; Load value for os_bus_read/write
+	call virtio_blk_init
 	jmp init_storage_done
 
 init_storage_ata:
