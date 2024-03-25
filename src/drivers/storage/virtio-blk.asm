@@ -82,7 +82,7 @@ virtio_blk_init:
 	add dx, VIRTIO_QUEUEADDRESS
 	mov eax, os_storage_mem
 	shr eax, 12
-	out dx, eax			; Point Queue 0 to os_rx_desc
+	out dx, eax
 
 	; 3.1.1 - Step 8
 	mov edx, [os_virtioblk_base]
@@ -175,15 +175,13 @@ virtio_blk_io:
 	stosq				; starting sector
 
 	; Add entry to Avail
-	mov rdi, 0x141000		; Offset to start of Availability ring
-	mov ax, 1
+	mov rdi, os_storage_mem+0x1000		; Offset to start of Availability ring
+	mov ax, 1			; 1 for no interrupts
 	stosw				; 16-bit flags
-	mov ax, 1
+	mov ax, 1			; Next ring index to use
 	stosw				; 16-bit index
 	mov ax, 0
 	stosw				; 16-bit ring
-	mov ax, 2
-	stosw				; 16-bit eventindex
 
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUESELECT
@@ -195,7 +193,7 @@ virtio_blk_io:
 	out dx, ax
 
 	; Inspect the used ring
-	mov rdi, 0x142002		; Offset to start of Used ring
+	mov rdi, os_storage_mem+0x2002		; Offset to start of Used ring
 virtio_blk_io_wait:
 	mov ax, [rdi]			; Load the index
 	cmp ax, 0
@@ -228,7 +226,9 @@ virtio_blk_id:
 ; Driver
 virtio_blk_driverid:
 dw 0x1AF4		; Vendor ID
-dw 0x1001		; Device ID
+dw 0x1001		; Device ID - legacy
+;dw 0x1042		; Device ID - v1.0
+;dw 0x0000		; End of list
 
 align 16
 footer:
@@ -239,8 +239,8 @@ header:
 dd 0x00					; 32-bit type
 dd 0x00					; 32-bit reserved
 dq 0					; 64-bit sector
-db 0					; 8-bit data
-db 0					; 8-bit status
+;db 0					; 8-bit data
+;db 0					; 8-bit status
 
 ; VIRTIO BLK Registers
 VIRTIO_BLK_CAPACITY				equ 0x14 ; 64-bit Capacity (in 512-byte sectors)

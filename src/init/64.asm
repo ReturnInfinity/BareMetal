@@ -112,6 +112,16 @@ make_interrupt_gate_stubs:
 	lodsd
 	mov [os_IOAPICAddress], rax
 
+	; Set device syscalls to stub
+	mov rax, os_stub
+	mov rdi, os_storage_io
+	stosq
+	stosq
+	mov rdi, os_net_transmit
+	stosq
+	stosq
+	stosq	
+
 	; Configure the Stack base
 	; The top 2MB page of RAM is for the stack
 	; Divide it evenly between the available CPUs
