@@ -67,7 +67,9 @@ net_virtio_init:
 	; 3.1.1 - Step 4
 	mov edx, [os_NetIOBaseMem]
 	in eax, dx			; Read DEVICEFEATURES
+	and eax, 0x00FFFFFF
 	btc eax, VIRTIO_NET_F_MQ	; Disable Multiqueue support for this driver
+	btc eax, VIRTIO_NET_F_MRG_RXBUF
 	add dx, VIRTIO_HOSTFEATURES
 	out dx, eax			; Write supported features to HOSTFEATURES
 
@@ -122,12 +124,12 @@ net_virtio_init_queues:
 	mov edx, [os_NetIOBaseMem]
 	add dx, VIRTIO_QUEUEADDRESS
 	mov eax, os_net_mem
+	push rbx
 	sub ebx, 1
 	shl rbx, 14			; Quick multiply by 16384
 	add rax, rbx
-	shr rbx, 14			; Quick multiply by 16384
+	pop rbx
 	shr eax, 12
-	add ebx, 1
 	out dx, eax			; Point Queue 0 to os_rx_desc
 	jmp net_virtio_check_queues	; Check the next queue
 
@@ -148,15 +150,17 @@ net_virtio_end_queues:
 	push rdi
 	mov rdi, 0x1a4000		; TX Queue
 
-	; Add header and packet to Buffers
+	; Create header buffer entry
 	mov rax, testpacket		; packet header for virtio
 	stosq				; 64-bit address
 	mov eax, 12
 	stosd				; 32-bit length
-	mov ax, 1
+	mov ax, 0;VIRTQ_DESC_F_NEXT
 	stosw				; 16-bit Flags
+	mov ax, 1
 	stosw				; 16-bit Next
 
+	; Create data buffer entry
 	mov rax, testpacketdata		; actual packet
 	stosq				; 64-bit address
 	mov rax, 500
@@ -165,9 +169,9 @@ net_virtio_end_queues:
 	stosw				; 16-bit Flags
 	stosw				; 16-bit Next
 
-	; Add entry to Avail
+	; Add entry to Avail ring
 	mov rdi, 0x1a5000
-	mov ax, 1
+	mov ax, 0
 	stosw				; 16-bit flags
 	mov ax, 1
 	stosw				; 16-bit index
@@ -198,13 +202,15 @@ net_virtion_init_end:
 
 align 16
 testpacket:
-db 0x02					; 8-bit flags (1 - needs checksum, 2 - data valid)
-db 0x00					; 8-bit gso_type
+db 0					; 8-bit flags (1 - needs checksum, 2 - data valid)
+db VIRTIO_NET_HDR_GSO_NONE		; 8-bit gso_type
 dw 0					; 16-bit hdr_len
 dw 0					; 16-bit gso_size
 dw 0					; 16-bit csum_start
 dw 0					; 16-bit csum_offset
 dw 0					; 16-bit num_buffers
+
+align 16
 testpacketdata:
 db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF		; wut?
 db 0xFF, 0xFF, 0xFF, 0xFF, 0xFF		; wut?
@@ -338,6 +344,19 @@ VIRTQ_DESC_F_INDIRECT		equ 4
 ; VIRTQUEUES
 VIRTIO_NET_QUEUE_RX		equ 0	; The first of the Receive Queues
 VIRTIO_NET_QUEUE_TX		equ 1	; The first of the Transmit Queues
+
+; VIRTIO_NET_HDR flags
+VIRTIO_NET_HDR_F_NEEDS_CSUM	equ 1
+VIRTIO_NET_HDR_F_DATA_VALID	equ 2
+VIRTIO_NET_HDR_F_RSC_INFO	equ 4
+
+; VIRTIO_NET_HDR gso_type
+VIRTIO_NET_HDR_GSO_NONE		equ 0
+VIRTIO_NET_HDR_GSO_TCPV4	equ 1
+VIRTIO_NET_HDR_GSO_UDP		equ 3
+VIRTIO_NET_HDR_GSO_TCPV6	equ 4
+VIRTIO_NET_HDR_GSO_UDP_L4	equ 5
+VIRTIO_NET_HDR_GSO_ECN		equ 0x80
 
 
 ; =============================================================================
