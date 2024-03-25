@@ -103,7 +103,7 @@ os_NumCores:		equ os_SystemVariables + 0x0200
 os_CoreSpeed:		equ os_SystemVariables + 0x0202
 os_NetIOAddress:	equ os_SystemVariables + 0x0204
 os_NetLock:		equ os_SystemVariables + 0x0206
-os_StorageVar:		equ os_SystemVariables + 0x0208
+os_StorageVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
 os_pcie_count:		equ os_SystemVariables + 0x020E

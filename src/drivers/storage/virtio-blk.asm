@@ -8,15 +8,19 @@
 
 ; -----------------------------------------------------------------------------
 virtio_blk_init:
-	push rdx
+	push rdx			; RDX should already point to a supported device for os_bus_read/write
 	push rax
 
-	; Todo
-	; Make sure the PCI Vendor and Device IDs match what this drive supports
-	; Vendor 0x1af4, Device 0x1001
-	; Get the proper IO address instead of using the known QEMU port below
-	mov edx, 0xc000
-	mov qword [os_virtioblk_base], rdx
+	; Verify this driver supports the Vendor/Device ID
+	mov eax, [rsi+4]		; Offset to Vendor/Device ID in the Bus Table
+	cmp eax, [virtio_blk_driverid]	; The single Vendor/Device ID supported by this driver
+	jne virtio_blk_init_error	; Bail out if it wasn't a match
+
+	mov dl, 4			; Read register 4 for BAR0
+	xor eax, eax
+	call os_bus_read		; BAR0 (NVMe Base Address Register)
+	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
+	mov [os_virtioblk_base], rax
 
 	; Device Initialization (section 3.1)
 
@@ -37,6 +41,7 @@ virtio_blk_init:
 	; 3.1.1 - Step 4
 	mov edx, [os_virtioblk_base]
 	in eax, dx			; Read DEVICEFEATURES
+	and eax, 0x00FFFFFF		; Clear bits 24-31 as they are reserved
 	btc eax, VIRTIO_BLK_F_MQ	; Disable Multiqueue support for this driver
 	add dx, VIRTIO_HOSTFEATURES
 	out dx, eax			; Write supported features to HOSTFEATURES
@@ -50,7 +55,7 @@ virtio_blk_init:
 	; 3.1.1 - Step 6
 	in al, dx			; Re-read device status to make sure FEATURES_OK is still set
 	bt ax, 3 ;VIRTIO_STATUS_FEATURES_OK
-	jnc virtio_blk_error
+	jnc virtio_blk_init_error
 
 	; 3.1.1 - Step 7
 	; Set up the device and the queues
@@ -84,9 +89,6 @@ virtio_blk_init:
 	add dx, VIRTIO_DEVICESTATUS
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	out dx, al			; At this point the device is “live”
-
-	; Reset the device
-;	call net_virtio_reset
 
 	; Try to read a sector
 	push rdi
@@ -143,9 +145,51 @@ virtio_blk_init:
 	xor eax, eax
 	out dx, ax
 
-virtio_blk_error:
+virtio_blk_init_done:
+	bts word [os_StorageVar], 3	; Set the bit flag that VIRTIO Block has been initialized
+	mov rdi, os_storage_io
+	mov rax, virtio_blk_io
+	stosq
+	mov rax, virtio_blk_id
+	stosq
 	pop rax
 	pop rdx
+	add rsi, 15
+	mov byte [rsi], 1		; Mark driver as installed in Bus Table
+	sub rsi, 15
+	ret
+
+virtio_blk_init_error:
+	pop rax
+	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; virtio_blk_io -- Perform an I/O operation on a VIRTIO Block device
+; IN:	RAX = starting sector #
+;	RBX = I/O Opcode
+;	RCX = number of sectors
+;	RDX = drive #
+;	RDI = memory location used for reading/writing data from/to device
+; OUT:	Nothing
+;	All other registers preserved
+virtio_blk_io:
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; virtio_blk_id -- 
+; IN:	EAX = CDW0
+;	EBX = CDW1
+;	ECX = CDW10
+;	EDX = CDW11
+;	RDI = CDW6-7
+; OUT:	Nothing
+;	All other registers preserved
+virtio_blk_id:
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -153,7 +197,7 @@ virtio_blk_error:
 ; Driver
 virtio_blk_driverid:
 dw 0x1AF4		; Vendor ID
-dw 0x1000		; Device ID
+dw 0x1001		; Device ID
 
 align 16
 testendheader:
@@ -169,6 +213,30 @@ db 0					; 8-bit status
 
 testdata:
 
+
+; VIRTIO BLK Registers
+VIRTIO_BLK_CAPACITY				equ 0x14 ; 64-bit Capacity (in 512-byte sectors)
+VIRTIO_BLK_SIZE_MAX				equ 0x1C ; 32-bit Maximum Segment Size
+VIRTIO_BLK_SEG_MAX				equ 0x20 ; 32-bit Maximum Segment Count
+VIRTIO_BLK_CYLINDERS				equ 0x24 ; 16-bit Cylinder Count
+VIRTIO_BLK_HEADS				equ 0x26 ; 8-bit Head Count
+VIRTIO_BLK_SECTORS				equ 0x27 ; 8-bit Sector Count
+VIRTIO_BLK_BLK_SIZE				equ 0x28 ; 32-bit Block Length
+VIRTIO_BLK_PHYSICAL_BLOCK_EXP			equ 0x2C ; 8-bit # OF LOGICAL BLOCKS PER PHYSICAL BLOCK (LOG2)
+VIRTIO_BLK_ALIGNMENT_OFFSET			equ 0x2D ; 8-bit OFFSET OF FIRST ALIGNED LOGICAL BLOCK
+VIRTIO_BLK_MIN_IO_SIZE				equ 0x2E ; 16-bit SUGGESTED MINIMUM I/O SIZE IN BLOCKS
+VIRTIO_BLK_OPT_IO_SIZE				equ 0x30 ; 32-bit OPTIMAL (SUGGESTED MAXIMUM) I/O SIZE IN BLOCKS
+VIRTIO_BLK_WRITEBACK				equ 0x34 ; 8-bit
+VIRTIO_BLK_NUM_QUEUES				equ 0x36 ; 16-bit
+VIRTIO_BLK_MAX_DISCARD_SECTORS			equ 0x38 ; 32-bit 
+VIRTIO_BLK_MAX_DISCARD_SEG			equ 0x3C ; 32-bit 
+VIRTIO_BLK_DISCARD_SECTOR_ALIGNMENT		equ 0x40 ; 32-bit 
+VIRTIO_BLK_MAX_WRITE_ZEROES_SECTORS		equ 0x44 ; 32-bit 
+VIRTIO_BLK_MAX_WRITE_ZEROES_SEG			equ 0x48 ; 32-bit 
+VIRTIO_BLK_WRITE_ZEROES_MAY_UNMAP		equ 0x4C ; 8-bit
+VIRTIO_BLK_MAX_SECURE_ERASE_SECTORS		equ 0x50 ; 32-bit 
+VIRTIO_BLK_MAX_SECURE_ERASE_SEG			equ 0x54 ; 32-bit 
+VIRTIO_BLK_SECURE_ERASE_SECTOR_ALIGNMENT	equ 0x58 ; 32-bit 
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_BLK_F_BARRIER		equ 0 ; Legacy - Device supports request barriers
