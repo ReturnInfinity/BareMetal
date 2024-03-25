@@ -90,61 +90,6 @@ virtio_blk_init:
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	out dx, al			; At this point the device is “live”
 
-	; Try to read a sector
-	push rdi
-	mov rdi, 0x140000		; TX Queue
-	
-	; Add header to Buffers
-	mov rax, testheader		; header for virtio
-	stosq				; 64-bit address
-	mov eax, 16
-	stosd				; 32-bit length
-	mov ax, VIRTQ_DESC_F_NEXT
-	stosw				; 16-bit Flags
-	mov ax, 1
-	stosw				; 16-bit Next
-
-	; Add data to Buffers
-	mov rax, 0x400000		; Address to store the data
-	stosq
-	mov eax, 1024			; Number of bytes
-	stosd
-	mov ax, VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE
-	stosw				; 16-bit Flags
-	mov ax, 2
-	stosw				; 16-bit Next
-
-	mov rax, testendheader
-	stosq				; 64-bit address
-	mov eax, 1
-	stosd				; 32-bit length
-	mov eax, VIRTQ_DESC_F_WRITE
-	stosw				; 16-bit Flags
-	mov eax, 3
-	stosw				; 16-bit Next
-
-	; Add entry to Avail
-	mov rdi, 0x141000		; Offset to start of Availability ring
-	mov ax, 1
-	stosw				; 16-bit flags
-	mov ax, 1
-	stosw				; 16-bit index
-	mov ax, 0
-	stosw				; 16-bit ring
-	mov ax, 2
-	stosw				; 16-bit eventindex
-	
-	pop rdi
-	
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_QUEUESELECT
-	mov ax, 0
-	out dx, ax			; Select the Queue
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_QUEUENOTIFY
-	xor eax, eax
-	out dx, ax
-
 virtio_blk_init_done:
 	bts word [os_StorageVar], 3	; Set the bit flag that VIRTIO Block has been initialized
 	mov rdi, os_storage_io
@@ -176,6 +121,92 @@ virtio_blk_init_error:
 ; OUT:	Nothing
 ;	All other registers preserved
 virtio_blk_io:
+	push r9
+	push rdi
+	push rdx
+	push rcx
+	push rbx
+	push rax
+	push rax			; Save the starting sector
+
+	mov r9, rdi
+	mov rdi, os_storage_mem
+
+	; Add header to Buffers
+	mov rax, header			; header for virtio
+	stosq				; 64-bit address
+	mov eax, 16
+	stosd				; 32-bit length
+	mov ax, VIRTQ_DESC_F_NEXT
+	stosw				; 16-bit Flags
+	mov ax, 1
+	stosw				; 16-bit Next
+	
+	; Add data to Buffers
+	mov rax, r9			; Address to store the data
+	stosq
+	shl rcx, 12			; Covert count to 4096B sectors
+	mov eax, ecx			; Number of bytes
+	stosd
+	mov ax, VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE
+	stosw				; 16-bit Flags
+	mov ax, 2
+	stosw				; 16-bit Next
+	
+	mov rax, footer
+	stosq				; 64-bit address
+	mov eax, 1
+	stosd				; 32-bit length
+	mov eax, VIRTQ_DESC_F_WRITE
+	stosw				; 16-bit Flags
+	mov eax, 3
+	stosw				; 16-bit Next
+
+	mov rdi, header
+	; BareMetal I/O opcode for Read is 2, Write is 1
+	; Virtio-blk I/O opcode for Read is 0, Write is 1
+	; FIXME: Currently we just clear bit 1.
+	btc bx, 1
+	mov eax, ebx
+	stosd				; type
+	xor eax, eax
+	stosd				; reserved
+	pop rax
+	stosq				; starting sector
+
+	; Add entry to Avail
+	mov rdi, 0x141000		; Offset to start of Availability ring
+	mov ax, 1
+	stosw				; 16-bit flags
+	mov ax, 1
+	stosw				; 16-bit index
+	mov ax, 0
+	stosw				; 16-bit ring
+	mov ax, 2
+	stosw				; 16-bit eventindex
+
+	mov edx, [os_virtioblk_base]
+	add dx, VIRTIO_QUEUESELECT
+	mov ax, 0
+	out dx, ax			; Select the Queue
+	mov edx, [os_virtioblk_base]
+	add dx, VIRTIO_QUEUENOTIFY
+	xor eax, eax
+	out dx, ax
+
+	; Inspect the used ring
+	mov rdi, 0x142002		; Offset to start of Used ring
+virtio_blk_io_wait:
+	mov ax, [rdi]			; Load the index
+	cmp ax, 0
+	je virtio_blk_io_wait
+
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
+	pop rdi
+	pop r9
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -200,19 +231,16 @@ dw 0x1AF4		; Vendor ID
 dw 0x1001		; Device ID
 
 align 16
-testendheader:
+footer:
 db 0x00
 
 align 16
-testheader:
+header:
 dd 0x00					; 32-bit type
 dd 0x00					; 32-bit reserved
 dq 0					; 64-bit sector
 db 0					; 8-bit data
 db 0					; 8-bit status
-
-testdata:
-
 
 ; VIRTIO BLK Registers
 VIRTIO_BLK_CAPACITY				equ 0x14 ; 64-bit Capacity (in 512-byte sectors)
