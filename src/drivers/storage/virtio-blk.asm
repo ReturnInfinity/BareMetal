@@ -81,8 +81,20 @@ virtio_blk_init:
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUEADDRESS
 	mov eax, os_storage_mem
-	shr eax, 12
+	shr eax, 12			; A 4KiB aligned address
 	out dx, eax
+
+	; Populate the Next entries in the description ring
+	; FIXME - Don't expect exactly 256 entries
+	mov eax, 1
+	mov rdi, os_storage_mem
+	add rdi, 14
+virtio_blk_init_pop:
+	mov [rdi], al
+	add rdi, 16
+	add al, 1
+	cmp al, 0
+	jne virtio_blk_init_pop
 
 	; 3.1.1 - Step 8
 	mov edx, [os_virtioblk_base]
@@ -131,6 +143,9 @@ virtio_blk_io:
 
 	mov r9, rdi
 	mov rdi, os_storage_mem
+	mov eax, [descindex]
+	shl eax, 4			; multiply by 16 for entry size
+	add rdi, rax
 
 	; Add header to Buffers
 	mov rax, header			; header for virtio
@@ -139,9 +154,8 @@ virtio_blk_io:
 	stosd				; 32-bit length
 	mov ax, VIRTQ_DESC_F_NEXT
 	stosw				; 16-bit Flags
-	mov ax, 1
-	stosw				; 16-bit Next
-	
+	add rdi, 2			; Skip Next as it is pre-populated
+
 	; Add data to Buffers
 	mov rax, r9			; Address to store the data
 	stosq
@@ -150,18 +164,18 @@ virtio_blk_io:
 	stosd
 	mov ax, VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
-	mov ax, 2
-	stosw				; 16-bit Next
-	
+	add rdi, 2			; Skip Next as it is pre-populated
+
+	; Add footer to Buffer
 	mov rax, footer
 	stosq				; 64-bit address
 	mov eax, 1
 	stosd				; 32-bit length
 	mov eax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
-	mov eax, 3
-	stosw				; 16-bit Next
+	add rdi, 2			; Skip Next as it is pre-populated
 
+	; Build the header
 	mov rdi, header
 	; BareMetal I/O opcode for Read is 2, Write is 1
 	; Virtio-blk I/O opcode for Read is 0, Write is 1
@@ -171,33 +185,40 @@ virtio_blk_io:
 	stosd				; type
 	xor eax, eax
 	stosd				; reserved
-	pop rax
+	pop rax				; Restore the starting sector
 	stosq				; starting sector
 
+	; Build the footer
+	mov rdi, footer
+	xor eax, eax
+	stosb
+
 	; Add entry to Avail
-	mov rdi, os_storage_mem+0x1000		; Offset to start of Availability ring
+	mov rdi, os_storage_mem+0x1000	; Offset to start of Availability Ring
 	mov ax, 1			; 1 for no interrupts
 	stosw				; 16-bit flags
-	mov ax, 1			; Next ring index to use
+	mov ax, [availindex]
 	stosw				; 16-bit index
 	mov ax, 0
 	stosw				; 16-bit ring
 
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUESELECT
-	mov ax, 0
+	xor eax, eax
 	out dx, ax			; Select the Queue
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUENOTIFY
-	xor eax, eax
 	out dx, ax
 
 	; Inspect the used ring
-	mov rdi, os_storage_mem+0x2002		; Offset to start of Used ring
+	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
 virtio_blk_io_wait:
 	mov ax, [rdi]			; Load the index
 	cmp ax, 0
 	je virtio_blk_io_wait
+
+	add dword [descindex], 3
+	add word [availindex], 1
 
 	pop rax
 	pop rbx
@@ -222,6 +243,9 @@ virtio_blk_id:
 	ret
 ; -----------------------------------------------------------------------------
 
+; Variables
+descindex: dd 0
+availindex: dw 1
 
 ; Driver
 virtio_blk_driverid:
