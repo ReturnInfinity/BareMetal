@@ -143,7 +143,8 @@ virtio_blk_io:
 
 	mov r9, rdi
 	mov rdi, os_storage_mem
-	mov eax, [descindex]
+	xor eax, eax
+	mov ax, [descindex]
 	shl eax, 4			; multiply by 16 for entry size
 	add rdi, rax
 
@@ -212,12 +213,13 @@ virtio_blk_io:
 
 	; Inspect the used ring
 	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
+	mov bx, [availindex]
 virtio_blk_io_wait:
 	mov ax, [rdi]			; Load the index
-	cmp ax, 0
-	je virtio_blk_io_wait
+	cmp ax, bx
+	jne virtio_blk_io_wait
 
-	add dword [descindex], 3
+	add word [descindex], 3
 	add word [availindex], 1
 
 	pop rax
@@ -244,7 +246,7 @@ virtio_blk_id:
 ; -----------------------------------------------------------------------------
 
 ; Variables
-descindex: dd 0
+descindex: dw 0
 availindex: dw 1
 
 ; Driver
