@@ -54,7 +54,7 @@ virtio_blk_init:
 
 	; 3.1.1 - Step 6
 	in al, dx			; Re-read device status to make sure FEATURES_OK is still set
-	bt ax, 3 ;VIRTIO_STATUS_FEATURES_OK
+	bt ax, 3			; VIRTIO_STATUS_FEATURES_OK
 	jnc virtio_blk_init_error
 
 	; 3.1.1 - Step 7
@@ -64,11 +64,10 @@ virtio_blk_init:
 	; reading and possibly writing the device’s virtio configuration space
 	; population of virtqueues
 
-	; FIXME (or not?) - This only sets up queue 0
-	xor ebx, ebx			; Counter for number of queues with sizes > 0
+	; Set up Queue 0
+	xor eax, eax			; Counter for number of queues with sizes > 0
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUESELECT
-	mov ax, bx
 	out dx, ax			; Select the Queue
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUESIZE
@@ -103,8 +102,8 @@ virtio_blk_init_pop:
 	out dx, al			; At this point the device is “live”
 
 virtio_blk_init_done:
-	bts word [os_StorageVar], 3	; Set the bit flag that VIRTIO Block has been initialized
-	mov rdi, os_storage_io
+	bts word [os_StorageVar], 3	; Set the bit flag that Virtio Block has been initialized
+	mov rdi, os_storage_io		; Write over the storage function addresses
 	mov rax, virtio_blk_io
 	stosq
 	mov rax, virtio_blk_id
@@ -139,17 +138,14 @@ virtio_blk_io:
 	push rcx
 	push rbx
 	push rax
+
 	push rax			; Save the starting sector
+	mov r9, rdi			; Save the memory address
 
-	mov r9, rdi
-	mov rdi, os_storage_mem
-	xor eax, eax
-	mov ax, [descindex]
-	shl eax, 4			; multiply by 16 for entry size
-;	add rdi, rax
+	mov rdi, os_storage_mem		; This driver always starts at beginning of the Descriptor Table
 
-	; Add header to Buffers
-	mov rax, header			; header for virtio
+	; Add header to Descriptor Entry 0
+	mov rax, header			; Address of the header
 	stosq				; 64-bit address
 	mov eax, 16
 	stosd				; 32-bit length
@@ -157,7 +153,7 @@ virtio_blk_io:
 	stosw				; 16-bit Flags
 	add rdi, 2			; Skip Next as it is pre-populated
 
-	; Add data to Buffers
+	; Add data to Descriptor Entry 1
 	mov rax, r9			; Address to store the data
 	stosq
 	shl rcx, 12			; Covert count to 4096B sectors
@@ -167,8 +163,8 @@ virtio_blk_io:
 	stosw				; 16-bit Flags
 	add rdi, 2			; Skip Next as it is pre-populated
 
-	; Add footer to Buffer
-	mov rax, footer
+	; Add footer to Descriptor Entry 3
+	mov rax, footer			; Address of the footer
 	stosq				; 64-bit address
 	mov eax, 1
 	stosd				; 32-bit length
@@ -220,7 +216,7 @@ virtio_blk_io_wait:
 	cmp ax, bx
 	jne virtio_blk_io_wait
 
-	add word [descindex], 3
+	add word [descindex], 3		; 3 entries were required
 	add word [availindex], 1
 
 	pop rax
