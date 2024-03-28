@@ -38,6 +38,7 @@ os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Var
 bus_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K Bus Table
 						; 0x130000 -> 0x13FFFF	64K Free
 ; Storage memory
+os_storage_mem:		equ 0x0000000000140000
 ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
 ahci_CLB:		equ 0x0000000000140000	; 0x140000 -> 0x147FFF	32K AHCI Command List Base (1K per port)
 ahci_FB:		equ 0x0000000000148000	; 0x148000 -> 0x167FFF	128K AHCI FIS Base (4K per port)
@@ -86,6 +87,7 @@ os_NVMe_Base:		equ os_SystemVariables + 0x00A8
 os_storage_io:		equ os_SystemVariables + 0x00B0
 os_storage_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
+os_virtioblk_base:	equ os_SystemVariables + 0x00C8
 
 
 ; DD - Starting at offset 256, increments by 4
@@ -101,7 +103,7 @@ os_NumCores:		equ os_SystemVariables + 0x0200
 os_CoreSpeed:		equ os_SystemVariables + 0x0202
 os_NetIOAddress:	equ os_SystemVariables + 0x0204
 os_NetLock:		equ os_SystemVariables + 0x0206
-os_StorageVar:		equ os_SystemVariables + 0x0208
+os_StorageVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
 os_pcie_count:		equ os_SystemVariables + 0x020E
