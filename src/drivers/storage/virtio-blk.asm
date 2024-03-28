@@ -146,7 +146,7 @@ virtio_blk_io:
 	xor eax, eax
 	mov ax, [descindex]
 	shl eax, 4			; multiply by 16 for entry size
-	add rdi, rax
+;	add rdi, rax
 
 	; Add header to Buffers
 	mov rax, header			; header for virtio
@@ -187,6 +187,7 @@ virtio_blk_io:
 	xor eax, eax
 	stosd				; reserved
 	pop rax				; Restore the starting sector
+	shl rax, 3			; Multiply by 8 as we use 4096-byte sectors internally
 	stosq				; starting sector
 
 	; Build the footer
@@ -203,9 +204,9 @@ virtio_blk_io:
 	mov ax, 0
 	stosw				; 16-bit ring
 
+	xor eax, eax
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUESELECT
-	xor eax, eax
 	out dx, ax			; Select the Queue
 	mov edx, [os_virtioblk_base]
 	add dx, VIRTIO_QUEUENOTIFY
