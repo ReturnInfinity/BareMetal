@@ -11,8 +11,6 @@ init_64:
 	; Configure the serial port
 	call serial_init
 
-	; Set the temporary stack
-
 	; Mask all PIC interrupts
 	mov al, 0xFF
 	out 0x21, al
@@ -58,9 +56,9 @@ make_interrupt_gate_stubs:
 	mov edi, 0x21
 	mov rax, keyboard
 	call create_gate
-	mov edi, 0x28
-	mov rax, rtc
-	call create_gate
+;	mov edi, 0x28
+;	mov rax, rtc
+;	call create_gate
 	mov edi, 0x80
 	mov rax, ap_wakeup
 	call create_gate
@@ -168,9 +166,6 @@ no_more_aps:
 	; Enable specific interrupts
 	mov ecx, 1			; Keyboard IRQ
 	mov eax, 0x21			; Keyboard Interrupt Vector
-	call os_ioapic_mask_clear
-	mov ecx, 8			; RTC IRQ
-	mov eax, 0x28			; RTC Interrupt Vector
 	call os_ioapic_mask_clear
 
 	ret

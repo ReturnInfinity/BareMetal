@@ -104,70 +104,6 @@ keyboard_done:
 
 
 ; -----------------------------------------------------------------------------
-; Real-time clock interrupt. IRQ 0x08, INT 0x28
-; Currently this IRQ runs 8 times per second (As defined in init_64.asm)
-; The supervisor lives here
-align 8
-rtc:
-	push rax
-	pushfq
-	cld				; Clear direction flag
-
-	add qword [os_ClockCounter], 1	; 64-bit counter started at boot-up
-
-	cmp qword [os_ClockCallback], 0	; Is it valid?
-	je rtc_end			; If not then bail out.
-
-	; We could do a 'call [os_ClockCallback]' here but that would not be ideal.
-	; A defective callback would hang the system if it never returned back to the
-	; interrupt handler. Instead, we modify the stack so that the callback is
-	; executed after the interrupt handler has finished. Once the callback has
-	; finished, the execution flow will pick up back in the program.
-	push rdi
-	push rsi
-	push rcx
-	mov rcx, clock_callback		; RCX stores the callback function address
-	mov rsi, rsp			; Copy the current stack pointer to RSI
-	sub rsp, 8			; Subtract 8 since we add a 64-bit value to the stack
-	mov rdi, rsp			; Copy the 'new' stack pointer to RDI
-	movsq				; RCX
-	movsq				; RSI
-	movsq				; RDI
-	movsq				; Flags
-	movsq				; RAX
-	lodsq				; RIP
-	xchg rax, rcx
-	stosq				; Callback address
-	movsq				; CS
-	movsq				; Flags
-	lodsq				; RSP
-	sub rax, 8
-	stosq
-	movsq				; SS
-	mov [rax], rcx			; Original RIP
-	pop rcx
-	pop rsi
-	pop rdi
-
-rtc_end:
-	mov al, 0x0C			; Select RTC register C
-	out 0x70, al			; Port 0x70 is the RTC index, and 0x71 is the RTC data
-	in al, 0x71			; Read the value in register C
-
-	; Acknowledge the IRQ
-	push rcx
-	mov rcx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
-	pop rcx
-
-	popfq
-	pop rax
-	iretq
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
 ; Network interrupt handler
 align 8
 network:
@@ -243,18 +179,6 @@ network_callback:
 	pushfq
 	cld				; Clear direction flag
 	call [os_NetworkCallback]
-	popfq
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; Clock interrupt callback.
-align 8
-clock_callback:
-	pushfq
-	cld				; Clear direction flag
-	call [os_ClockCallback]
 	popfq
 	ret
 ; -----------------------------------------------------------------------------
