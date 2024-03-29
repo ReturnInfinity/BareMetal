@@ -16,11 +16,13 @@ virtio_blk_init:
 	cmp eax, [virtio_blk_driverid]	; The single Vendor/Device ID supported by this driver
 	jne virtio_blk_init_error	; Bail out if it wasn't a match
 
+	; Grab the Base I/O Address of the device
 	mov dl, 4			; Read register 4 for BAR0
-	xor eax, eax
-	call os_bus_read		; BAR0 (NVMe Base Address Register)
-	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
-	mov [os_virtioblk_base], rax
+	call os_bus_read
+	bt eax, 0			; Bit 0 will be 1 if it is an I/O space
+	jnc virtio_blk_init_error
+	and eax, 0xFFFFFFFC		; Clear the low two bits
+	mov dword [os_virtioblk_base], eax
 
 	; Device Initialization (section 3.1)
 
