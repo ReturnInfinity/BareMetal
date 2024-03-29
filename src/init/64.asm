@@ -56,9 +56,6 @@ make_interrupt_gate_stubs:
 	mov edi, 0x21
 	mov rax, keyboard
 	call create_gate
-;	mov edi, 0x28
-;	mov rax, rtc
-;	call create_gate
 	mov edi, 0x80
 	mov rax, ap_wakeup
 	call create_gate
