@@ -8,6 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 virtio_blk_init:
+	push rsi
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 	push rax
 
@@ -17,45 +18,62 @@ virtio_blk_init:
 	jne virtio_blk_init_error	; Bail out if it wasn't a match
 
 	; Grab the Base I/O Address of the device
-	mov dl, 4			; Read register 4 for BAR0
+	mov dl, 8			; Read register 8 for BAR4
 	call os_bus_read
-	bt eax, 0			; Bit 0 will be 1 if it is an I/O space
-	jnc virtio_blk_init_error
-	and eax, 0xFFFFFFFC		; Clear the low two bits
+	bt eax, 0			; Bit 0 will be 0 if it is an MMIO space
+	jc virtio_blk_init_error
+	and eax, 0xFFFFFFF0		; Clear the low four bits
 	mov dword [os_virtioblk_base], eax
+
+	mov rsi, rax			; RSI holds the base for MMIO
 
 	; Device Initialization (section 3.1)
 
-	; 3.1.1 - Step 1
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_DEVICESTATUS
-	mov al, 0x00
-	out dx, al			; Reset the device (section 2.4)
+	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
+	mov al, 0x00			
+	mov [rsi+VIRTIO_DEVICE_STATUS], al
+virtio_blk_init_reset_wait:
+	mov al, [rsi+VIRTIO_DEVICE_STATUS]
+	cmp al, 0x00
+	jne virtio_blk_init_reset_wait
 
-	; 3.1.1 - Step 2
+	; 3.1.1 - Step 2 - Tell the device we see it
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE
-	out dx, al			; Tell the device we see it
+	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
-	; 3.1.1 - Step 3
+	; 3.1.1 - Step 3 - Tell the device we support it
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER
-	out dx, al			; Tell the device we support it
+	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
 	; 3.1.1 - Step 4
-	mov edx, [os_virtioblk_base]
-	in eax, dx			; Read DEVICEFEATURES
-	and eax, 0x00FFFFFF		; Clear bits 24-31 as they are reserved
-	btc eax, VIRTIO_BLK_F_MQ	; Disable Multiqueue support for this driver
-	add dx, VIRTIO_HOSTFEATURES
-	out dx, eax			; Write supported features to HOSTFEATURES
+	xor eax, eax
+	mov [rsi+VIRTIO_DEVICE_FEATURE_SELECT], eax
+	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
+;	btc eax, VIRTIO_BLK_F_MQ	; Disable Multiqueue support for this driver
+;	btc eax, VIRTIO_F_INDIRECT_DESC
+	mov eax, 0x44			; BLK_SIZE & SEG_MAX
+	push rax
+	xor eax, eax
+	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
+	pop rax
+	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
+	; TODO - select 1 and process
+	mov eax, 1
+	mov [rsi+VIRTIO_DEVICE_FEATURE_SELECT], eax
+	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
+	and eax, 1
+	push rax
+	mov eax, 1
+	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
+	pop rax
+	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
 
 	; 3.1.1 - Step 5
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_DEVICESTATUS
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_FEATURES_OK
-	out dx, al
+	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
-	; 3.1.1 - Step 6
-	in al, dx			; Re-read device status to make sure FEATURES_OK is still set
+	; 3.1.1 - Step 6 - Re-read device status to make sure FEATURES_OK is still set
+	mov al, [rsi+VIRTIO_DEVICE_STATUS]
 	bt ax, 3			; VIRTIO_STATUS_FEATURES_OK
 	jnc virtio_blk_init_error
 
@@ -67,23 +85,27 @@ virtio_blk_init:
 	; population of virtqueues
 
 	; Set up Queue 0
-	xor eax, eax			; Counter for number of queues with sizes > 0
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_QUEUESELECT
-	out dx, ax			; Select the Queue
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_QUEUESIZE
 	xor eax, eax
-	in ax, dx			; Return the size of the queue
-
-	; Set up the required buffers in memory
+	mov [rsi+VIRTIO_QUEUE_SELECT], ax
+	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
 	mov ecx, eax			; Store queue size in ECX
-
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_QUEUEADDRESS
 	mov eax, os_storage_mem
-	shr eax, 12			; A 4KiB aligned address
-	out dx, eax
+	mov [rsi+VIRTIO_QUEUE_DESC], eax
+	rol rax, 32
+	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
+	rol rax, 32
+	add rax, 4096
+	mov [rsi+VIRTIO_QUEUE_DRIVER], eax
+	rol rax, 32
+	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
+	rol rax, 32
+	add rax, 4096
+	mov [rsi+VIRTIO_QUEUE_DEVICE], eax
+	rol rax, 32
+	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
+	rol rax, 32
+	mov ax, 1
+	mov [rsi+VIRTIO_QUEUE_ENABLE], ax
 
 	; Populate the Next entries in the description ring
 	; FIXME - Don't expect exactly 256 entries
@@ -97,11 +119,9 @@ virtio_blk_init_pop:
 	cmp al, 0
 	jne virtio_blk_init_pop
 
-	; 3.1.1 - Step 8
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_DEVICESTATUS
+	; 3.1.1 - Step 8 - At this point the device is “live”
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
-	out dx, al			; At this point the device is “live”
+	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
 virtio_blk_init_done:
 	bts word [os_StorageVar], 3	; Set the bit flag that Virtio Block has been initialized
@@ -112,6 +132,7 @@ virtio_blk_init_done:
 	stosq
 	pop rax
 	pop rdx
+	pop rsi
 	add rsi, 15
 	mov byte [rsi], 1		; Mark driver as installed in Bus Table
 	sub rsi, 15
@@ -120,6 +141,7 @@ virtio_blk_init_done:
 virtio_blk_init_error:
 	pop rax
 	pop rdx
+	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -202,21 +224,21 @@ virtio_blk_io:
 	mov ax, 0
 	stosw				; 16-bit ring
 
-	xor eax, eax
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_QUEUESELECT
-	out dx, ax			; Select the Queue
-	mov edx, [os_virtioblk_base]
-	add dx, VIRTIO_QUEUENOTIFY
-	out dx, ax
+;	xor eax, eax
+;	mov edx, [os_virtioblk_base]
+;	add dx, VIRTIO_QUEUESELECT
+;	out dx, ax			; Select the Queue
+;	mov edx, [os_virtioblk_base]
+;	add dx, VIRTIO_QUEUENOTIFY
+;	out dx, ax
 
 	; Inspect the used ring
-	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
-	mov bx, [availindex]
-virtio_blk_io_wait:
-	mov ax, [rdi]			; Load the index
-	cmp ax, bx
-	jne virtio_blk_io_wait
+;	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
+;	mov bx, [availindex]
+;virtio_blk_io_wait:
+;	mov ax, [rdi]			; Load the index
+;	cmp ax, bx
+;	jne virtio_blk_io_wait
 
 	add word [descindex], 3		; 3 entries were required
 	add word [availindex], 1
