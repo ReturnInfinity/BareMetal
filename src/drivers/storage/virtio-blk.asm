@@ -10,12 +10,25 @@
 virtio_blk_init:
 	push rsi
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
+	push rbx
 	push rax
 
-	; Verify this driver supports the Vendor/Device ID
+	; Verify this driver supports the Vendor
 	mov eax, [rsi+4]		; Offset to Vendor/Device ID in the Bus Table
-	cmp eax, [virtio_blk_driverid]	; The single Vendor/Device ID supported by this driver
+	mov rsi, virtio_blk_driverid
+	mov bx, [rsi]			; Load the Vendor (0x1AF4)
+	cmp ax, bx
 	jne virtio_blk_init_error	; Bail out if it wasn't a match
+
+	; Verify this driver support the Device
+	shr eax, 16			; Move Device ID into AX
+virtio_blk_init_next_dev:
+	add rsi, 2
+	mov bx, [rsi]			; Load the Device
+	cmp bx, 0			; End of list?
+	je virtio_blk_init_error	; If so, bail out
+	cmp ax, bx			; Check against the list
+	jne virtio_blk_init_next_dev	; No match? Try next entry
 
 	; Grab the Base I/O Address of the device
 	mov dl, 8			; Read register 8 for BAR4
@@ -52,7 +65,7 @@ virtio_blk_init_reset_wait:
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
 ;	btc eax, VIRTIO_BLK_F_MQ	; Disable Multiqueue support for this driver
 ;	btc eax, VIRTIO_F_INDIRECT_DESC
-	mov eax, 0x44			; BLK_SIZE & SEG_MAX
+	mov eax, 0x44			; Only support BLK_SIZE (6) & SEG_MAX (2)
 	push rax
 	xor eax, eax
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
@@ -132,6 +145,7 @@ virtio_blk_init_done:
 	mov rax, virtio_blk_id
 	stosq
 	pop rax
+	pop rbx
 	pop rdx
 	pop rsi
 	add rsi, 15
@@ -141,6 +155,7 @@ virtio_blk_init_done:
 
 virtio_blk_init_error:
 	pop rax
+	pop rbx
 	pop rdx
 	pop rsi
 	ret
@@ -234,7 +249,7 @@ virtio_blk_io:
 
 	; Inspect the used ring
 	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
-	mov bx, 1			; FIXME: [availindex]
+	mov bx, [availindex]
 virtio_blk_io_wait:
 	mov ax, [rdi]			; Load the index
 	cmp ax, bx
@@ -272,10 +287,10 @@ availindex: dw 1
 
 ; Driver
 virtio_blk_driverid:
-dw 0x1AF4		; Vendor ID
-dw 0x1001		; Device ID - legacy
-;dw 0x1042		; Device ID - v1.0
-;dw 0x0000		; End of list
+dw 0x1AF4				; Vendor ID
+dw 0x1001				; Device ID - legacy
+dw 0x1042				; Device ID - v1.0
+dw 0x0000				; End of list
 
 align 16
 footer:
@@ -286,8 +301,6 @@ header:
 dd 0x00					; 32-bit type
 dd 0x00					; 32-bit reserved
 dq 0					; 64-bit sector
-;db 0					; 8-bit data
-;db 0					; 8-bit status
 
 ; VIRTIO BLK Registers
 VIRTIO_BLK_CAPACITY				equ 0x14 ; 64-bit Capacity (in 512-byte sectors)
@@ -314,31 +327,31 @@ VIRTIO_BLK_MAX_SECURE_ERASE_SEG			equ 0x54 ; 32-bit
 VIRTIO_BLK_SECURE_ERASE_SECTOR_ALIGNMENT	equ 0x58 ; 32-bit 
 
 ; VIRTIO_DEVICEFEATURES bits
-VIRTIO_BLK_F_BARRIER		equ 0 ; Legacy - Device supports request barriers
-VIRTIO_BLK_F_SIZE_MAX		equ 1 ; Maximum size of any single segment is in size_max
-VIRTIO_BLK_F_SEG_MAX		equ 2 ; Maximum number of segments in a request is in seg_max
-VIRTIO_BLK_F_GEOMETRY		equ 4 ; Disk-style geometry specified in geometry
-VIRTIO_BLK_F_RO			equ 5 ; Device is read-only
-VIRTIO_BLK_F_BLK_SIZE		equ 6 ; Block size of disk is in blk_size
-VIRTIO_BLK_F_SCSI		equ 7 ; Legacy - Device supports scsi packet commands
-VIRTIO_BLK_F_FLUSH		equ 9 ; Cache flush command support
-VIRTIO_BLK_F_TOPOLOGY		equ 10 ; Device exports information on optimal I/O alignment
-VIRTIO_BLK_F_CONFIG_WCE		equ 11 ; Device can toggle its cache between writeback and writethrough modes
-VIRTIO_BLK_F_MQ			equ 12 ; Device supports multiqueue
-VIRTIO_BLK_F_DISCARD		equ 13 ; Device can support discard command
-VIRTIO_BLK_F_WRITE_ZEROES	equ 14 ; Device can support write zeroes command
-VIRTIO_BLK_F_LIFETIME		equ 15 ; Device supports providing storage lifetime information
-VIRTIO_BLK_F_SECURE_ERASE	equ 16 ; Device supports secure erase command
+VIRTIO_BLK_F_BARRIER			equ 0 ; Legacy - Device supports request barriers
+VIRTIO_BLK_F_SIZE_MAX			equ 1 ; Maximum size of any single segment is in size_max
+VIRTIO_BLK_F_SEG_MAX			equ 2 ; Maximum number of segments in a request is in seg_max
+VIRTIO_BLK_F_GEOMETRY			equ 4 ; Disk-style geometry specified in geometry
+VIRTIO_BLK_F_RO				equ 5 ; Device is read-only
+VIRTIO_BLK_F_BLK_SIZE			equ 6 ; Block size of disk is in blk_size
+VIRTIO_BLK_F_SCSI			equ 7 ; Legacy - Device supports scsi packet commands
+VIRTIO_BLK_F_FLUSH			equ 9 ; Cache flush command support
+VIRTIO_BLK_F_TOPOLOGY			equ 10 ; Device exports information on optimal I/O alignment
+VIRTIO_BLK_F_CONFIG_WCE			equ 11 ; Device can toggle its cache between writeback and writethrough modes
+VIRTIO_BLK_F_MQ				equ 12 ; Device supports multiqueue
+VIRTIO_BLK_F_DISCARD			equ 13 ; Device can support discard command
+VIRTIO_BLK_F_WRITE_ZEROES		equ 14 ; Device can support write zeroes command
+VIRTIO_BLK_F_LIFETIME			equ 15 ; Device supports providing storage lifetime information
+VIRTIO_BLK_F_SECURE_ERASE		equ 16 ; Device supports secure erase command
 
 ; VIRTIO Block Types
-VIRTIO_BLK_T_IN			equ 0 ; Read from device
-VIRTIO_BLK_T_OUT		equ 1 ; Write to device
-VIRTIO_BLK_T_FLUSH		equ 4 ; Flush
-VIRTIO_BLK_T_GET_ID		equ 8 ; Get device ID string
-VIRTIO_BLK_T_GET_LIFETIME	equ 10 ; Get device lifetime
-VIRTIO_BLK_T_DISCARD		equ 11 ; Discard
-VIRTIO_BLK_T_WRITE_ZEROES	equ 13 ; Write zeros
-VIRTIO_BLK_T_SECURE_ERASE	equ 14 ; Secure erase
+VIRTIO_BLK_T_IN				equ 0 ; Read from device
+VIRTIO_BLK_T_OUT			equ 1 ; Write to device
+VIRTIO_BLK_T_FLUSH			equ 4 ; Flush
+VIRTIO_BLK_T_GET_ID			equ 8 ; Get device ID string
+VIRTIO_BLK_T_GET_LIFETIME		equ 10 ; Get device lifetime
+VIRTIO_BLK_T_DISCARD			equ 11 ; Discard
+VIRTIO_BLK_T_WRITE_ZEROES		equ 13 ; Write zeros
+VIRTIO_BLK_T_SECURE_ERASE		equ 14 ; Secure erase
 
 
 ; =============================================================================
