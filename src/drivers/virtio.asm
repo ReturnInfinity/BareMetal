@@ -46,6 +46,15 @@ VIRTIO_QUEUE_DEVICE			equ 0x30 ; 64-bit
 VIRTIO_QUEUE_NOTIFY_DATA		equ 0x38 ; 16-bit Read-only
 VIRTIO_QUEUE_RESET			equ 0x3A ; 16-bit
 
+; VIRTIO CFG Types
+VIRTIO_PCI_CAP_COMMON_CFG		equ 1
+VIRTIO_PCI_CAP_NOTIFY_CFG		equ 2
+VIRTIO_PCI_CAP_ISR_CFG			equ 3
+VIRTIO_PCI_CAP_DEVICE_CFG		equ 4
+VIRTIO_PCI_CAP_PCI_CFG			equ 5
+VIRTIO_PCI_CAP_SHARED_MEMORY_CFG	equ 8
+VIRTIO_PCI_CAP_VENDOR_CFG		equ 9
+
 ; VIRTIO_STATUS Values
 VIRTIO_STATUS_FAILED			equ 0x80 ; Indicates that something went wrong in the guest, and it has given up on the device
 VIRTIO_STATUS_DEVICE_NEEDS_RESET	equ 0x40 ; Indicates that the device has experienced an error from which it can’t recover
@@ -59,7 +68,7 @@ VIRTQ_DESC_F_NEXT			equ 1
 VIRTQ_DESC_F_WRITE			equ 2
 VIRTQ_DESC_F_INDIRECT			equ 4
 
-; VIRTIO Feature Bits
+
 VIRTIO_F_INDIRECT_DESC			equ 28
 VIRTIO_F_EVENT_IDX			equ 29
 VIRTIO_F_VERSION_1			equ 32

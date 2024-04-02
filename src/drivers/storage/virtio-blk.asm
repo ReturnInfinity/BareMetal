@@ -97,12 +97,12 @@ virtio_blk_init_reset_wait:
 	add rax, 4096
 	mov [rsi+VIRTIO_QUEUE_DRIVER], eax
 	rol rax, 32
-	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
+	mov [rsi+VIRTIO_QUEUE_DRIVER+8], eax
 	rol rax, 32
 	add rax, 4096
 	mov [rsi+VIRTIO_QUEUE_DEVICE], eax
 	rol rax, 32
-	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
+	mov [rsi+VIRTIO_QUEUE_DEVICE+8], eax
 	rol rax, 32
 	mov ax, 1
 	mov [rsi+VIRTIO_QUEUE_ENABLE], ax
