@@ -46,6 +46,7 @@ virtio_blk_init_reset_wait:
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
 	; 3.1.1 - Step 4
+	; Process the first 32-bits of Feature bits
 	xor eax, eax
 	mov [rsi+VIRTIO_DEVICE_FEATURE_SELECT], eax
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
@@ -57,7 +58,7 @@ virtio_blk_init_reset_wait:
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
 	pop rax
 	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
-	; TODO - select 1 and process
+	; Process the next 32-bits of Feature bits
 	mov eax, 1
 	mov [rsi+VIRTIO_DEVICE_FEATURE_SELECT], eax
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
@@ -167,6 +168,7 @@ virtio_blk_io:
 	mov r9, rdi			; Save the memory address
 
 	mov rdi, os_storage_mem		; This driver always starts at beginning of the Descriptor Table
+					; FIXME: Add desc_index offset
 
 	; Add header to Descriptor Entry 0
 	mov rax, header			; Address of the header
@@ -224,21 +226,19 @@ virtio_blk_io:
 	mov ax, 0
 	stosw				; 16-bit ring
 
-;	xor eax, eax
-;	mov edx, [os_virtioblk_base]
-;	add dx, VIRTIO_QUEUESELECT
-;	out dx, ax			; Select the Queue
-;	mov edx, [os_virtioblk_base]
-;	add dx, VIRTIO_QUEUENOTIFY
-;	out dx, ax
+	; Notify the queue
+	mov edi, [os_virtioblk_base]
+	add rdi, 0x3000			; FIXME: Where did this value come from?
+	xor eax, eax
+	stosw
 
 	; Inspect the used ring
-;	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
-;	mov bx, [availindex]
-;virtio_blk_io_wait:
-;	mov ax, [rdi]			; Load the index
-;	cmp ax, bx
-;	jne virtio_blk_io_wait
+	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
+	mov bx, 1			; FIXME: [availindex]
+virtio_blk_io_wait:
+	mov ax, [rdi]			; Load the index
+	cmp ax, bx
+	jne virtio_blk_io_wait
 
 	add word [descindex], 3		; 3 entries were required
 	add word [availindex], 1
