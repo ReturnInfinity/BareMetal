@@ -49,6 +49,53 @@ virtio_blk_init_32bit_bar:
 
 	mov rsi, rax			; RSI holds the base for MMIO
 
+	; Gather required values from PCI Capabilities
+	mov dl, 1
+	call os_bus_read		; Read register 1 for Status/Command
+	bt eax, 20			; Check bit 4 of the Status word (31:16)
+	jnc virtio_blk_init_error	; If if doesn't exist then bail out
+	mov dl, 13
+	call os_bus_read		; Read register 13 for the Capabilities Pointer (7:0)
+	and al, 0xFC			; Clear the bottom two bits as they are reserved
+virtio_blk_init_cap_next:
+	shr al, 2			; Quick divide by 4
+	mov dl, al
+	call os_bus_read
+	ror eax, 8			; FIXME - This exits before processing the last entry
+	cmp al, 0x00			; End of linked list?
+	je virtio_blk_init_cap_end
+	rol eax, 8
+	cmp al, 0x09			; Look for a "Vendor" Capability ID
+	je virtio_blk_init_cap
+	shr eax, 8
+	jmp virtio_blk_init_cap_next
+
+virtio_blk_init_cap:
+	rol eax, 8			; Move Virtio cfg_type to AL
+	cmp al, 2
+	je virtio_blk_init_cap_notify
+	ror eax, 16			; Move next entry offset to AL
+	jmp virtio_blk_init_cap_next
+
+virtio_blk_init_cap_notify:
+	push rdx
+	inc dl
+	call os_bus_read
+	cmp al, 0x04
+	jne virtio_blk_init_error
+	inc dl
+	call os_bus_read
+	mov [notification_offset], eax
+	add dl, 2
+	call os_bus_read
+	mov [notify_off_multiplier], eax
+	pop rdx
+	call os_bus_read
+	shr eax, 8			; Shift next pointer to AL
+	jmp virtio_blk_init_cap_next
+
+virtio_blk_init_cap_end:
+
 	; Device Initialization (section 3.1)
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
@@ -252,7 +299,7 @@ virtio_blk_io:
 
 	; Notify the queue
 	mov edi, [os_virtioblk_base]
-	add rdi, 0x3000			; FIXME: Where did this value come from?
+	add rdi, [notification_offset]
 	xor eax, eax
 	stosw
 
@@ -291,6 +338,8 @@ virtio_blk_id:
 ; -----------------------------------------------------------------------------
 
 ; Variables
+notification_offset: dq 0
+notify_off_multiplier: dq 0
 descindex: dw 0
 availindex: dw 1
 
