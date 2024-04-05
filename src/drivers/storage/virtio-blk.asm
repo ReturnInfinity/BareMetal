@@ -62,38 +62,48 @@ virtio_blk_init_cap_next:
 	shr al, 2			; Quick divide by 4
 	mov dl, al
 	call os_bus_read
-	ror eax, 8			; FIXME - This exits before processing the last entry
-	cmp al, 0x00			; End of linked list?
-	je virtio_blk_init_cap_end
-	rol eax, 8
-	cmp al, 0x09			; Look for a "Vendor" Capability ID
+	cmp al, VIRTIO_PCI_CAP_VENDOR_CFG
 	je virtio_blk_init_cap
 	shr eax, 8
-	jmp virtio_blk_init_cap_next
+	jmp virtio_blk_init_cap_next_offset
 
 virtio_blk_init_cap:
 	rol eax, 8			; Move Virtio cfg_type to AL
-	cmp al, 2
+	cmp al, VIRTIO_PCI_CAP_COMMON_CFG
+	je virtio_blk_init_cap_common
+	cmp al, VIRTIO_PCI_CAP_NOTIFY_CFG
 	je virtio_blk_init_cap_notify
 	ror eax, 16			; Move next entry offset to AL
-	jmp virtio_blk_init_cap_next
+	jmp virtio_blk_init_cap_next_offset
+
+virtio_blk_init_cap_common:
+	push rdx
+	; TODO Check for BAR4 and offset of 0x0
+	pop rdx
+	jmp virtio_blk_init_cap_next_offset
 
 virtio_blk_init_cap_notify:
 	push rdx
 	inc dl
 	call os_bus_read
-	cmp al, 0x04
+	pop rdx
+	cmp al, 0x04			; Needs to be BAR4
 	jne virtio_blk_init_error
-	inc dl
+	push rdx
+	add dl, 2
 	call os_bus_read
 	mov [notify_offset], eax
 	add dl, 2			; Skip Length
 	call os_bus_read
 	mov [notify_offset_multiplier], eax
 	pop rdx
+	jmp virtio_blk_init_cap_next_offset
+
+virtio_blk_init_cap_next_offset:
 	call os_bus_read
-	shr eax, 8			; Shift next pointer to AL
-	jmp virtio_blk_init_cap_next
+	shr eax, 8			; Shift pointer to AL
+	cmp al, 0x00			; End of linked list?
+	jne virtio_blk_init_cap_next	; If not, continue reading
 
 virtio_blk_init_cap_end:
 

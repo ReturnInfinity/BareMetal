@@ -26,6 +26,15 @@ VIRTIO_QUEUENOTIFY			equ 0x10 ; 16-bit
 VIRTIO_DEVICESTATUS			equ 0x12 ; 8-bit
 VIRTIO_ISRSTATUS			equ 0x13 ; 8-bit Read-only
 
+; VIRTIO PCI CAP 'cfg_type' Values
+VIRTIO_PCI_CAP_COMMON_CFG		equ 1 ; Common configuration
+VIRTIO_PCI_CAP_NOTIFY_CFG		equ 2 ; Notifications
+VIRTIO_PCI_CAP_ISR_CFG			equ 3 ; ISR Status
+VIRTIO_PCI_CAP_DEVICE_CFG		equ 4 ; Device specific configuration
+VIRTIO_PCI_CAP_PCI_CFG			equ 5 ; PCI configuration access
+VIRTIO_PCI_CAP_SHARED_MEMORY_CFG	equ 8 ; Shared memory region
+VIRTIO_PCI_CAP_VENDOR_CFG		equ 9 ; Vendor-specific data
+
 ; VIRTIO MMIO Common Registers
 VIRTIO_DEVICE_FEATURE_SELECT		equ 0x00 ; 32-bit
 VIRTIO_DEVICE_FEATURE			equ 0x04 ; 32-bit Read-only
