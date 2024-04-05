@@ -22,7 +22,7 @@
 
 ; Network
 %include "drivers/net/i8254x.asm"
-%include "drivers/net/virtio.asm"
+%include "drivers/net/virtio-net.asm"
 
 ; Video
 %include "drivers/video/bga.asm"
