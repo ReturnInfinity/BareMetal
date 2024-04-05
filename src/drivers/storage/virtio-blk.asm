@@ -57,6 +57,7 @@ virtio_blk_init_32bit_bar:
 	mov dl, 13
 	call os_bus_read		; Read register 13 for the Capabilities Pointer (7:0)
 	and al, 0xFC			; Clear the bottom two bits as they are reserved
+
 virtio_blk_init_cap_next:
 	shr al, 2			; Quick divide by 4
 	mov dl, al
@@ -85,10 +86,10 @@ virtio_blk_init_cap_notify:
 	jne virtio_blk_init_error
 	inc dl
 	call os_bus_read
-	mov [notification_offset], eax
-	add dl, 2
+	mov [notify_offset], eax
+	add dl, 2			; Skip Length
 	call os_bus_read
-	mov [notify_off_multiplier], eax
+	mov [notify_offset_multiplier], eax
 	pop rdx
 	call os_bus_read
 	shr eax, 8			; Shift next pointer to AL
@@ -298,8 +299,8 @@ virtio_blk_io:
 	stosw				; 16-bit ring
 
 	; Notify the queue
-	mov edi, [os_virtioblk_base]
-	add rdi, [notification_offset]
+	mov rdi, [os_virtioblk_base]
+	add rdi, [notify_offset]	; This driver only uses Queue 0 so no multiplier needed
 	xor eax, eax
 	stosw
 
@@ -338,8 +339,8 @@ virtio_blk_id:
 ; -----------------------------------------------------------------------------
 
 ; Variables
-notification_offset: dq 0
-notify_off_multiplier: dq 0
+notify_offset: dq 0
+notify_offset_multiplier: dq 0
 descindex: dw 0
 availindex: dw 1
 
