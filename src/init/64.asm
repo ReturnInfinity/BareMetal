@@ -8,6 +8,9 @@
 
 ; -----------------------------------------------------------------------------
 init_64:
+	; Configure the keyboard
+	call keyboard_init
+
 	; Configure the serial port
 	call serial_init
 
