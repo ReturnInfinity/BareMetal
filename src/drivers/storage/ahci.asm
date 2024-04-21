@@ -151,6 +151,7 @@ ahci_init_error:
 ; OUT:	Nothing
 ;	All other registers preserved
 ahci_io:
+	push r8
 	push rdx
 	push rbx
 	push rdi
@@ -175,9 +176,21 @@ ahci_io_prep:
 	shl rax, 3			; Convert to 512B starting sector
 	shl rcx, 3			; Convert 4K sectors to 512B sectors
 
-	bt dword [ahci_PA], edx		; Is the requested device marked as active?
-	jnc achi_io_error		; If not, bail out
-	
+;	bt dword [ahci_PA], edx		; Is the requested device marked as active?
+;	jnc achi_io_error		; If not, bail out
+
+	; Convert supplied drive # to corresponding active drive
+	; Drive 0 is the first active drive, drive 1 is the second active drive, etc
+	; FIXME - any drive request will go to the first active drive
+ahci_io_prep_next_drive:
+	bt dword [ahci_PA], edx
+	jc ahci_io_prep_good_drive_id
+	add rdx, 1
+	bt rdx, 32
+	jc achi_io_error
+	jmp ahci_io_prep_next_drive
+ahci_io_prep_good_drive_id:
+
 	cmp rcx, 8192			; Are we trying to read more that 4MiB?
 	jge achi_io_error		; If so, bail out
 
@@ -277,6 +290,7 @@ ahci_io_poll:
 	add rdi, rbx
 	pop rbx
 	pop rdx
+	pop r8
 	ret
 
 achi_io_error:
@@ -286,6 +300,7 @@ achi_io_error:
 	pop rdi
 	pop rbx
 	pop rdx
+	pop r8
 	xor ecx, ecx
 	ret
 ; -----------------------------------------------------------------------------
