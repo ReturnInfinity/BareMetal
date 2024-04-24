@@ -94,7 +94,7 @@ make_interrupt_gate_stubs:
 	mov [os_HPETAddress], rax
 	mov esi, 0x00005080		; VIDEO_*
 	xor eax, eax
-	lodsd
+	lodsq
 	mov [os_screen_lfb], rax
 	lodsw
 	mov [os_screen_x], ax
