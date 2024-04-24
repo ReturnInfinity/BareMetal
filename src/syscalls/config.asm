@@ -35,6 +35,8 @@ b_config:
 	cmp rcx, 0x22
 	je b_config_screen_y_get
 	cmp rcx, 0x23
+	je b_config_screen_ppsl_get
+	cmp rcx, 0x24
 	je b_config_screen_bpp_get
 
 ; Network
@@ -94,6 +96,10 @@ b_config_screen_x_get:
 b_config_screen_y_get:
 	xor eax, eax
 	mov ax, [os_screen_y]
+	ret
+
+b_config_screen_ppsl_get:
+	mov eax, [os_screen_ppsl]
 	ret
 
 b_config_screen_bpp_get:

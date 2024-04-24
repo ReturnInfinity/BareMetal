@@ -29,7 +29,8 @@ clockcallback_set	equ 0x06
 screen_lfb_get		equ 0x20
 screen_x_get		equ 0x21
 screen_y_get		equ 0x22
-screen_bpp_get		equ 0x23
+screen_ppsl_get		equ 0x23
+screen_bpp_get		equ 0x24
 mac_get			equ 0x30
 bus_read		equ 0x40
 bus_write		equ 0x41

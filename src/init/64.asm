@@ -100,6 +100,8 @@ make_interrupt_gate_stubs:
 	mov [os_screen_x], ax
 	lodsw
 	mov [os_screen_y], ax
+	lodsd
+	mov [os_screen_ppsl], eax
 	lodsb
 	mov [os_screen_bpp], al
 	mov esi, 0x00005090		; PCIe bus count

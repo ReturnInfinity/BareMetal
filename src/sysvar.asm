@@ -7,8 +7,8 @@
 
 
 ; Constants
-screen_x:		equ 640
-screen_y:		equ 480
+screen_x:		equ 800
+screen_y:		equ 600
 screen_bpp:		equ 32
 
 
@@ -97,6 +97,7 @@ os_MemAmount:		equ os_SystemVariables + 0x0104	; in MiB
 ahci_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
+os_screen_ppsl:		equ os_SystemVariables + 0x0114
 
 
 ; DW - Starting at offset 512, increments by 2

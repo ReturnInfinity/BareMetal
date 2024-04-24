@@ -35,7 +35,8 @@ void b_system(unsigned long function, void *var1, void *var2);
 #define SCREEN_LFB_GET		0x20
 #define SCREEN_X_GET		0x21
 #define SCREEN_Y_GET		0x22
-#define SCREEN_BPP_GET		0x23
+#define SCREEN_PPSL_GET		0x23
+#define SCREEN_BPP_GET		0x24
 #define MAC_GET			0x30
 #define BUS_READ		0x40
 #define BUS_WRITE		0x41
