@@ -36,7 +36,6 @@ start:
 	call init_bus			; Initialize system bus
 	call init_storage		; Initialize storage
 	call init_net			; Initialize network
-	call init_video			; Initialize video
 
 	mov rsi, readymsg
 	mov rcx, 13

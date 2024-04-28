@@ -6,12 +6,6 @@
 ; =============================================================================
 
 
-; Constants
-screen_x:		equ 800
-screen_y:		equ 600
-screen_bpp:		equ 32
-
-
 ; Strings
 system_status_header:	db 'BareMetal v1.0.0', 0
 readymsg:		db 'BareMetal OK'	; This string falls through to newline

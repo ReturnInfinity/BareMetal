@@ -25,9 +25,6 @@
 %include "drivers/net/i8254x.asm"
 %include "drivers/net/virtio-net.asm"
 
-; Video
-%include "drivers/video/bga.asm"
-
 NIC_DeviceVendor_ID:	; The supported list of NICs
 
 ; Virtio

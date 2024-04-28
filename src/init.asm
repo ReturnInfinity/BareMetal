@@ -10,7 +10,6 @@
 %include "init/bus.asm"
 %include "init/storage.asm"
 %include "init/net.asm"
-%include "init/video.asm"
 
 
 ; =============================================================================
