@@ -176,8 +176,9 @@ ahci_io_prep:
 	shl rax, 3			; Convert to 512B starting sector
 	shl rcx, 3			; Convert 4K sectors to 512B sectors
 
-;	bt dword [ahci_PA], edx		; Is the requested device marked as active?
-;	jnc achi_io_error		; If not, bail out
+	mov edx, [ahci_PA]		; Are there any active drives?
+	cmp edx, 0
+	je achi_io_error		; If not, bail out
 
 	; Convert supplied drive # to corresponding active drive
 	; Drive 0 is the first active drive, drive 1 is the second active drive, etc
