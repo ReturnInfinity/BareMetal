@@ -14,9 +14,9 @@
 os_ioapic_init:
 	mov ecx, IOAPICVER
 	call os_ioapic_read
-	mov [os_ioapic_ver], al
+	mov [os_ioapic_ver], al		; Store the version
 	shr eax, 16
-	mov [os_ioapic_mde], al
+	mov [os_ioapic_mde], al		; Store the maximum # of redirection entries
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -53,8 +53,8 @@ os_ioapic_write:
 
 ; -----------------------------------------------------------------------------
 ; os_ioapic_mask_clear -- Clear a mask on the I/O APIC
-;  IN:	ECX  = IRQ #
-;	EAX  = Interrupt Vector
+;  IN:	ECX = IRQ #
+;	EAX = Interrupt Vector
 ; OUT:	All registers preserved
 os_ioapic_mask_clear:
 	push rcx
@@ -65,6 +65,39 @@ os_ioapic_mask_clear:
 	add ecx, 1			; Increment for next register
 	xor eax, eax
 	call os_ioapic_write		; Write the high 32 bits
+	pop rax
+	pop rcx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_ioapic_redirection -- Configure a redirection on the I/O APIC
+;  IN:	AL  = Interrupt Vector
+; OUT:	All registers preserved
+; Note: This also clears the mask
+os_ioapic_redirection:
+	push rcx
+	push rax
+	and eax, 0x000000FF		; Clear the top 24 bits of EAX just in case
+	mov cl, [os_ioapic_mde]		; Get the Maximum amount of Redirection Entries
+	cmp al, cl			; Compare the Interrupt Vector to the MDE
+	jg os_ioapic_redirection_error	; If it is greater then bail out
+	mov ecx, eax
+	add eax, 0x20			; Offset to start of Interrupts
+	push rcx
+	push rax
+	shl ecx, 1			; Quick multiply by 2
+	add ecx, IOAPICREDTBL		; Add offset
+	bts eax, 13			; Active low
+	bts eax, 15			; Level
+	call os_ioapic_write		; Write the low 32 bits
+	add ecx, 1			; Increment for next register
+	xor eax, eax
+	call os_ioapic_write		; Write the high 32 bits
+	pop rax
+	pop rcx
+os_ioapic_redirection_error:
 	pop rax
 	pop rcx
 	ret
