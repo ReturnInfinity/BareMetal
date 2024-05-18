@@ -140,7 +140,7 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
 	mov eax, 1
 	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
-	mov eax, 0x04008026			; Receiver Enable, Store Bad Packets, Long Packet Reception, Broadcast Accept Mode, Strip Ethernet CRC from incoming packet
+	mov eax, 0x0400803A			; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
 	mov [rsi+I8254X_REG_RCTL], eax		; Receive Control Register
 
 	push rdi
