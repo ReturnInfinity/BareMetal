@@ -13,25 +13,36 @@ net_i8254x_init:
 	push rsi
 	push rdx
 	push rcx
+	push rbx
 	push rax
 
-	; Read BAR4, If BAR4 is all zeros then we are using 32-bit addresses
-
 	; Grab the Base I/O Address of the device
-	mov dl, 0x04				; BAR0
+	xor ebx, ebx
+	mov dl, 0x04				; Read register 4 for BAR0
 	call os_bus_read
-	and eax, 0xFFFFFFF0			; EAX now holds the Base Memory IO Address (clear the low 4 bits)
-	mov dword [os_NetIOBaseMem], eax
+	xchg eax, ebx				; Exchange the result to EBX (low 32 bits of base)
+	bt ebx, 0				; Bit 0 will be 0 if it is an MMIO space
+	jc net_i8254x_init_error
+	bt ebx, 2				; Bit 2 will be 1 if it is a 64-bit MMIO space
+	jnc net_i8254x_init_32bit_bar
+	mov dl, 0x05				; Read register 5 for BAR1 (Upper 32-bits of BAR0)
+	call os_bus_read
+	shl rax, 32				; Shift the bits to the upper 32
+net_i8254x_init_32bit_bar:
+	and ebx, 0xFFFFFFF0			; Clear the low four bits
+	add rax, rbx				; Add the upper 32 and lower 32 together
+	mov [os_NetIOBaseMem], rax		; Save it as the base
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F				; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
 	call os_bus_read
 	mov [os_NetIRQ], al			; AL holds the IRQ
 
-	; Enable PCI Bus Mastering
+	; Enable PCI Bus Mastering and Memory Space
 	mov dl, 0x01				; Get Status/Command
 	call os_bus_read
-	bts eax, 2
+	bts eax, 2				; Bus Master Enable Bit
+	bts eax, 1				; Memory Space Enable Bit
 	call os_bus_write
 
 	; Grab the MAC address
@@ -80,7 +91,10 @@ net_i8254x_init_done_MAC:
 	; Reset the device
 	call net_i8254x_reset
 
+net_i8254x_init_error:
+
 	pop rax
+	pop rbx
 	pop rcx
 	pop rdx
 	pop rsi
