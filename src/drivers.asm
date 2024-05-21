@@ -8,6 +8,7 @@
 
 ; Internal
 %include "drivers/apic.asm"
+%include "drivers/hpet.asm"
 %include "drivers/ioapic.asm"
 %include "drivers/pcie.asm"
 %include "drivers/pci.asm"

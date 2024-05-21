@@ -67,7 +67,7 @@ os_net_poll:		equ os_SystemVariables + 0x0030
 os_net_ackint:		equ os_SystemVariables + 0x0038
 os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
 os_NetMAC:		equ os_SystemVariables + 0x0048
-os_HPETAddress:		equ os_SystemVariables + 0x0050
+os_HPET_Address:	equ os_SystemVariables + 0x0050
 ahci_base:		equ os_SystemVariables + 0x0058
 os_NetworkCallback:	equ os_SystemVariables + 0x0060
 os_KeyboardCallback:	equ os_SystemVariables + 0x0068
@@ -92,6 +92,7 @@ ahci_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_screen_ppsl:		equ os_SystemVariables + 0x0114
+os_HPET_Frequency:	equ os_SystemVariables + 0x0118
 
 
 ; DW - Starting at offset 512, increments by 2
@@ -103,6 +104,7 @@ os_StorageVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
 os_pcie_count:		equ os_SystemVariables + 0x020E
+os_HPET_CounterMin:	equ os_SystemVariables + 0x0210
 
 
 ; DB - Starting at offset 768, increments by 1
@@ -131,6 +133,7 @@ os_AHCIIRQ:		equ os_SystemVariables + 0x0315
 os_screen_bpp:		equ os_SystemVariables + 0x0316
 os_ioapic_ver:		equ os_SystemVariables + 0x0317
 os_ioapic_mde:		equ os_SystemVariables + 0x0318
+os_HPETEnabled:		equ os_SystemVariables + 0x0319 ; 1 if the HPET was enabled
 
 
 ; Misc

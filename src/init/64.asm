@@ -91,7 +91,10 @@ make_interrupt_gate_stubs:
 	mov [os_MemAmount], eax		; In MiB's
 	mov esi, 0x00005040		; HPET
 	lodsq
-	mov [os_HPETAddress], rax
+	mov [os_HPET_Address], rax
+	mov esi, 0x00005050
+	lodsw
+	mov [os_HPET_CounterMin], ax
 	mov esi, 0x00005080		; VIDEO_*
 	xor eax, eax
 	lodsq
@@ -146,6 +149,9 @@ make_interrupt_gate_stubs:
 
 	; Initialize the I/O APIC
 	call os_ioapic_init
+
+	; Initialize the HPET
+	call os_hpet_init
 
 	; Initialize all AP's to run our reset code. Skip the BSP
 	call b_smp_get_id
