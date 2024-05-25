@@ -2,14 +2,13 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
-; Realtek 8169 NIC. http://wiki.osdev.org/RTL8169
+; Realtek 816x/811x Gigabit Ethernet Driver
 ; =============================================================================
 
 
 ; -----------------------------------------------------------------------------
-; Initialize a Realtek 8169 NIC
-;  IN:	BL  = Bus number of the Realtek device
-;	CL  = Device/Slot number of the Realtek device
+; Initialize a Realtek 816x NIC
+;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_r8169_init:
 	push rsi
 	push rdx
@@ -159,7 +158,7 @@ reset_8169_completed:
 	; Enable Rx/Tx in the Command register
 	mov dx, word [os_NetIOAddress]
 	add dx, R8169_REG_COMMAND
-	mov al, (1 << R8169_BIT_RE) | (1 << R8169_BIT_TE) ;0x0C				; Set bits 2 (TE) and 3 (RE)
+	mov al, (1 << R8169_BIT_RE) | (1 << R8169_BIT_TE) ; Set bits 2 (TE) and 3 (RE)
 	out dx, al
 
 	; Enable Receive and Transmit interrupts
@@ -186,9 +185,14 @@ reset_8169_completed:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
-;	Uses RAX, RCX, RDX, RSI, RDI
 ; ToDo:	Check for proper timeout
 net_r8169_transmit:
+	push rdi
+	push rsi
+	push rdx
+	push rcx
+	push rax
+
 	mov rdi, os_tx_desc
 	mov rax, rcx
 	stosw					; Store the frame length
@@ -205,6 +209,12 @@ net_r8169_transmit_sendloop:
 	and eax, 0x80000000			; Check the ownership bit (BT command instead?)
 	cmp eax, 0x80000000			; If the ownership bit is clear then the NIC sent the packet
 	je net_r8169_transmit_sendloop
+
+	pop rax
+	pop rcx
+	pop rdx
+	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -213,8 +223,12 @@ net_r8169_transmit_sendloop:
 ; net_r8169_poll - Polls the Realtek 8169 NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
-;	Uses RAX, RCX, RDX, RSI, RDI
 net_r8169_poll:
+	push rdi
+	push rsi
+	push rdx
+	push rax
+
 	xor ecx, ecx
 	mov cx, [os_rx_desc]
 	and cx, 0x3FFF				; Clear the two high bits as length is bits 13-0
@@ -225,7 +239,7 @@ net_r8169_poll:
 net_r8169_poll_first_descriptor:
 	mov rsi, os_PacketBuffers
 	push rcx
-	rep movsb				; Copy the packet to the lacation stored in RDI
+	rep movsb				; Copy the packet to the location stored in RDI
 	pop rcx
 	mov eax, 0x80001FF8			; Set bits 31 (Ownership), also buffer size (Max 0x1FF8)
 	mov [os_rx_desc], eax
@@ -235,6 +249,11 @@ net_r8169_poll_first_descriptor:
 	mov [os_rx_desc+16], eax
 	mov rax, os_PacketBuffers
 	mov [os_rx_desc+24], rax
+
+	pop rax
+	pop rdx
+	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
