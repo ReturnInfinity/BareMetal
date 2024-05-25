@@ -46,11 +46,24 @@ init_net_probe_find_next_device:
 	jmp init_net_probe_find_next_device	; Check the next device
 
 init_net_probe_found:
-	cmp bx, 0x8254
-	je init_net_probe_found_i8254x
 	cmp bx, 0x1AF4
 	je init_net_probe_found_virtio
+	cmp bx, 0x8254
+	je init_net_probe_found_i8254x
+	cmp bx, 0x8169
+	je init_net_probe_found_r8169
 	jmp init_net_probe_not_found
+
+init_net_probe_found_virtio:
+	call net_virtio_init
+	mov rdi, os_net_transmit
+	mov rax, net_virtio_transmit
+	stosq
+	mov rax, net_virtio_poll
+	stosq
+	mov rax, net_virtio_ack_int
+	stosq
+	jmp init_net_probe_found_finish
 
 init_net_probe_found_i8254x:
 	call net_i8254x_init
@@ -63,14 +76,14 @@ init_net_probe_found_i8254x:
 	stosq
 	jmp init_net_probe_found_finish
 
-init_net_probe_found_virtio:
-	call net_virtio_init
+init_net_probe_found_r8169:
+	call net_r8169_init
 	mov rdi, os_net_transmit
-	mov rax, net_virtio_transmit
+	mov rax, net_r8169_transmit
 	stosq
-	mov rax, net_virtio_poll
+	mov rax, net_r8169_poll
 	stosq
-	mov rax, net_virtio_ack_int
+	mov rax, net_r8169_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 

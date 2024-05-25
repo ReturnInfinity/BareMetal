@@ -32,6 +32,11 @@
 
 * [Software Developer's Manual](https://www.intel.com/content/dam/doc/manual/pci-pci-x-family-gbe-controllers-software-dev-manual.pdf)
 
+### Realtek 8169 (r8169)
+
+* Supports the Realtek 8168, 8169, 8110, and 8111 Gigabit network interfaces.
+* [Datasheet](http://realtek.info/pdf/rtl8169s.pdf)
+
 ### Intel 8257x (e1000e)
 
 * [Software Developer's Manual](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/pcie-gbe-controllers-open-source-manual.pdf?cmdf=PCI%2FPCI-E+Family+of+Gigabit+Ethernet+Controllers+Software+Developer’s+Manual)

@@ -24,6 +24,7 @@
 
 ; Network
 %include "drivers/net/i8254x.asm"
+%include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
 
 NIC_DeviceVendor_ID:	; The supported list of NICs
@@ -100,6 +101,14 @@ dw 0x10f0		; 82578DC
 dw 0x10f6		; 82574L
 dw 0x1107		; 82544EI
 dw 0x1112		; 82544GC
+dw 0x0000
+
+; Realtek 816x/811x Gigabit Ethernet
+dw 0x8169		; Driver ID
+dw 0x10EC		; Vendor ID
+dw 0x8167		; 8110SC/8169SC
+dw 0x8168		; 8111/8168B
+dw 0x8169		; 8169
 dw 0x0000
 
 ; End of list
