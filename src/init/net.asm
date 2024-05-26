@@ -50,6 +50,8 @@ init_net_probe_found:
 	je init_net_probe_found_virtio
 	cmp bx, 0x8254
 	je init_net_probe_found_i8254x
+	cmp bx, 0x8257
+	je init_net_probe_found_i8257x
 	cmp bx, 0x8169
 	je init_net_probe_found_r8169
 	jmp init_net_probe_not_found
@@ -73,6 +75,17 @@ init_net_probe_found_i8254x:
 	mov rax, net_i8254x_poll
 	stosq
 	mov rax, net_i8254x_ack_int
+	stosq
+	jmp init_net_probe_found_finish
+
+init_net_probe_found_i8257x:
+	call net_i8257x_init
+	mov rdi, os_net_transmit
+	mov rax, net_i8257x_transmit
+	stosq
+	mov rax, net_i8257x_poll
+	stosq
+	mov rax, net_i8257x_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 

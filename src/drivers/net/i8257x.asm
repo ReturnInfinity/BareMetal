@@ -2,14 +2,14 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
-; Intel 8254x Gigabit Ethernet Driver
+; Intel 8257x Gigabit Ethernet Driver
 ; =============================================================================
 
 
 ; -----------------------------------------------------------------------------
 ; Initialize an Intel 8254x NIC
 ;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
-net_i8254x_init:
+net_i8257x_init:
 	push rsi
 	push rdx
 	push rcx
@@ -22,13 +22,13 @@ net_i8254x_init:
 	call os_bus_read
 	xchg eax, ebx				; Exchange the result to EBX (low 32 bits of base)
 	bt ebx, 0				; Bit 0 will be 0 if it is an MMIO space
-	jc net_i8254x_init_error
+	jc net_i8257x_init_error
 	bt ebx, 2				; Bit 2 will be 1 if it is a 64-bit MMIO space
-	jnc net_i8254x_init_32bit_bar
+	jnc net_i8257x_init_32bit_bar
 	mov dl, 0x05				; Read register 5 for BAR1 (Upper 32-bits of BAR0)
 	call os_bus_read
 	shl rax, 32				; Shift the bits to the upper 32
-net_i8254x_init_32bit_bar:
+net_i8257x_init_32bit_bar:
 	and ebx, 0xFFFFFFF0			; Clear the low four bits
 	add rax, rbx				; Add the upper 32 and lower 32 together
 	mov [os_NetIOBaseMem], rax		; Save it as the base
@@ -49,7 +49,7 @@ net_i8254x_init_32bit_bar:
 	mov rsi, [os_NetIOBaseMem]
 	mov eax, [rsi+0x5400]			; RAL
 	cmp eax, 0x00000000
-	je net_i8254x_init_get_MAC_via_EPROM
+	je net_i8257x_init_get_MAC_via_EPROM
 	mov [os_NetMAC], al
 	shr eax, 8
 	mov [os_NetMAC+1], al
@@ -61,9 +61,9 @@ net_i8254x_init_32bit_bar:
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
-	jmp net_i8254x_init_done_MAC
+	jmp net_i8257x_init_done_MAC
 
-net_i8254x_init_get_MAC_via_EPROM:
+net_i8257x_init_get_MAC_via_EPROM:
 	mov rsi, [os_NetIOBaseMem]
 	mov eax, 0x00000001
 	mov [rsi+0x14], eax
@@ -86,12 +86,12 @@ net_i8254x_init_get_MAC_via_EPROM:
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
-net_i8254x_init_done_MAC:
+net_i8257x_init_done_MAC:
 
 	; Reset the device
-	call net_i8254x_reset
+	call net_i8257x_reset
 
-net_i8254x_init_error:
+net_i8257x_init_error:
 
 	pop rax
 	pop rbx
@@ -103,10 +103,10 @@ net_i8254x_init_error:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8254x_reset - Reset an Intel 8254x NIC
+; net_i8257x_reset - Reset an Intel 8254x NIC
 ;  IN:	Nothing
 ; OUT:	Nothing, all registers preserved
-net_i8254x_reset:
+net_i8257x_reset:
 	push rdi
 	push rsi
 	push rax
@@ -115,28 +115,28 @@ net_i8254x_reset:
 	mov rdi, rsi
 
 	mov eax, 0xFFFFFFFF
-	mov [rsi+I8254X_REG_IMC], eax		; Disable all interrupt causes
-	mov eax, [rsi+I8254X_REG_ICR]		; Clear any pending interrupts
+	mov [rsi+I8257X_REG_IMC], eax		; Disable all interrupt causes
+	mov eax, [rsi+I8257X_REG_ICR]		; Clear any pending interrupts
 	xor eax, eax
-	mov [rsi+I8254X_REG_ITR], eax		; Disable interrupt throttling logic
+	mov [rsi+I8257X_REG_ITR], eax		; Disable interrupt throttling logic
 
 	mov eax, 0x00000030
-	mov [rsi+I8254X_REG_PBA], eax		; PBA: set the RX buffer size to 48KB (TX buffer is calculated as 64-RX buffer)
+	mov [rsi+I8257X_REG_PBA], eax		; PBA: set the RX buffer size to 48KB (TX buffer is calculated as 64-RX buffer)
 
 	mov eax, 0x80008060
-	mov [rsi+I8254X_REG_TXCW], eax		; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Request)
+	mov [rsi+I8257X_REG_TXCW], eax		; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Request)
 
-	mov eax, [rsi+I8254X_REG_CTRL]
+	mov eax, [rsi+I8257X_REG_CTRL]
 	btr eax, 3				; LRST = 0
 	bts eax, 6				; SLU = 1
 	bts eax, 5				; ASDE = 1
 	btr eax, 31				; PHY_RST = 0
 	btr eax, 30				; VME = 0 (Disable 802.1Q)
 	btr eax, 7				; ILOS = 0
-	mov [rsi+I8254X_REG_CTRL], eax		; CTRL: clear LRST, set SLU and ASDE, clear RSTPHY, VME, and ILOS
+	mov [rsi+I8257X_REG_CTRL], eax		; CTRL: clear LRST, set SLU and ASDE, clear RSTPHY, VME, and ILOS
 
 	push rdi
-	add rdi, I8254X_REG_MTA			; MTA: reset
+	add rdi, I8257X_REG_MTA			; MTA: reset
 	mov eax, 0xFFFFFFFF
 	stosd
 	stosd
@@ -145,17 +145,17 @@ net_i8254x_reset:
 	pop rdi
 
 	mov rax, os_rx_desc
-	mov [rsi+I8254X_REG_RDBAL], eax		; Receive Descriptor Base Address Low
+	mov [rsi+I8257X_REG_RDBAL], eax		; Receive Descriptor Base Address Low
 	shr rax, 32
-	mov [rsi+I8254X_REG_RDBAH], eax		; Receive Descriptor Base Address High
+	mov [rsi+I8257X_REG_RDBAH], eax		; Receive Descriptor Base Address High
 	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
-	mov [rsi+I8254X_REG_RDLEN], eax		; Receive Descriptor Length
+	mov [rsi+I8257X_REG_RDLEN], eax		; Receive Descriptor Length
 	xor eax, eax
-	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
+	mov [rsi+I8257X_REG_RDH], eax		; Receive Descriptor Head
 	mov eax, 1
-	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
+	mov [rsi+I8257X_REG_RDT], eax		; Receive Descriptor Tail
 	mov eax, 0x0400803A			; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
-	mov [rsi+I8254X_REG_RCTL], eax		; Receive Control Register
+	mov [rsi+I8257X_REG_RCTL], eax		; Receive Control Register
 
 	push rdi
 	mov rdi, os_rx_desc
@@ -165,26 +165,26 @@ net_i8254x_reset:
 	pop rdi
 
 	mov rax, os_tx_desc
-	mov [rsi+I8254X_REG_TDBAL], eax		; Transmit Descriptor Base Address Low
+	mov [rsi+I8257X_REG_TDBAL], eax		; Transmit Descriptor Base Address Low
 	shr rax, 32
-	mov [rsi+I8254X_REG_TDBAH], eax		; Transmit Descriptor Base Address High
+	mov [rsi+I8257X_REG_TDBAH], eax		; Transmit Descriptor Base Address High
 	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
-	mov [rsi+I8254X_REG_TDLEN], eax		; Transmit Descriptor Length
+	mov [rsi+I8257X_REG_TDLEN], eax		; Transmit Descriptor Length
 	xor eax, eax
-	mov [rsi+I8254X_REG_TDH], eax		; Transmit Descriptor Head
-	mov [rsi+I8254X_REG_TDT], eax		; Transmit Descriptor Tail
+	mov [rsi+I8257X_REG_TDH], eax		; Transmit Descriptor Head
+	mov [rsi+I8257X_REG_TDT], eax		; Transmit Descriptor Tail
 	mov eax, 0x010400FA			; Enabled, Pad Short Packets, 15 retries, 64-byte COLD, Re-transmit on Late Collision
-	mov [rsi+I8254X_REG_TCTL], eax		; Transmit Control Register
+	mov [rsi+I8257X_REG_TCTL], eax		; Transmit Control Register
 	mov eax, 0x0060200A			; IPGT 10, IPGR1 8, IPGR2 6
-	mov [rsi+I8254X_REG_TIPG], eax		; Transmit IPG Register
+	mov [rsi+I8257X_REG_TIPG], eax		; Transmit IPG Register
 
 	xor eax, eax
-	mov [rsi+I8254X_REG_RDTR], eax		; Clear the Receive Delay Timer Register
-	mov [rsi+I8254X_REG_RADV], eax		; Clear the Receive Interrupt Absolute Delay Timer
-	mov [rsi+I8254X_REG_RSRPD], eax		; Clear the Receive Small Packet Detect Interrupt
+	mov [rsi+I8257X_REG_RDTR], eax		; Clear the Receive Delay Timer Register
+	mov [rsi+I8257X_REG_RADV], eax		; Clear the Receive Interrupt Absolute Delay Timer
+	mov [rsi+I8257X_REG_RSRPD], eax		; Clear the Receive Small Packet Detect Interrupt
 
 	mov eax, 0x1FFFF			; Temp enable all interrupt types
-	mov [rsi+I8254X_REG_IMS], eax		; Enable interrupt types
+	mov [rsi+I8257X_REG_IMS], eax		; Enable interrupt types
 
 	pop rax
 	pop rsi
@@ -194,7 +194,7 @@ net_i8254x_reset:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8254x_transmit - Transmit a packet via an Intel 8254x NIC
+; net_i8257x_transmit - Transmit a packet via an Intel 8254x NIC
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
@@ -204,7 +204,7 @@ net_i8254x_reset:
 ;	Bytes 9:8 - Length
 ;	Bytes 13:10 - Flags
 ;	Bytes 15:14 - Special
-net_i8254x_transmit:
+net_i8257x_transmit:
 	push rdi
 	push rax
 
@@ -218,9 +218,9 @@ net_i8254x_transmit:
 	stosq
 	mov rdi, [os_NetIOBaseMem]
 	xor eax, eax
-	mov [rdi+I8254X_REG_TDH], eax		; TDH - Transmit Descriptor Head
+	mov [rdi+I8257X_REG_TDH], eax		; TDH - Transmit Descriptor Head
 	inc eax
-	mov [rdi+I8254X_REG_TDT], eax		; TDL - Transmit Descriptor Tail
+	mov [rdi+I8257X_REG_TDT], eax		; TDL - Transmit Descriptor Tail
 
 	pop rax
 	pop rdi
@@ -229,7 +229,7 @@ net_i8254x_transmit:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
+; net_i8257x_poll - Polls the Intel 8254x NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
 ; Note:	Descriptor Format:
@@ -237,7 +237,7 @@ net_i8254x_transmit:
 ;	Bytes 9:8 - Length
 ;	Bytes 13:10 - Flags
 ;	Bytes 15:14 - Special
-net_i8254x_poll:
+net_i8257x_poll:
 	push rdi
 	push rsi
 	push rax
@@ -251,9 +251,9 @@ net_i8254x_poll:
 	; TODO - Fix this to actually make use of all the available descriptors
 	mov rsi, [os_NetIOBaseMem]
 	xor eax, eax
-	mov [rsi+I8254X_REG_RDH], eax		; Receive Descriptor Head
+	mov [rsi+I8257X_REG_RDH], eax		; Receive Descriptor Head
 	inc eax
-	mov [rsi+I8254X_REG_RDT], eax		; Receive Descriptor Tail
+	mov [rsi+I8257X_REG_RDT], eax		; Receive Descriptor Tail
 
 	; Reset the Receive Descriptor Buffer Address for a new packet
 	mov rdi, os_rx_desc
@@ -269,15 +269,15 @@ net_i8254x_poll:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8254x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
+; net_i8257x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
 ;  IN:	Nothing
 ; OUT:	RAX = Ethernet status
-net_i8254x_ack_int:
+net_i8257x_ack_int:
 	push rdi
 
 	xor eax, eax
 	mov rdi, [os_NetIOBaseMem]
-	mov eax, [rdi+I8254X_REG_ICR]
+	mov eax, [rdi+I8257X_REG_ICR]
 
 	pop rdi
 	ret
@@ -288,52 +288,52 @@ net_i8254x_ack_int:
 I8254X_MAX_PKT_SIZE	equ 16384
 
 ; Register list
-I8254X_REG_CTRL		equ 0x0000 ; Control Register
-I8254X_REG_STATUS	equ 0x0008 ; Device Status Register
-I8254X_REG_CTRLEXT	equ 0x0018 ; Extended Control Register
-I8254X_REG_MDIC		equ 0x0020 ; MDI Control Register
-I8254X_REG_FCAL		equ 0x0028 ; Flow Control Address Low
-I8254X_REG_FCAH		equ 0x002C ; Flow Control Address High
-I8254X_REG_FCT		equ 0x0030 ; Flow Control Type
-I8254X_REG_VET		equ 0x0038 ; VLAN Ether Type
-I8254X_REG_ICR		equ 0x00C0 ; Interrupt Cause Read
-I8254X_REG_ITR		equ 0x00C4 ; Interrupt Throttling Register
-I8254X_REG_ICS		equ 0x00C8 ; Interrupt Cause Set Register
-I8254X_REG_IMS		equ 0x00D0 ; Interrupt Mask Set/Read Register
-I8254X_REG_IMC		equ 0x00D8 ; Interrupt Mask Clear Register
-I8254X_REG_RCTL		equ 0x0100 ; Receive Control Register
-I8254X_REG_FCTTV	equ 0x0170 ; Flow Control Transmit Timer Value
-I8254X_REG_TXCW		equ 0x0178 ; Transmit Configuration Word
-I8254X_REG_RXCW		equ 0x0180 ; Receive Configuration Word
-I8254X_REG_TCTL		equ 0x0400 ; Transmit Control Register
-I8254X_REG_TIPG		equ 0x0410 ; Transmit Inter Packet Gap
+I8257X_REG_CTRL		equ 0x0000 ; Control Register
+I8257X_REG_STATUS	equ 0x0008 ; Device Status Register
+I8257X_REG_CTRLEXT	equ 0x0018 ; Extended Control Register
+I8257X_REG_MDIC		equ 0x0020 ; MDI Control Register
+I8257X_REG_FCAL		equ 0x0028 ; Flow Control Address Low
+I8257X_REG_FCAH		equ 0x002C ; Flow Control Address High
+I8257X_REG_FCT		equ 0x0030 ; Flow Control Type
+I8257X_REG_VET		equ 0x0038 ; VLAN Ether Type
+I8257X_REG_ICR		equ 0x00C0 ; Interrupt Cause Read
+I8257X_REG_ITR		equ 0x00C4 ; Interrupt Throttling Register
+I8257X_REG_ICS		equ 0x00C8 ; Interrupt Cause Set Register
+I8257X_REG_IMS		equ 0x00D0 ; Interrupt Mask Set/Read Register
+I8257X_REG_IMC		equ 0x00D8 ; Interrupt Mask Clear Register
+I8257X_REG_RCTL		equ 0x0100 ; Receive Control Register
+I8257X_REG_FCTTV	equ 0x0170 ; Flow Control Transmit Timer Value
+I8257X_REG_TXCW		equ 0x0178 ; Transmit Configuration Word
+I8257X_REG_RXCW		equ 0x0180 ; Receive Configuration Word
+I8257X_REG_TCTL		equ 0x0400 ; Transmit Control Register
+I8257X_REG_TIPG		equ 0x0410 ; Transmit Inter Packet Gap
 
-I8254X_REG_LEDCTL	equ 0x0E00 ; LED Control
-I8254X_REG_PBA		equ 0x1000 ; Packet Buffer Allocation
+I8257X_REG_LEDCTL	equ 0x0E00 ; LED Control
+I8257X_REG_PBA		equ 0x1000 ; Packet Buffer Allocation
 
-I8254X_REG_RDBAL	equ 0x2800 ; RX Descriptor Base Address Low
-I8254X_REG_RDBAH	equ 0x2804 ; RX Descriptor Base Address High
-I8254X_REG_RDLEN	equ 0x2808 ; RX Descriptor Length
-I8254X_REG_RDH		equ 0x2810 ; RX Descriptor Head
-I8254X_REG_RDT		equ 0x2818 ; RX Descriptor Tail
-I8254X_REG_RDTR		equ 0x2820 ; RX Delay Timer Register
-I8254X_REG_RXDCTL	equ 0x3828 ; RX Descriptor Control
-I8254X_REG_RADV		equ 0x282C ; RX Int. Absolute Delay Timer
-I8254X_REG_RSRPD	equ 0x2C00 ; RX Small Packet Detect Interrupt
+I8257X_REG_RDBAL	equ 0x2800 ; RX Descriptor Base Address Low
+I8257X_REG_RDBAH	equ 0x2804 ; RX Descriptor Base Address High
+I8257X_REG_RDLEN	equ 0x2808 ; RX Descriptor Length
+I8257X_REG_RDH		equ 0x2810 ; RX Descriptor Head
+I8257X_REG_RDT		equ 0x2818 ; RX Descriptor Tail
+I8257X_REG_RDTR		equ 0x2820 ; RX Delay Timer Register
+I8257X_REG_RXDCTL	equ 0x3828 ; RX Descriptor Control
+I8257X_REG_RADV		equ 0x282C ; RX Int. Absolute Delay Timer
+I8257X_REG_RSRPD	equ 0x2C00 ; RX Small Packet Detect Interrupt
 
-I8254X_REG_TXDMAC	equ 0x3000 ; TX DMA Control
-I8254X_REG_TDBAL	equ 0x3800 ; TX Descriptor Base Address Low
-I8254X_REG_TDBAH	equ 0x3804 ; TX Descriptor Base Address High
-I8254X_REG_TDLEN	equ 0x3808 ; TX Descriptor Length
-I8254X_REG_TDH		equ 0x3810 ; TX Descriptor Head
-I8254X_REG_TDT		equ 0x3818 ; TX Descriptor Tail
-I8254X_REG_TIDV		equ 0x3820 ; TX Interrupt Delay Value
-I8254X_REG_TXDCTL	equ 0x3828 ; TX Descriptor Control
-I8254X_REG_TADV		equ 0x382C ; TX Absolute Interrupt Delay Value
-I8254X_REG_TSPMT	equ 0x3830 ; TCP Segmentation Pad & Min Threshold
+I8257X_REG_TXDMAC	equ 0x3000 ; TX DMA Control
+I8257X_REG_TDBAL	equ 0x3800 ; TX Descriptor Base Address Low
+I8257X_REG_TDBAH	equ 0x3804 ; TX Descriptor Base Address High
+I8257X_REG_TDLEN	equ 0x3808 ; TX Descriptor Length
+I8257X_REG_TDH		equ 0x3810 ; TX Descriptor Head
+I8257X_REG_TDT		equ 0x3818 ; TX Descriptor Tail
+I8257X_REG_TIDV		equ 0x3820 ; TX Interrupt Delay Value
+I8257X_REG_TXDCTL	equ 0x3828 ; TX Descriptor Control
+I8257X_REG_TADV		equ 0x382C ; TX Absolute Interrupt Delay Value
+I8257X_REG_TSPMT	equ 0x3830 ; TCP Segmentation Pad & Min Threshold
 
-I8254X_REG_RXCSUM	equ 0x5000 ; RX Checksum Control
-I8254X_REG_MTA		equ 0x5200 ; Multicast Table Array
+I8257X_REG_RXCSUM	equ 0x5000 ; RX Checksum Control
+I8257X_REG_MTA		equ 0x5200 ; Multicast Table Array
 
 ; Register list for i8254x
 I82542_REG_RDTR		equ 0x0108 ; RX Delay Timer Register

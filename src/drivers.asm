@@ -24,6 +24,7 @@
 
 ; Network
 %include "drivers/net/i8254x.asm"
+%include "drivers/net/i8257x.asm"
 %include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
 
@@ -35,7 +36,7 @@ dw 0x1AF4		; Vendor ID
 dw 0x1000		; Device
 dw 0x0000
 
-; Intel 8254x/8257x Gigabit Ethernet
+; Intel 8254x Gigabit Ethernet
 dw 0x8254		; Driver ID
 dw 0x8086		; Vendor ID
 dw 0x1000		; 82542 (Fiber)
@@ -58,49 +59,54 @@ dw 0x1016		; 82540EP (Mobile)
 dw 0x1017		; 82540EP
 dw 0x1018		; 82541EI
 dw 0x1019		; 82547EI
-dw 0x101a		; 82547EI (Mobile)
-dw 0x101d		; 82546EB
-dw 0x101e		; 82540EP (Mobile)
+dw 0x101A		; 82547EI (Mobile)
+dw 0x101D		; 82546EB
+dw 0x101E		; 82540EP (Mobile)
 dw 0x1026		; 82545GM
 dw 0x1027		; 82545GM
 dw 0x1028		; 82545GM
-dw 0x105b		; 82546GB (Copper)
-dw 0x105e		; 82571EB/82571GB
-dw 0x105f		; 82571EB
-dw 0x1060		; 82571EB
 dw 0x1075		; 82547GI
 dw 0x1076		; 82541GI
 dw 0x1077		; 82541GI
 dw 0x1078		; 82541ER
 dw 0x1079		; 82546GB
-dw 0x107a		; 82546GB
-dw 0x107b		; 82546GB
-dw 0x107c		; 82541PI
-dw 0x107d		; 82572EI (Copper)
-dw 0x107e		; 82572EI (Fiber)
-dw 0x107f		; 82572EI
-dw 0x108b		; 82573V (Copper)
-dw 0x108c		; 82573E (Copper)
-dw 0x109a		; 82573L
-dw 0x10a4		; 82571EB
-dw 0x10a5		; 82571EB (Fiber)
+dw 0x107A		; 82546GB
+dw 0x107B		; 82546GB
+dw 0x107C		; 82541PI
+dw 0x108A		; 82546GB
+dw 0x1099		; 82546GB (Copper)
 dw 0x10b5		; 82546GB (Copper)
-dw 0x10b9		; 82572EI (Copper)
-dw 0x10bc		; 82571EB/82571GB (Copper)
-dw 0x10c9		; 82576
-dw 0x10d3		; 82574L
-dw 0x10d6		; 82575GB
-dw 0x10e2		; 82575GB
-dw 0x10e6		; 82576
-dw 0x10e7		; 82576
-dw 0x10e8		; 82576
-dw 0x10ea		; 82577LM
-dw 0x10eb		; 82577LC
-dw 0x10ef		; 82578DM
-dw 0x10f0		; 82578DC
-dw 0x10f6		; 82574L
-dw 0x1107		; 82544EI
-dw 0x1112		; 82544GC
+dw 0x0000
+
+; Intel 8257x Gigabit Ethernet
+dw 0x8257		; Driver ID
+dw 0x8086		; Vendor ID
+dw 0x105E		; 82571EB/82571GB
+dw 0x105F		; 82571EB
+dw 0x1060		; 82571EB
+dw 0x1075		; 82547GI
+dw 0x107D		; 82572EI (Copper)
+dw 0x107E		; 82572EI (Fiber)
+dw 0x107F		; 82572EI
+dw 0x108B		; 82573V (Copper)
+dw 0x108C		; 82573E (Copper)
+dw 0x109A		; 82573L
+dw 0x10A4		; 82571EB
+dw 0x10A5		; 82571EB (Fiber)
+dw 0x10B9		; 82572EI (Copper)
+dw 0x10BC		; 82571EB/82571GB (Copper)
+dw 0x10C9		; 82576
+dw 0x10D3		; 82574L
+dw 0x10D6		; 82575GB
+dw 0x10E2		; 82575GB
+dw 0x10E6		; 82576
+dw 0x10E7		; 82576
+dw 0x10E8		; 82576
+dw 0x10EA		; 82577LM
+dw 0x10EB		; 82577LC
+dw 0x10EF		; 82578DM
+dw 0x10F0		; 82578DC
+dw 0x10F6		; 82574L
 dw 0x0000
 
 ; Realtek 816x/811x Gigabit Ethernet

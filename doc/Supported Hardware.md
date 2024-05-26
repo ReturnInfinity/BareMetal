@@ -28,11 +28,20 @@
 * [Specs](https://docs.oasis-open.org/virtio/virtio/v1.2/virtio-v1.2.pdf)
 * [Legacy specs](http://ozlabs.org/~rusty/virtio-spec/virtio-0.9.5.pdf)
 
-### Intel 8254x PCI (e1000) / Intel 8257x PCIe (e1000e)
+### Intel 8254x PCI (e1000) / 
 
-* Supports the Intel 8254x, 8257x Gigabit network interfaces.
+* Supports the Intel 8254x Gigabit network interfaces.
 * [PCI Software Developer's Manual](https://www.intel.com/content/dam/doc/manual/pci-pci-x-family-gbe-controllers-software-dev-manual.pdf)
+
+### Intel 8257x PCIe (e1000e)
+
+* Supports the Intel 8257x Gigabit network interfaces.
 * [PCIe Software Developer's Manual](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/pcie-gbe-controllers-open-source-manual.pdf?cmdf=PCI%2FPCI-E+Family+of+Gigabit+Ethernet+Controllers+Software+Developer’s+Manual)
+
+### Intel 8259x (ixbge)
+
+* Supports the Intel 8259x 10 Gigabit network interfaces.
+* [Datasheet](https://www.intel.com/content/dam/www/public/us/en/documents/datasheets/82599-10-gbe-controller-datasheet.pdf)
 
 ### Realtek 8169 (r8169)
 
