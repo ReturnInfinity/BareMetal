@@ -16,16 +16,6 @@
 ; -----------------------------------------------------------------------------
 
 
-; VIRTIO Common Registers
-VIRTIO_DEVICEFEATURES			equ 0x00 ; 32-bit Read-only
-VIRTIO_HOSTFEATURES			equ 0x04 ; 32-bit
-VIRTIO_QUEUEADDRESS			equ 0x08 ; 32-bit
-VIRTIO_QUEUESIZE			equ 0x0C ; 16-bit Read-only
-VIRTIO_QUEUESELECT			equ 0x0E ; 16-bit
-VIRTIO_QUEUENOTIFY			equ 0x10 ; 16-bit
-VIRTIO_DEVICESTATUS			equ 0x12 ; 8-bit
-VIRTIO_ISRSTATUS			equ 0x13 ; 8-bit Read-only
-
 ; VIRTIO PCI CAP 'cfg_type' Values
 VIRTIO_PCI_CAP_COMMON_CFG		equ 1 ; Common configuration
 VIRTIO_PCI_CAP_NOTIFY_CFG		equ 2 ; Notifications
@@ -89,6 +79,8 @@ VIRTIO_F_SR_IOV				equ 37
 VIRTIO_F_NOTIFICATION_DATA		equ 38
 VIRTIO_F_NOTIF_CONFIG_DATA		equ 39
 VIRTIO_F_RING_RESET			equ 40
+
+VIRTIO_MSI_NO_VECTOR			equ 0xFFFF
 
 ; =============================================================================
 ; EOF

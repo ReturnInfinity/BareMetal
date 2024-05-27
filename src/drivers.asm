@@ -25,6 +25,7 @@
 ; Network
 %include "drivers/net/i8254x.asm"
 %include "drivers/net/i8257x.asm"
+%include "drivers/net/i8259x.asm"
 %include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
 
@@ -33,7 +34,8 @@ NIC_DeviceVendor_ID:	; The supported list of NICs
 ; Virtio
 dw 0x1AF4		; Driver ID
 dw 0x1AF4		; Vendor ID
-dw 0x1000		; Device
+dw 0x1000		; Device ID - legacy
+dw 0x1041		; Device ID - v1.0
 dw 0x0000
 
 ; Intel 8254x Gigabit Ethernet
@@ -107,6 +109,12 @@ dw 0x10EB		; 82577LC
 dw 0x10EF		; 82578DM
 dw 0x10F0		; 82578DC
 dw 0x10F6		; 82574L
+dw 0x0000
+
+; Intel 8259x/X540/X550 10 Gigabit Ethernet
+dw 0x8259		; Driver ID
+dw 0x8086		; Vendor ID
+dw 0x1560		; X540T1
 dw 0x0000
 
 ; Realtek 816x/811x Gigabit Ethernet
