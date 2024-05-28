@@ -38,22 +38,17 @@ net_i8257x_init_32bit_bar:
 	call os_bus_read
 	mov [os_NetIRQ], al			; AL holds the IRQ
 
-	; Disable INTX
+	; Set PCI Status/Command values
 	mov dl, 0x01				; Read Status/Command
 	call os_bus_read
-	bts eax, 10				; Set Interrupt Disable (bit 10)
-	call os_bus_write
-
-	; Enable PCI Bus Mastering and Memory Space
-	mov dl, 0x01				; Get Status/Command
-	call os_bus_read
-	bts eax, 2				; Bus Master Enable Bit
-	bts eax, 1				; Memory Space Enable Bit
-	call os_bus_write
+	bts eax, 10				; Set Interrupt Disable
+	bts eax, 2				; Enable Bus Master
+	bts eax, 1				; Enable Memory Space
+	call os_bus_write			; Write updated Status/Command
 
 	; Grab the MAC address
 	mov rsi, [os_NetIOBaseMem]
-	mov eax, [rsi+0x5400]			; RAL
+	mov eax, [rsi+i8257x_RAL]		; RAL
 	mov [os_NetMAC], al
 	shr eax, 8
 	mov [os_NetMAC+1], al
@@ -61,7 +56,7 @@ net_i8257x_init_32bit_bar:
 	mov [os_NetMAC+2], al
 	shr eax, 8
 	mov [os_NetMAC+3], al
-	mov eax, [rsi+0x5404]			; RAH
+	mov eax, [rsi+i8257x_RAH]		; RAH
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
@@ -114,6 +109,12 @@ net_i8257x_init_reset_wait:
 	mov eax, [rsi+i8257x_ICR]
 
 	; Set up the PHY and the link (14.8.1)
+	mov eax, [rsi+i8257x_CTRL]
+	bts eax, 0				; FD = 1
+	btr eax, 3				; LRST = 0
+	bts eax, 6				; SLU = 1
+	btr eax, 30				; VME = 0 (Disable 802.1Q)
+	mov [rsi+i8257x_CTRL], eax
 
 	; Initialize all statistical counters ()
 	mov eax, [rsi+i8257x_GPRC]		; RX packets
@@ -124,8 +125,41 @@ net_i8257x_init_reset_wait:
 	mov eax, [rsi+i8257x_GOTCH]		; TX bytes = GOTCL + (GOTCH << 32)
 
 	; Initialize receive (14.6)
+	mov rax, os_rx_desc
+	mov [rsi+i8257x_RDBAL], eax		; Receive Descriptor Base Address Low
+	shr rax, 32
+	mov [rsi+i8257x_RDBAH], eax		; Receive Descriptor Base Address High
+	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
+	mov [rsi+i8257x_RDLEN], eax		; Receive Descriptor Length
+	xor eax, eax
+	mov [rsi+i8257x_RDH], eax		; Receive Descriptor Head
+	mov eax, 1
+	mov [rsi+i8257x_RDT], eax		; Receive Descriptor Tail
+	mov eax, 0x0400803A			; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
+	mov [rsi+i8257x_RCTL], eax		; Receive Control Register
 	
+	push rdi
+	mov rdi, os_rx_desc
+	mov rax, os_PacketBuffers		; Default packet will go here
+	add rax, 2				; Room for packet length
+	stosd
+	pop rdi
+
 	; Initialize transmit (14.7)
+	mov rax, os_tx_desc
+	mov [rsi+i8257x_TDBAL], eax		; Transmit Descriptor Base Address Low
+	shr rax, 32
+	mov [rsi+i8257x_TDBAH], eax		; Transmit Descriptor Base Address High
+	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
+	mov [rsi+i8257x_TDLEN], eax		; Transmit Descriptor Length
+	xor eax, eax
+	mov [rsi+i8257x_TDH], eax		; Transmit Descriptor Head
+	mov [rsi+i8257x_TDT], eax		; Transmit Descriptor Tail
+;	mov eax, 0x010400FA			; Enabled, Pad Short Packets, 15 retries, 64-byte COLD, Re-transmit on Late Collision
+	mov eax, 0x3003F0FA
+	mov [rsi+i8257x_TCTL], eax		; Transmit Control Register
+	mov eax, 0x0060200A			; IPGT 10, IPGR1 8, IPGR2 6
+	mov [rsi+i8257x_TIPG], eax		; Transmit IPG Register
 
 	; Enable interrupts ()
 
@@ -155,6 +189,20 @@ net_i8257x_init_reset_wait:
 net_i8257x_transmit:
 	push rdi
 	push rax
+
+	mov rdi, os_tx_desc			; Transmit Descriptor Base Address
+	mov rax, rsi
+	stosq					; Store the data location
+	mov rax, rcx				; The packet size is in CX
+	bts rax, 24				; TDESC.CMD.EOP - End Of Packet
+	bts rax, 25				; TDESC.CMD.IFCS - Insert FCS
+	bts rax, 27				; TDESC.CMD.RS - Report Status
+	stosq
+	mov rdi, [os_NetIOBaseMem]
+	xor eax, eax
+	mov [rdi+i8257x_TDH], eax		; TDH - Transmit Descriptor Head
+	inc eax
+	mov [rdi+i8257x_TDT], eax		; TDL - Transmit Descriptor Tail
 
 	pop rax
 	pop rdi
@@ -198,7 +246,7 @@ net_i8257x_ack_int:
 ; Maximum packet size
 I8257X_MAX_PKT_SIZE	equ 16384
 
-; Register list (All registers should be accessed as 32-bit values)
+; Register list (13.3) (All registers should be accessed as 32-bit values)
 
 ; General Control Registers
 i8257x_CTRL		equ 0x00000 ; Device Control Register
@@ -223,7 +271,10 @@ i8257x_RDBAH		equ 0x02804 ; Receive Descriptor Base Address High Queue 0
 i8257x_RDLEN		equ 0x02808 ; Receive Descriptor Ring Length Queue 0
 i8257x_RDH		equ 0x02810 ; Receive Descriptor Head Queue 0
 i8257x_RDT		equ 0x02818 ; Receive Descriptor Tail Queue 0
+i8257x_RDTR		equ 0x02820
 i8257x_RXDCTL		equ 0x02828 ; Receive Descriptor Control Queue 0
+i8257x_RADV		equ 0x0282C
+i8257x_RSRPD		equ 0x02C00
 i8257x_RXCSUM		equ 0x05000 ; Receive Checksum Control
 i8257x_RLPML		equ 0x05004 ; Receive Long packet maximal length
 i8257x_RFCTL		equ 0x05008 ; Receive Filter Control Register
@@ -233,6 +284,7 @@ i8257x_RAH		equ 0x05404 ; Receive Address High (Upper 16-bits of 48-bit address)
 
 ; Transmit Registers
 i8257x_TCTL		equ 0x00400 ; Transmit Control
+i8257x_TIPG		equ 0x00410
 i8257x_TDBAL		equ 0x03800 ; Transmit Descriptor Base Address Low
 i8257x_TDBAH		equ 0x03804 ; Transmit Descriptor Base Address High
 i8257x_TDLEN		equ 0x03808 ; Transmit Descriptor Length (Bits 19:0 in bytes, 128-byte aligned)
@@ -261,6 +313,21 @@ i8257x_CTRL_RST_MASK	equ 1 << i8259x_CTRL_LRST | 1 << i8259x_CTRL_RST
 
 ; CTRL_EXT (Extended Device Control Register, 0x00018, RW) Bit Masks
 i8257x_CTRL_EXT_DRV_LOAD	equ 28 ; Driver loaded and the corresponding network interface is enabled
+
+; RCTL (Receive Control Register, 0x00100, RW) Bit Masks
+i8257x_RCTL_EN		equ 1 ; Receive Enable
+i8257x_RCTL_SBP		equ 2 ; Store Bad Packets
+i8257x_RCTL_UPE		equ 3 ; Unicast Promiscuous Enabled
+i8257x_RCTL_MPE		equ 4 ; Multicast Promiscuous Enabled
+i8257x_RCTL_LPE		equ 5 ; Long Packet Reception Enable
+i8257x_RCTL_BAM		equ 15 ; Broadcast Accept Mode
+i8257x_RCTL_SECRC	equ 26 ; Strip Ethernet CRC from incoming packet
+
+; TCTL (Transmit Control Register, 0x00400, RW) Bit Masks
+i8257x_TCTL_EN		equ 1 ; Transmit Enable
+i8257x_TCTL_PSP		equ 3 ; Pad Short Packets
+
+; All other bits are reserved and should be written as 0
 
 i8257x_IRQ_CLEAR_MASK	equ 0xFFFFFFFF
 

@@ -109,6 +109,8 @@ dw 0x10EB		; 82577LC
 dw 0x10EF		; 82578DM
 dw 0x10F0		; 82578DC
 dw 0x10F6		; 82574L
+dw 0x153A		; I217-LM
+dw 0x153B		; I217-V
 dw 0x0000
 
 ; Intel 8259x/X540/X550 10 Gigabit Ethernet
