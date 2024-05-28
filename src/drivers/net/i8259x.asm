@@ -13,29 +13,36 @@ net_i8259x_init:
 	push rsi
 	push rdx
 	push rcx
+	push rbx
 	push rax
 
 	; Grab the Base I/O Address of the device
 	xor ebx, ebx
-	mov dl, 0x04			; Read register 4 for BAR0
+	mov dl, 0x04				; Read register 4 for BAR0
 	call os_bus_read
-	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
-	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
+	xchg eax, ebx				; Exchange the result to EBX (low 32 bits of base)
+	bt ebx, 0				; Bit 0 will be 0 if it is an MMIO space
 	jc net_i8259x_init_error
-	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
+	bt ebx, 2				; Bit 2 will be 1 if it is a 64-bit MMIO space
 	jnc net_i8259x_init_32bit_bar
-	mov dl, 0x05			; Read register 5 for BAR1 (Upper 32-bits of BAR0)
+	mov dl, 0x05				; Read register 5 for BAR1 (Upper 32-bits of BAR0)
 	call os_bus_read
-	shl rax, 32			; Shift the bits to the upper 32
+	shl rax, 32				; Shift the bits to the upper 32
 net_i8259x_init_32bit_bar:
-	and ebx, 0xFFFFFFF0		; Clear the low four bits
-	add rax, rbx			; Add the upper 32 and lower 32 together
-	mov [os_NetIOBaseMem], rax	; Save it as the base
+	and ebx, 0xFFFFFFF0			; Clear the low four bits
+	add rax, rbx				; Add the upper 32 and lower 32 together
+	mov [os_NetIOBaseMem], rax		; Save it as the base
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F				; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
 	call os_bus_read
 	mov [os_NetIRQ], al			; AL holds the IRQ
+
+	; Disable INTX
+	mov dl, 0x01				; Read Status/Command
+	call os_bus_read
+	bts eax, 10				; Set Interrupt Disable (bit 10)
+	call os_bus_write
 
 	; Enable PCI Bus Mastering and Memory Space
 	mov dl, 0x01				; Get Status/Command
@@ -65,6 +72,7 @@ net_i8259x_init_32bit_bar:
 net_i8259x_init_error:
 
 	pop rax
+	pop rbx
 	pop rcx
 	pop rdx
 	pop rsi
@@ -78,8 +86,6 @@ net_i8259x_init_error:
 ; OUT:	Nothing, all registers preserved
 net_i8259x_reset:
 	push rsi
-	push rdx
-	push rcx
 	push rax
 
 	mov rsi, [os_NetIOBaseMem]
@@ -295,8 +301,6 @@ net_i8259x_init_tx_enable_wait:
 	mov [rsi+i8259x_CTRL_EXT], eax
 
 	pop rax
-	pop rcx
-	pop rdx
 	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
