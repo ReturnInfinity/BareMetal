@@ -2,7 +2,7 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
-; Intel i8259x Driver
+; Intel 8259x/X540/X550 10 Gigabit Ethernet Driver
 ; =============================================================================
 
 
@@ -38,18 +38,13 @@ net_i8259x_init_32bit_bar:
 	call os_bus_read
 	mov [os_NetIRQ], al			; AL holds the IRQ
 
-	; Disable INTX
+	; Set PCI Status/Command values
 	mov dl, 0x01				; Read Status/Command
 	call os_bus_read
-	bts eax, 10				; Set Interrupt Disable (bit 10)
-	call os_bus_write
-
-	; Enable PCI Bus Mastering and Memory Space
-	mov dl, 0x01				; Get Status/Command
-	call os_bus_read
-	bts eax, 2				; Bus Master
-	bts eax, 1				; Memory Space
-	call os_bus_write
+	bts eax, 10				; Set Interrupt Disable
+	bts eax, 2				; Enable Bus Master
+	bts eax, 1				; Enable Memory Space
+	call os_bus_write			; Write updated Status/Command
 
 	; Grab the MAC address
 	mov rsi, [os_NetIOBaseMem]
