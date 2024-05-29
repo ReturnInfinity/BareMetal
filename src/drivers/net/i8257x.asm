@@ -7,7 +7,7 @@
 
 
 ; -----------------------------------------------------------------------------
-; Initialize an Intel 8254x NIC
+; Initialize an Intel 8257x NIC
 ;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_i8257x_init:
 	push rsi
@@ -76,7 +76,7 @@ net_i8257x_init_error:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8257x_reset - Reset an Intel 8254x NIC
+; net_i8257x_reset - Reset an Intel 8257x NIC
 ;  IN:	Nothing
 ; OUT:	Nothing, all registers preserved
 net_i8257x_reset:
@@ -176,7 +176,7 @@ net_i8257x_init_reset_wait:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8257x_transmit - Transmit a packet via an Intel 8254x NIC
+; net_i8257x_transmit - Transmit a packet via an Intel 8257x NIC
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
@@ -211,7 +211,7 @@ net_i8257x_transmit:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8257x_poll - Polls the Intel 8254x NIC for a received packet
+; net_i8257x_poll - Polls the Intel 8257x NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
 ; Note:	Descriptor Format:
@@ -232,7 +232,7 @@ net_i8257x_poll:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8257x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
+; net_i8257x_ack_int - Acknowledge an internal interrupt of the Intel 8257x NIC
 ;  IN:	Nothing
 ; OUT:	RAX = Ethernet status
 net_i8257x_ack_int:
@@ -259,6 +259,7 @@ i8257x_LEDCTL		equ 0x00E00 ; LED Control
 
 ; Interrupts Registers
 i8257x_ICR		equ 0x000C0 ; Interrupt Cause Read
+i8257x_ITR		equ 0x000C4 ; Interrupt Throttling Rate
 i8257x_ICS		equ 0x000C8 ; Interrupt Cause Set
 i8257x_IMS		equ 0x000D0 ; Interrupt Mask Set/Read
 i8257x_IMC		equ 0x000D8 ; Interrupt Mask Clear
@@ -271,10 +272,10 @@ i8257x_RDBAH		equ 0x02804 ; Receive Descriptor Base Address High Queue 0
 i8257x_RDLEN		equ 0x02808 ; Receive Descriptor Ring Length Queue 0
 i8257x_RDH		equ 0x02810 ; Receive Descriptor Head Queue 0
 i8257x_RDT		equ 0x02818 ; Receive Descriptor Tail Queue 0
-i8257x_RDTR		equ 0x02820
+i8257x_RDTR		equ 0x02820 ; Receive Interrupt Packet Delay Timer
 i8257x_RXDCTL		equ 0x02828 ; Receive Descriptor Control Queue 0
-i8257x_RADV		equ 0x0282C
-i8257x_RSRPD		equ 0x02C00
+i8257x_RADV		equ 0x0282C ; Receive Interrupt Absolute Delay Timer
+i8257x_RSRPD		equ 0x02C00 ; Receive Small Packet Detect
 i8257x_RXCSUM		equ 0x05000 ; Receive Checksum Control
 i8257x_RLPML		equ 0x05004 ; Receive Long packet maximal length
 i8257x_RFCTL		equ 0x05008 ; Receive Filter Control Register
@@ -284,7 +285,7 @@ i8257x_RAH		equ 0x05404 ; Receive Address High (Upper 16-bits of 48-bit address)
 
 ; Transmit Registers
 i8257x_TCTL		equ 0x00400 ; Transmit Control
-i8257x_TIPG		equ 0x00410
+i8257x_TIPG		equ 0x00410 ; Transmit IPG (Inter Packet Gap)
 i8257x_TDBAL		equ 0x03800 ; Transmit Descriptor Base Address Low
 i8257x_TDBAH		equ 0x03804 ; Transmit Descriptor Base Address High
 i8257x_TDLEN		equ 0x03808 ; Transmit Descriptor Length (Bits 19:0 in bytes, 128-byte aligned)
@@ -302,16 +303,37 @@ i8257x_GORCH		equ 0x0408C ; Good Octets Received Count High
 i8257x_GOTCL		equ 0x04090 ; Good Octets Transmitted Count Low
 i8257x_GOTCH		equ 0x04094 ; Good Octets Transmitted Count High
 
-
-
+; Register bits
 
 ; CTRL (Device Control Register, 0x00000 / 0x00004, RW) Bit Masks
+i8257x_CTRL_FD		equ 0 ; Full-Duplex
+i8257x_CTRL_GIO		equ 2 ; GIO Master Disable
 i8257x_CTRL_LRST	equ 3 ; Link Reset
+i8257x_CTRL_SLU		equ 6 ; Set Link Up
+i8257x_CTRL_SPEED	equ 8 ; 2 bits - Speed selection
+i8257x_CTRL_FRCSPD	equ 11 ; Force Speed
+i8257x_CTRL_FRCDPLX	equ 12 ; Force Duplex
 i8257x_CTRL_RST		equ 26 ; Device Reset
+i8257x_CTRL_RFCE	equ 27 ; Receive Flow Control Enable
+i8257x_CTRL_TFCE	equ 28 ; Transmit Flow Control Enable
+i8257x_CTRL_VME		equ 30 ; VLAN Mode Enable
+i8257x_CTRL_PHY_RST	equ 31 ; PHY Reset
 ; All other bits are reserved and should be written as 0
 i8257x_CTRL_RST_MASK	equ 1 << i8259x_CTRL_LRST | 1 << i8259x_CTRL_RST
 
+; STATUS (Device Status Register, 0x00008, R)
+i8257x_STATUS_FD	equ 0 ; Link Full Duplex configuration Indication
+i8257x_STATUS_LU	equ 1 ; Link Up Indication
+i8257x_STATUS_LANID	equ 2 ; 2 bits - LAN ID
+i8257x_STATUS_TXOFF	equ 4 ; Transmission Paused
+i8257x_STATUS_TBIMODE	equ 5 ; TBI Mode
+i8257x_STATUS_SPEED	equ 6 ; 2 bits - Link speed setting
+i8257x_STATUS_ASDV	equ 8 ; 2 bits - Auto Speed Detection Value
+i8257x_STATUS_PHYRA	equ 10 ; PHY Reset Asserted
+i8257x_STATUS_GIO	equ 19 ; GIO Master Enable Status
+
 ; CTRL_EXT (Extended Device Control Register, 0x00018, RW) Bit Masks
+i8257x_CTRL_EXT_ASDCHK	equ 12 ; ASD Check
 i8257x_CTRL_EXT_DRV_LOAD	equ 28 ; Driver loaded and the corresponding network interface is enabled
 
 ; RCTL (Receive Control Register, 0x00100, RW) Bit Masks

@@ -49,7 +49,7 @@ dw 0x1009		; 82544EI (Fiber)
 dw 0x100A		; 82540EM
 dw 0x100C		; 82544GC (Copper)
 dw 0x100D		; 82544GC (LOM)
-dw 0x100E		; 82540EM
+dw 0x100E		; 82540EM - QEMU e1000
 dw 0x100F		; 82545EM (Copper)
 dw 0x1010		; 82546EB (Copper)
 dw 0x1011		; 82545EM (Fiber)
@@ -98,7 +98,7 @@ dw 0x10A5		; 82571EB (Fiber)
 dw 0x10B9		; 82572EI (Copper)
 dw 0x10BC		; 82571EB/82571GB (Copper)
 dw 0x10C9		; 82576
-dw 0x10D3		; 82574L
+dw 0x10D3		; 82574L - QEMU e1000e
 dw 0x10D6		; 82575GB
 dw 0x10E2		; 82575GB
 dw 0x10E6		; 82576
