@@ -129,7 +129,7 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_RDBAL], eax		; Receive Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8257x_RDBAH], eax		; Receive Descriptor Base Address High
-	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
+	mov eax, 0x1000
 	mov [rsi+i8257x_RDLEN], eax		; Receive Descriptor Length
 	xor eax, eax
 	mov [rsi+i8257x_RDH], eax		; Receive Descriptor Head
@@ -150,13 +150,18 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_TDBAL], eax		; Transmit Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8257x_TDBAH], eax		; Transmit Descriptor Base Address High
-	mov eax, (32 * 8)			; Multiples of 8, each descriptor is 16 bytes
+	mov eax, 0x1000
 	mov [rsi+i8257x_TDLEN], eax		; Transmit Descriptor Length
 	xor eax, eax
 	mov [rsi+i8257x_TDH], eax		; Transmit Descriptor Head
 	mov [rsi+i8257x_TDT], eax		; Transmit Descriptor Tail
-;	mov eax, 0x010400FA			; Enabled, Pad Short Packets, 15 retries, 64-byte COLD, Re-transmit on Late Collision
-	mov eax, 0x3003F0FA
+	mov eax, 0x08
+	mov [rsi+i8257x_TIDV], eax
+	mov eax, 0x20
+	mov [rsi+i8257x_TADV], eax
+	mov eax, 0x141011f
+	mov [rsi+i8257x_TXDCTL], eax
+	mov eax, 0x0103F0FA
 	mov [rsi+i8257x_TCTL], eax		; Transmit Control Register
 	mov eax, 0x0060200A			; IPGT 10, IPGR1 8, IPGR2 6
 	mov [rsi+i8257x_TIPG], eax		; Transmit IPG Register
@@ -253,6 +258,7 @@ i8257x_CTRL		equ 0x00000 ; Device Control Register
 i8257x_CTRL_Legacy	equ 0x00004 ; Copy of Device Control Register
 i8257x_STATUS		equ 0x00008 ; Device Status Register
 i8257x_CTRL_EXT		equ 0x00018 ; Extended Device Control Register
+i8257x_MDIC		equ 0x00020 ; MDI Control Register
 i8257x_LEDCTL		equ 0x00E00 ; LED Control
 
 ; EEPROM / Flash Registers
@@ -291,7 +297,9 @@ i8257x_TDBAH		equ 0x03804 ; Transmit Descriptor Base Address High
 i8257x_TDLEN		equ 0x03808 ; Transmit Descriptor Length (Bits 19:0 in bytes, 128-byte aligned)
 i8257x_TDH		equ 0x03810 ; Transmit Descriptor Head (Bits 15:0)
 i8257x_TDT		equ 0x03818 ; Transmit Descriptor Tail (Bits 15:0)
+i8257x_TIDV		equ 0x03820 ; Transmit Interrupt Delay Value
 i8257x_TXDCTL		equ 0x03828 ; Transmit Descriptor Control (Bit 25 - Enable)
+i8257x_TADV		equ 0x0382C ; Transmit Absolute Interrupt Delay Value
 
 ; Statistic Registers
 i8257x_GPRC		equ 0x04074 ; Good Packets Received Count
