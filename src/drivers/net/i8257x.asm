@@ -115,6 +115,8 @@ net_i8257x_init_reset_wait:
 	bts eax, 6				; SLU = 1
 	btr eax, 30				; VME = 0 (Disable 802.1Q)
 	mov [rsi+i8257x_CTRL], eax
+	; Disable TSO?
+	; CTRL_EXT?
 
 	; Initialize all statistical counters ()
 	mov eax, [rsi+i8257x_GPRC]		; RX packets
@@ -135,9 +137,12 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_RDH], eax		; Receive Descriptor Head
 	mov eax, 1
 	mov [rsi+i8257x_RDT], eax		; Receive Descriptor Tail
+; RADV, RDTR, RFCTL (for descriptor format), RXCSUM?
+	mov eax, 0x00140420			; PTHRESH (5:0), HTHRESH (13:8), WTHRESH (21:16), GRAN (24)
+	mov [rsi+i8257x_RXDCTL], eax
 	mov eax, 0x0400803A			; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
 	mov [rsi+i8257x_RCTL], eax		; Receive Control Register
-	
+
 	push rdi
 	mov rdi, os_rx_desc
 	mov rax, os_PacketBuffers		; Default packet will go here
@@ -155,16 +160,19 @@ net_i8257x_init_reset_wait:
 	xor eax, eax
 	mov [rsi+i8257x_TDH], eax		; Transmit Descriptor Head
 	mov [rsi+i8257x_TDT], eax		; Transmit Descriptor Tail
+	mov eax, 0x0341011F			; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
+	mov [rsi+i8257x_TXDCTL], eax
+	mov eax, 0x0060200A			; IPGT 10, IPGR1 8, IPGR2 6
+	mov [rsi+i8257x_TIPG], eax		; Transmit IPG Register
 	mov eax, 0x08
 	mov [rsi+i8257x_TIDV], eax
 	mov eax, 0x20
 	mov [rsi+i8257x_TADV], eax
-	mov eax, 0x141011f
-	mov [rsi+i8257x_TXDCTL], eax
+	mov eax, 0x00000400 			; Enable (10)
+	mov [rsi+i8257x_TARC0], eax
+; TDFH, TDFT, TDFHS, TDFPC?
 	mov eax, 0x0103F0FA
 	mov [rsi+i8257x_TCTL], eax		; Transmit Control Register
-	mov eax, 0x0060200A			; IPGT 10, IPGR1 8, IPGR2 6
-	mov [rsi+i8257x_TIPG], eax		; Transmit IPG Register
 
 	; Enable interrupts ()
 
@@ -300,6 +308,7 @@ i8257x_TDT		equ 0x03818 ; Transmit Descriptor Tail (Bits 15:0)
 i8257x_TIDV		equ 0x03820 ; Transmit Interrupt Delay Value
 i8257x_TXDCTL		equ 0x03828 ; Transmit Descriptor Control (Bit 25 - Enable)
 i8257x_TADV		equ 0x0382C ; Transmit Absolute Interrupt Delay Value
+i8257x_TARC0		equ 0x03840 ; Transmit Arbitration Counter Queue 0
 
 ; Statistic Registers
 i8257x_GPRC		equ 0x04074 ; Good Packets Received Count
