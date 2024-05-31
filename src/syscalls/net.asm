@@ -46,10 +46,6 @@ b_net_tx:
 
 	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
 	jne b_net_tx_fail
-	cmp rcx, 64			; An net packet must be at least 64 bytes
-	jge b_net_tx_maxcheck
-	mov rcx, 64			; If it was below 64 then set to 64
-	; FIXME - OS should pad the packet with 0's before sending if less than 64
 
 b_net_tx_maxcheck:
 	cmp rcx, 1522			; Fail if more than 1522 bytes
@@ -92,6 +88,12 @@ b_net_rx:
 	cmp byte [os_NetEnabled], 1
 	jne b_net_rx_fail
 
+	call qword [os_net_poll]	; Call the driver
+	cmp cx, 0
+	je b_net_rx_end
+	inc qword [os_net_TXPackets]
+	add qword [os_net_TXBytes], rcx
+
 	mov rsi, os_PacketBuffers	; Packet exists here
 	mov ax, word [rsi]		; Grab the packet length
 	test ax, ax			; Anything there?
@@ -103,7 +105,18 @@ b_net_rx:
 	rep movsb			; Copy packet to new memory
 	pop rcx
 
+;	mov rdi, os_PacketBuffers
+;	xor eax, eax
+;	stosw
+
+	pop rax
+	pop rsi
+	pop rdi
+	ret
+
+b_net_rx_end:
 b_net_rx_fail:
+	xor ecx, ecx
 	pop rax
 	pop rsi
 	pop rdi
@@ -116,10 +129,10 @@ b_net_rx_fail:
 ;  IN:	Nothing
 ; OUT:	RAX = Type of interrupt trigger
 ;	All other registers preserved
-b_net_ack_int:
-	call qword [os_net_ackint]
-
-	ret
+;b_net_ack_int:
+;	call qword [os_net_ackint]
+;
+;	ret
 ; -----------------------------------------------------------------------------
 
 
@@ -128,12 +141,12 @@ b_net_ack_int:
 ;  IN:	RDI = Memory location where packet will be stored
 ; OUT:	RCX = Length of packet
 ;	All other registers preserved
-b_net_rx_from_interrupt:
-	call qword [os_net_poll]	; Call the driver
-	add qword [os_net_RXPackets], 1
-	add qword [os_net_RXBytes], rcx
-
-	ret
+;b_net_rx_from_interrupt:
+;	call qword [os_net_poll]	; Call the driver
+;	add qword [os_net_RXPackets], 1
+;	add qword [os_net_RXBytes], rcx
+;
+;	ret
 ; -----------------------------------------------------------------------------
 
 

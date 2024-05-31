@@ -183,8 +183,8 @@ net_i8254x_reset:
 	mov [rsi+I8254X_REG_RADV], eax		; Clear the Receive Interrupt Absolute Delay Timer
 	mov [rsi+I8254X_REG_RSRPD], eax		; Clear the Receive Small Packet Detect Interrupt
 
-	mov eax, 0x1FFFF			; Temp enable all interrupt types
-	mov [rsi+I8254X_REG_IMS], eax		; Enable interrupt types
+;	mov eax, 0x1FFFF			; Temp enable all interrupt types
+;	mov [rsi+I8254X_REG_IMS], eax		; Enable interrupt types
 
 	pop rax
 	pop rsi
@@ -244,6 +244,8 @@ net_i8254x_poll:
 
 	xor ecx, ecx
 	mov cx, [os_rx_desc+8]			; Get the packet length
+	cmp cx, 0
+	je net_i8254x_poll_end
 	mov rdi, os_PacketBuffers
 	mov [rdi], word cx
 
@@ -260,7 +262,16 @@ net_i8254x_poll:
 	mov rax, os_PacketBuffers		; Packet will go here
 	add rax, 2				; Room for packet length
 	stosd
+	xor eax, eax
+	mov [os_rx_desc+8], ax
 
+	pop rax
+	pop rsi
+	pop rdi
+	ret
+
+net_i8254x_poll_end:
+	xor ecx, ecx
 	pop rax
 	pop rsi
 	pop rdi
