@@ -48,9 +48,7 @@ net_i8254x_init_32bit_bar:
 
 	; Grab the MAC address
 	mov rsi, [os_NetIOBaseMem]
-	mov eax, [rsi+i8254x_RAL]			; RAL
-;	cmp eax, 0x00000000
-;	je net_i8254x_init_get_MAC_via_EPROM
+	mov eax, [rsi+i8254x_RAL]	; RAL
 	mov [os_NetMAC], al
 	shr eax, 8
 	mov [os_NetMAC+1], al
@@ -58,36 +56,10 @@ net_i8254x_init_32bit_bar:
 	mov [os_NetMAC+2], al
 	shr eax, 8
 	mov [os_NetMAC+3], al
-	mov eax, [rsi+i8254x_RAH]			; RAH
+	mov eax, [rsi+i8254x_RAH]	; RAH
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
-;	jmp net_i8254x_init_done_MAC
-;
-;net_i8254x_init_get_MAC_via_EPROM:
-;	mov rsi, [os_NetIOBaseMem]
-;	mov eax, 0x00000001
-;	mov [rsi+0x14], eax
-;	mov eax, [rsi+0x14]
-;	shr eax, 16
-;	mov [os_NetMAC], al
-;	shr eax, 8
-;	mov [os_NetMAC+1], al
-;	mov eax, 0x00000101
-;	mov [rsi+0x14], eax
-;	mov eax, [rsi+0x14]
-;	shr eax, 16
-;	mov [os_NetMAC+2], al
-;	shr eax, 8
-;	mov [os_NetMAC+3], al
-;	mov eax, 0x00000201
-;	mov [rsi+0x14], eax
-;	mov eax, [rsi+0x14]
-;	shr eax, 16
-;	mov [os_NetMAC+4], al
-;	shr eax, 8
-;	mov [os_NetMAC+5], al
-;net_i8254x_init_done_MAC:
 
 	; Reset the device
 	call net_i8254x_reset
@@ -184,9 +156,6 @@ net_i8254x_reset:
 	mov [rsi+i8254x_RADV], eax	; Clear the Receive Interrupt Absolute Delay Timer
 	mov [rsi+i8254x_RSRPD], eax	; Clear the Receive Small Packet Detect Interrupt
 
-;	mov eax, 0x1FFFF		; Temp enable all interrupt types
-;	mov [rsi+i8254x_IMS], eax	; Enable interrupt types
-
 	pop rax
 	pop rsi
 	pop rdi
@@ -201,10 +170,16 @@ net_i8254x_reset:
 ; OUT:	Nothing
 ; Note:	This driver uses the "legacy format" so TDESC.DEXT is set to 0
 ;	Descriptor Format:
-;	Bytes 7:0 - Buffer Address
-;	Bytes 9:8 - Length
-;	Bytes 13:10 - Flags
-;	Bytes 15:14 - Special
+;	First Qword:
+;	Bits 63:0 - Buffer Address
+;	Second Qword:
+;	Bits 15:0 - Length
+;	Bits 23:16 - CSO
+;	Bits 31:24 - CMD (Section 3.4.3.1)
+;	Bits 35:32 - STA (Section 3.4.3.2)
+;	Bits 39:36 - Reserved
+;	Bits 47:40 - CSS
+;	Bits 63:48 - Special
 net_i8254x_transmit:
 	push rdi
 	push rax
@@ -213,9 +188,9 @@ net_i8254x_transmit:
 	mov rax, rsi
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
-	bts rax, 24			; TDESC.CMD.EOP - End Of Packet
-	bts rax, 25			; TDESC.CMD.IFCS - Insert FCS
-	bts rax, 27			; TDESC.CMD.RS - Report Status
+	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
+	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS
+	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
 	mov rdi, [os_NetIOBaseMem]
 	xor eax, eax

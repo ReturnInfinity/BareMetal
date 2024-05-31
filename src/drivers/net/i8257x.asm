@@ -174,8 +174,6 @@ net_i8257x_init_reset_wait:
 	mov eax, 0x0103F0FA
 	mov [rsi+i8257x_TCTL], eax	; Transmit Control Register
 
-	; Enable interrupts ()
-
 	; Set Driver Loaded bit
 	mov eax, [rsi+i8257x_CTRL_EXT]
 	or eax, 1 << i8257x_CTRL_EXT_DRV_LOAD
@@ -193,12 +191,18 @@ net_i8257x_init_reset_wait:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
-; Note:	This driver uses the "legacy format" so TDESC.DEXT is set to 0
+; Note:	This driver uses the "legacy format" so TDESC.DEXT (5) is cleared to 0
 ;	Descriptor Format:
-;	Bytes 7:0 - Buffer Address
-;	Bytes 9:8 - Length
-;	Bytes 13:10 - Flags
-;	Bytes 15:14 - Special
+;	First Qword:
+;	Bits 63:0 - Buffer Address
+;	Second Qword:
+;	Bits 15:0 - Length
+;	Bits 23:16 - CSO
+;	Bits 31:24 - CMD (Section 3.4.3.1)
+;	Bits 35:32 - STA (Section 3.4.3.2)
+;	Bits 39:36 - Reserved
+;	Bits 47:40 - CSS
+;	Bits 63:48 - Special
 net_i8257x_transmit:
 	push rdi
 	push rax
@@ -207,9 +211,9 @@ net_i8257x_transmit:
 	mov rax, rsi
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
-	bts rax, 24			; TDESC.CMD.EOP - End Of Packet
-	bts rax, 25			; TDESC.CMD.IFCS - Insert FCS
-	bts rax, 27			; TDESC.CMD.RS - Report Status
+	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
+	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS
+	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
 	mov rdi, [os_NetIOBaseMem]
 	xor eax, eax

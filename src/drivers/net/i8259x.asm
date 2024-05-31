@@ -318,9 +318,9 @@ net_i8259x_transmit:
 	mov rax, rsi
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
-	bts eax, 24			; TDESC.CMD.EOP - End Of Packet
-	bts eax, 25			; TDESC.CMD.IFCS - Insert FCS
-	bts eax, 27			; TDESC.CMD.RS - Report Status
+	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
+	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS
+	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
 	mov rdi, [os_NetIOBaseMem]
 	xor eax, eax
