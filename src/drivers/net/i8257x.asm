@@ -18,37 +18,37 @@ net_i8257x_init:
 
 	; Grab the Base I/O Address of the device
 	xor ebx, ebx
-	mov dl, 0x04				; Read register 4 for BAR0
+	mov dl, 0x04			; Read register 4 for BAR0
 	call os_bus_read
-	xchg eax, ebx				; Exchange the result to EBX (low 32 bits of base)
-	bt ebx, 0				; Bit 0 will be 0 if it is an MMIO space
+	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
+	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
 	jc net_i8257x_init_error
-	bt ebx, 2				; Bit 2 will be 1 if it is a 64-bit MMIO space
+	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
 	jnc net_i8257x_init_32bit_bar
-	mov dl, 0x05				; Read register 5 for BAR1 (Upper 32-bits of BAR0)
+	mov dl, 0x05			; Read register 5 for BAR1 (Upper 32-bits of BAR0)
 	call os_bus_read
-	shl rax, 32				; Shift the bits to the upper 32
+	shl rax, 32			; Shift the bits to the upper 32
 net_i8257x_init_32bit_bar:
-	and ebx, 0xFFFFFFF0			; Clear the low four bits
-	add rax, rbx				; Add the upper 32 and lower 32 together
-	mov [os_NetIOBaseMem], rax		; Save it as the base
+	and ebx, 0xFFFFFFF0		; Clear the low four bits
+	add rax, rbx			; Add the upper 32 and lower 32 together
+	mov [os_NetIOBaseMem], rax	; Save it as the base
 
 	; Grab the IRQ of the device
-	mov dl, 0x0F				; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
+	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
 	call os_bus_read
-	mov [os_NetIRQ], al			; AL holds the IRQ
+	mov [os_NetIRQ], al		; AL holds the IRQ
 
 	; Set PCI Status/Command values
-	mov dl, 0x01				; Read Status/Command
+	mov dl, 0x01			; Read Status/Command
 	call os_bus_read
-	bts eax, 10				; Set Interrupt Disable
-	bts eax, 2				; Enable Bus Master
-	bts eax, 1				; Enable Memory Space
-	call os_bus_write			; Write updated Status/Command
+	bts eax, 10			; Set Interrupt Disable
+	bts eax, 2			; Enable Bus Master
+	bts eax, 1			; Enable Memory Space
+	call os_bus_write		; Write updated Status/Command
 
 	; Grab the MAC address
 	mov rsi, [os_NetIOBaseMem]
-	mov eax, [rsi+i8257x_RAL]		; RAL
+	mov eax, [rsi+i8257x_RAL]	; RAL
 	mov [os_NetMAC], al
 	shr eax, 8
 	mov [os_NetMAC+1], al
@@ -56,7 +56,7 @@ net_i8257x_init_32bit_bar:
 	mov [os_NetMAC+2], al
 	shr eax, 8
 	mov [os_NetMAC+3], al
-	mov eax, [rsi+i8257x_RAH]		; RAH
+	mov eax, [rsi+i8257x_RAH]	; RAH
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
@@ -95,11 +95,11 @@ net_i8257x_reset:
 	mov eax, [rsi+i8257x_ICR]
 	
 	; Issue a global reset (14.5)
-	mov eax, i8257x_CTRL_RST_MASK		; Load the mask for a software reset and link reset
-	mov [rsi+i8257x_CTRL], eax		; Write the reset value
+	mov eax, i8257x_CTRL_RST_MASK	; Load the mask for a software reset and link reset
+	mov [rsi+i8257x_CTRL], eax	; Write the reset value
 net_i8257x_init_reset_wait:
-	mov eax, [rsi+i8257x_CTRL]		; Read CTRL
-	jnz net_i8257x_init_reset_wait		; Wait for it to read back as 0x0
+	mov eax, [rsi+i8257x_CTRL]	; Read CTRL
+	jnz net_i8257x_init_reset_wait	; Wait for it to read back as 0x0
 
 	; Disable Interrupts again (14.4)
 	xor eax, eax
@@ -110,69 +110,69 @@ net_i8257x_init_reset_wait:
 
 	; Set up the PHY and the link (14.8.1)
 	mov eax, [rsi+i8257x_CTRL]
-	bts eax, 0				; FD = 1
-	btr eax, 3				; LRST = 0
-	bts eax, 6				; SLU = 1
-	btr eax, 30				; VME = 0 (Disable 802.1Q)
+	bts eax, 0			; FD = 1
+	btr eax, 3			; LRST = 0
+	bts eax, 6			; SLU = 1
+	btr eax, 30			; VME = 0 (Disable 802.1Q)
 	mov [rsi+i8257x_CTRL], eax
 	; Disable TSO?
 	; CTRL_EXT?
 
 	; Initialize all statistical counters ()
-	mov eax, [rsi+i8257x_GPRC]		; RX packets
-	mov eax, [rsi+i8257x_GPTC]		; TX packets
+	mov eax, [rsi+i8257x_GPRC]	; RX packets
+	mov eax, [rsi+i8257x_GPTC]	; TX packets
 	mov eax, [rsi+i8257x_GORCL]
-	mov eax, [rsi+i8257x_GORCH]		; RX bytes = GORCL + (GORCH << 32)
+	mov eax, [rsi+i8257x_GORCH]	; RX bytes = GORCL + (GORCH << 32)
 	mov eax, [rsi+i8257x_GOTCL]
-	mov eax, [rsi+i8257x_GOTCH]		; TX bytes = GOTCL + (GOTCH << 32)
+	mov eax, [rsi+i8257x_GOTCH]	; TX bytes = GOTCL + (GOTCH << 32)
 
 	; Initialize receive (14.6)
 	mov rax, os_rx_desc
-	mov [rsi+i8257x_RDBAL], eax		; Receive Descriptor Base Address Low
+	mov [rsi+i8257x_RDBAL], eax	; Receive Descriptor Base Address Low
 	shr rax, 32
-	mov [rsi+i8257x_RDBAH], eax		; Receive Descriptor Base Address High
+	mov [rsi+i8257x_RDBAH], eax	; Receive Descriptor Base Address High
 	mov eax, 0x1000
-	mov [rsi+i8257x_RDLEN], eax		; Receive Descriptor Length
+	mov [rsi+i8257x_RDLEN], eax	; Receive Descriptor Length
 	xor eax, eax
-	mov [rsi+i8257x_RDH], eax		; Receive Descriptor Head
+	mov [rsi+i8257x_RDH], eax	; Receive Descriptor Head
 	mov eax, 1
-	mov [rsi+i8257x_RDT], eax		; Receive Descriptor Tail
+	mov [rsi+i8257x_RDT], eax	; Receive Descriptor Tail
 ; RADV, RDTR, RFCTL (for descriptor format), RXCSUM?
-	mov eax, 0x00140420			; PTHRESH (5:0), HTHRESH (13:8), WTHRESH (21:16), GRAN (24)
+	mov eax, 0x00140420		; PTHRESH (5:0), HTHRESH (13:8), WTHRESH (21:16), GRAN (24)
 	mov [rsi+i8257x_RXDCTL], eax
-	mov eax, 0x0400803A			; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
-	mov [rsi+i8257x_RCTL], eax		; Receive Control Register
+	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
+	mov [rsi+i8257x_RCTL], eax	; Receive Control Register
 
 	push rdi
 	mov rdi, os_rx_desc
-	mov rax, os_PacketBuffers		; Default packet will go here
-	add rax, 2				; Room for packet length
+	mov rax, os_PacketBuffers	; Default packet will go here
+	add rax, 2			; Room for packet length
 	stosd
 	pop rdi
 
 	; Initialize transmit (14.7)
 	mov rax, os_tx_desc
-	mov [rsi+i8257x_TDBAL], eax		; Transmit Descriptor Base Address Low
+	mov [rsi+i8257x_TDBAL], eax	; Transmit Descriptor Base Address Low
 	shr rax, 32
-	mov [rsi+i8257x_TDBAH], eax		; Transmit Descriptor Base Address High
+	mov [rsi+i8257x_TDBAH], eax	; Transmit Descriptor Base Address High
 	mov eax, 0x1000
-	mov [rsi+i8257x_TDLEN], eax		; Transmit Descriptor Length
+	mov [rsi+i8257x_TDLEN], eax	; Transmit Descriptor Length
 	xor eax, eax
-	mov [rsi+i8257x_TDH], eax		; Transmit Descriptor Head
-	mov [rsi+i8257x_TDT], eax		; Transmit Descriptor Tail
-	mov eax, 0x0341011F			; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
+	mov [rsi+i8257x_TDH], eax	; Transmit Descriptor Head
+	mov [rsi+i8257x_TDT], eax	; Transmit Descriptor Tail
+	mov eax, 0x0341011F		; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
 	mov [rsi+i8257x_TXDCTL], eax
-	mov eax, 0x0060200A			; IPGT 10, IPGR1 8, IPGR2 6
-	mov [rsi+i8257x_TIPG], eax		; Transmit IPG Register
+	mov eax, 0x0060200A		; IPGT 10, IPGR1 8, IPGR2 6
+	mov [rsi+i8257x_TIPG], eax	; Transmit IPG Register
 	mov eax, 0x08
 	mov [rsi+i8257x_TIDV], eax
 	mov eax, 0x20
 	mov [rsi+i8257x_TADV], eax
-	mov eax, 0x00000400 			; Enable (10)
+	mov eax, 0x00000400 		; Enable (10)
 	mov [rsi+i8257x_TARC0], eax
 ; TDFH, TDFT, TDFHS, TDFPC?
 	mov eax, 0x0103F0FA
-	mov [rsi+i8257x_TCTL], eax		; Transmit Control Register
+	mov [rsi+i8257x_TCTL], eax	; Transmit Control Register
 
 	; Enable interrupts ()
 
@@ -203,19 +203,19 @@ net_i8257x_transmit:
 	push rdi
 	push rax
 
-	mov rdi, os_tx_desc			; Transmit Descriptor Base Address
+	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
 	mov rax, rsi
-	stosq					; Store the data location
-	mov rax, rcx				; The packet size is in CX
-	bts rax, 24				; TDESC.CMD.EOP - End Of Packet
-	bts rax, 25				; TDESC.CMD.IFCS - Insert FCS
-	bts rax, 27				; TDESC.CMD.RS - Report Status
+	stosq				; Store the data location
+	mov rax, rcx			; The packet size is in CX
+	bts rax, 24			; TDESC.CMD.EOP - End Of Packet
+	bts rax, 25			; TDESC.CMD.IFCS - Insert FCS
+	bts rax, 27			; TDESC.CMD.RS - Report Status
 	stosq
 	mov rdi, [os_NetIOBaseMem]
 	xor eax, eax
-	mov [rdi+i8257x_TDH], eax		; TDH - Transmit Descriptor Head
+	mov [rdi+i8257x_TDH], eax	; TDH - Transmit Descriptor Head
 	inc eax
-	mov [rdi+i8257x_TDT], eax		; TDL - Transmit Descriptor Tail
+	mov [rdi+i8257x_TDT], eax	; TDL - Transmit Descriptor Tail
 
 	pop rax
 	pop rdi
@@ -237,6 +237,36 @@ net_i8257x_poll:
 	push rsi
 	push rax
 
+	xor ecx, ecx
+	mov cx, [os_rx_desc+8]		; Get the packet length
+	cmp cx, 0
+	je net_i8257x_poll_end
+	mov rdi, os_PacketBuffers
+	mov [rdi], word cx
+
+	; Reset the descriptor head and tail
+	; TODO - Fix this to actually make use of all the available descriptors
+	mov rsi, [os_NetIOBaseMem]
+	xor eax, eax
+	mov [rsi+i8257x_RDH], eax	; Receive Descriptor Head
+	inc eax
+	mov [rsi+i8257x_RDT], eax	; Receive Descriptor Tail
+
+	; Reset the Receive Descriptor Buffer Address for a new packet
+	mov rdi, os_rx_desc
+	mov rax, os_PacketBuffers	; Packet will go here
+	add rax, 2			; Room for packet length
+	stosd
+	xor eax, eax
+	mov [os_rx_desc+8], ax
+
+	pop rax
+	pop rsi
+	pop rdi
+	ret
+
+net_i8257x_poll_end:
+	xor ecx, ecx
 	pop rax
 	pop rsi
 	pop rdi
@@ -248,11 +278,11 @@ net_i8257x_poll:
 ; net_i8257x_ack_int - Acknowledge an internal interrupt of the Intel 8257x NIC
 ;  IN:	Nothing
 ; OUT:	RAX = Ethernet status
-net_i8257x_ack_int:
-	push rdi
-
-	pop rdi
-	ret
+;net_i8257x_ack_int:
+;	push rdi
+;
+;	pop rdi
+;	ret
 ; -----------------------------------------------------------------------------
 
 

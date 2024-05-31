@@ -468,9 +468,9 @@ net_virtio_poll:
 ;  IN:	Nothing
 ; OUT:	RAX = Ethernet status
 ;	Uses RDI
-net_virtio_ack_int:
-	bts ax, 7
-	ret
+;net_virtio_ack_int:
+;	bts ax, 7
+;	ret
 ; -----------------------------------------------------------------------------
 
 ; Variables

@@ -123,11 +123,11 @@ os_delay:
 	push rcx
 	push rax
 
-	mov rcx, [os_ClockCounter]	; Grab the initial timer counter. It increments 8 times a second
-	add rax, rcx			; Add RCX so we get the end time we want
-os_delay_loop:
-	cmp qword [os_ClockCounter], rax	; Compare it against our end time
-	jle os_delay_loop		; Loop if RAX is still lower
+;	mov rcx, [os_ClockCounter]	; Grab the initial timer counter. It increments 8 times a second
+;	add rax, rcx			; Add RCX so we get the end time we want
+;os_delay_loop:
+;	cmp qword [os_ClockCounter], rax	; Compare it against our end time
+;	jle os_delay_loop		; Loop if RAX is still lower
 
 	pop rax
 	pop rcx
