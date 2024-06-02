@@ -322,6 +322,7 @@ virtio_net_init_pop:
 	; Populate RX desc
 	mov rdi, os_net_mem
 	mov rax, os_PacketBuffers	; Address for storing the data
+	add rax, 2			; Room for packet length
 	stosq
 	mov eax, 1500			; Number of bytes
 	stosd
@@ -434,16 +435,34 @@ net_virtio_poll:
 
 	; Get size of packet that was received
 	; Add it to 16bit val at start of os_PacketBuffers
+	mov rdi, os_net_mem
+	add rdi, 0x2000			; Offset to Used Ring
+	xor eax, eax
+	mov ax, [rdi+2]			; Offset to Used Ring Index
+	shl eax, 3
+	add rdi, rax
+	mov rax, rdi
+	mov ax, [rdi]
+	mov cx, ax
+	push rdi
+	mov rdi, os_PacketBuffers
+	stosw
+	pop rdi
+	xor eax, eax
+	mov [rdi], ax
+	cmp cx, 0
+	je net_virtio_poll_nodata
 
 	; Re-populate RX desc
 	mov rdi, os_net_mem
 	mov rax, os_PacketBuffers	; Address for storing the data
+	add rax, 2			; Room for packet length
 	stosq
-	mov eax, 1526			; Number of bytes
+	mov eax, 1500			; Number of bytes
 	stosd
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
-	
+
 	; Populate RX avail
 	mov rdi, os_net_mem
 	add rdi, 0x1000
@@ -457,6 +476,12 @@ net_virtio_poll:
 	add word [netrxdescindex], 1
 	add word [netrxavailindex], 1
 
+	pop rax
+	pop rdi
+	ret
+
+net_virtio_poll_nodata:
+	xor ecx, ecx
 	pop rax
 	pop rdi
 	ret
@@ -479,37 +504,21 @@ virtio_net_notify_offset_multiplier: dq 0
 virtio_net_isr_offset: dq 0
 virtio_net_device_offset: dq 0
 netrxdescindex: dw 0
-netrxavailindex: dw 1
+netrxavailindex: dw 0
 nettxdescindex: dw 0
 nettxavailindex: dw 1
 
 align 16
 netheader:
-dd 0x00
-dd 0x00
-dd 0x00
+dd 0x00000000
+dd 0x00000000
+dd 0x00000000
 
 ;align 16
 ;rxnetheader:
-;dd 0x00
-;dd 0x00
-;dd 0x00
-
-; VIRTIO NET Registers
-;VIRTIO_NET_MAC1			equ 0x14 ; 8-bit
-;VIRTIO_NET_MAC2			equ 0x15 ; 8-bit
-;VIRTIO_NET_MAC3			equ 0x16 ; 8-bit
-;VIRTIO_NET_MAC4			equ 0x17 ; 8-bit
-;VIRTIO_NET_MAC5			equ 0x18 ; 8-bit
-;VIRTIO_NET_MAC6			equ 0x19 ; 8-bit
-;VIRTIO_NET_STATUS		equ 0x1A ; 16-bit
-;VIRTIO_NET_MAX_VIRTQ_PAIRS	equ 0x1C ; 16-bit
-;VIRTIO_NET_MTU			equ 0x1E ; 16-bit
-;VIRTIO_NET_SPEED		equ 0x20 ; 32-bit in units of 1 MBit per second, 0 to 0x7fffffff, or 0xffffffff for unknown
-;VIRTIO_NET_DUPLEX		equ 0x24 ; 8-bit 0x01 for full duplex, 0x00 for half duplex
-;VIRTIO_NET_RSS_MAX_KEY_SIZE	equ 0x25 ; 8-bit
-;VIRTIO_NET_RSS_MAX_INT_TAB_LEN	equ 0x26 ; 16-bit
-;VIRTIO_NET_SUPPORTED_HASH_TYPES	equ 0x28 ; 32-bit
+;dd 0x00000000
+;dd 0x00000000
+;dd 0x00000000
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_NET_F_CSUM		equ 0 ; Device handles packets with partial checksum

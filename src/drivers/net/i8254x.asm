@@ -117,6 +117,15 @@ net_i8254x_reset:
 	stosd
 	pop rdi
 
+	; Create RX descriptor
+	push rdi
+	mov rdi, os_rx_desc
+	mov rax, os_PacketBuffers	; Default packet will go here
+	add rax, 2			; Room for packet length
+	stosd
+	pop rdi
+
+	; Initialize receive
 	mov rax, os_rx_desc
 	mov [rsi+i8254x_RDBAL], eax	; Receive Descriptor Base Address Low
 	shr rax, 32
@@ -130,13 +139,7 @@ net_i8254x_reset:
 	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
 	mov [rsi+i8254x_RCTL], eax	; Receive Control Register
 
-	push rdi
-	mov rdi, os_rx_desc
-	mov rax, os_PacketBuffers	; Default packet will go here
-	add rax, 2			; Room for packet length
-	stosd
-	pop rdi
-
+	; Initialize transmit
 	mov rax, os_tx_desc
 	mov [rsi+i8254x_TDBAL], eax	; Transmit Descriptor Base Address Low
 	shr rax, 32
@@ -175,8 +178,8 @@ net_i8254x_reset:
 ;	Second Qword:
 ;	Bits 15:0 - Length
 ;	Bits 23:16 - CSO
-;	Bits 31:24 - CMD (Section 3.4.3.1)
-;	Bits 35:32 - STA (Section 3.4.3.2)
+;	Bits 31:24 - CMD
+;	Bits 35:32 - STA
 ;	Bits 39:36 - Reserved
 ;	Bits 47:40 - CSS
 ;	Bits 63:48 - Special
@@ -426,10 +429,11 @@ i8254x_RCTL_PMCF	equ 0x00800000 ; Pass MAC Control Frames
 i8254x_RCTL_BSEX	equ 0x02000000 ; Buffer Size Extension
 i8254x_RCTL_SECRC	equ 0x04000000 ; Strip Ethernet CRC
 
-; TCTL - Transmit Control Register (0x0400)
-i8254x_TCTL_EN		equ 0x00000002 ; Transmit Enable
-i8254x_TCTL_PSP		equ 0x00000008 ; Pad short packets
-i8254x_TCTL_SWXOFF	equ 0x00400000 ; Software XOFF Transmission
+; TCTL (Transmit Control Register, 0x00400, RW) Bit Masks
+i8254x_TCTL_EN		equ 1 ; Transmit Enable
+i8254x_TCTL_PSP		equ 3 ; Pad Short Packets
+i8254x_TCTL_CT		equ 4 ; Collision Threshold (11:4)
+i8254x_TCTL_COLD	equ 12 ; Collision Distance (21:12)
 
 ; PBA - Packet Buffer Allocation (0x1000)
 i8254x_PBA_RXA_MASK	equ 0x0000FFFF ; RX Packet Buffer

@@ -110,10 +110,14 @@ net_i8257x_init_reset_wait:
 
 	; Set up the PHY and the link (14.8.1)
 	mov eax, [rsi+i8257x_CTRL]
-	bts eax, 0			; FD = 1
-	btr eax, 3			; LRST = 0
-	bts eax, 6			; SLU = 1
-	btr eax, 30			; VME = 0 (Disable 802.1Q)
+	; Clear the bits we don't want
+	and eax, 0xFFFFFFFF - (1 << i8257x_CTRL_LRST | 1 << i8257x_CTRL_VME)
+	; Set the bits we do want
+	or eax, 1 << i8257x_CTRL_FD | 1 << i8257x_CTRL_SLU
+;	bts eax, 0			; FD = 1
+;	btr eax, 3			; LRST = 0
+;	bts eax, 6			; SLU = 1
+;	btr eax, 30			; VME = 0 (Disable 802.1Q)
 	mov [rsi+i8257x_CTRL], eax
 	; Disable TSO?
 	; CTRL_EXT?
@@ -125,6 +129,14 @@ net_i8257x_init_reset_wait:
 	mov eax, [rsi+i8257x_GORCH]	; RX bytes = GORCL + (GORCH << 32)
 	mov eax, [rsi+i8257x_GOTCL]
 	mov eax, [rsi+i8257x_GOTCH]	; TX bytes = GOTCL + (GOTCH << 32)
+
+	; Create RX descriptor
+	push rdi
+	mov rdi, os_rx_desc
+	mov rax, os_PacketBuffers	; Default packet will go here
+	add rax, 2			; Room for packet length
+	stosd
+	pop rdi
 
 	; Initialize receive (14.6)
 	mov rax, os_rx_desc
@@ -143,13 +155,6 @@ net_i8257x_init_reset_wait:
 	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
 	mov [rsi+i8257x_RCTL], eax	; Receive Control Register
 
-	push rdi
-	mov rdi, os_rx_desc
-	mov rax, os_PacketBuffers	; Default packet will go here
-	add rax, 2			; Room for packet length
-	stosd
-	pop rdi
-
 	; Initialize transmit (14.7)
 	mov rax, os_tx_desc
 	mov [rsi+i8257x_TDBAL], eax	; Transmit Descriptor Base Address Low
@@ -162,7 +167,7 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_TDT], eax	; Transmit Descriptor Tail
 	mov eax, 0x0341011F		; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
 	mov [rsi+i8257x_TXDCTL], eax
-	mov eax, 0x0060200A		; IPGT 10, IPGR1 8, IPGR2 6
+	mov eax, 0x00602008		; IPGT (9:0) 8, IPGR1 (19:10) 8, IPGR2 (29:20) 6
 	mov [rsi+i8257x_TIPG], eax	; Transmit IPG Register
 	mov eax, 0x08
 	mov [rsi+i8257x_TIDV], eax
@@ -170,8 +175,7 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_TADV], eax
 	mov eax, 0x00000400 		; Enable (10)
 	mov [rsi+i8257x_TARC0], eax
-; TDFH, TDFT, TDFHS, TDFPC?
-	mov eax, 0x0103F0FA
+	mov eax, 1 << i8257x_TCTL_EN | 1 << i8257x_TCTL_PSP | 15 << i8257x_TCTL_CT | 0x3F << i8257x_TCTL_COLD
 	mov [rsi+i8257x_TCTL], eax	; Transmit Control Register
 
 	; Set Driver Loaded bit
@@ -191,18 +195,18 @@ net_i8257x_init_reset_wait:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
-; Note:	This driver uses the "legacy format" so TDESC.DEXT (5) is cleared to 0
-;	Descriptor Format:
+; Note:	This driver uses the "legacy format" so TDESC.CMD.DEXT (5) is cleared to 0
+;	TDESC Descriptor Format:
 ;	First Qword:
 ;	Bits 63:0 - Buffer Address
 ;	Second Qword:
 ;	Bits 15:0 - Length
 ;	Bits 23:16 - CSO
-;	Bits 31:24 - CMD (Section 3.4.3.1)
-;	Bits 35:32 - STA (Section 3.4.3.2)
-;	Bits 39:36 - Reserved
+;	Bits 31:24 - CMD
+;	Bits 35:32 - STA
+;	Bits 39:36 - ExtCMD
 ;	Bits 47:40 - CSS
-;	Bits 63:48 - Special
+;	Bits 63:48 - VLAN
 net_i8257x_transmit:
 	push rdi
 	push rax
@@ -212,7 +216,7 @@ net_i8257x_transmit:
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
 	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
-	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS
+	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS (CRC)
 	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
 	mov rdi, [os_NetIOBaseMem]
@@ -231,11 +235,15 @@ net_i8257x_transmit:
 ; net_i8257x_poll - Polls the Intel 8257x NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
-; Note:	Descriptor Format:
-;	Bytes 7:0 - Buffer Address
-;	Bytes 9:8 - Length
-;	Bytes 13:10 - Flags
-;	Bytes 15:14 - Special
+; Note:	RDESC Descriptor Format:
+;	First Qword:
+;	Bits 63:0 - Buffer Address
+;	Second Qword:
+;	Bits 15:0 - Length
+;	Bits 31:16 - Fragment Checksum
+;	Bits 39:32 - STA
+;	Bits 47:40 - Errors
+;	Bits 63:48 - VLAN
 net_i8257x_poll:
 	push rdi
 	push rsi
@@ -399,6 +407,9 @@ i8257x_RCTL_SECRC	equ 26 ; Strip Ethernet CRC from incoming packet
 ; TCTL (Transmit Control Register, 0x00400, RW) Bit Masks
 i8257x_TCTL_EN		equ 1 ; Transmit Enable
 i8257x_TCTL_PSP		equ 3 ; Pad Short Packets
+i8257x_TCTL_CT		equ 4 ; Collision Threshold (11:4)
+i8257x_TCTL_COLD	equ 12 ; Collision Distance (21:12)
+i8257x_TCTL_RRTHRESH	equ 29 ; Read Request Threshold (30:29)
 
 ; All other bits are reserved and should be written as 0
 
