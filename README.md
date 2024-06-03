@@ -16,7 +16,7 @@ BareMetal provides basic support for symmetric multiprocessing, network, and dri
 
 ### Key features
 * **64-bit**: Make use of the extra-wide and additional registers available in 64-bit mode.
-* **Mono-processing, multi-core**: The system is able to execute a single "program" but can spread the work load amongst available CPU cores.
+* **Mono-processing, multi-core**: The system is able to execute a single program but can spread the work load amongst available CPU cores.
 * **Extremely tiny memory footprint**: A minimal bootable image, including boot-loader and operating system components, is currently 16K.
 * **Physical and virtual hardware support** with full virtualization, using [x86 hardware virtualization](https://en.wikipedia.org/wiki/X86_virtualization) whenever available (it is on most modern x86-64 CPU's). In principle BareMetal should run on any x86-64 hardware platform, even on a physical x86-64 computer, given appropriate drivers. Officially, we develop on [QEMU](http://www.qemu.org) and [VirtualBox](https://www.virtualbox.org), which means that you can run BareMetal on both Linux, Microsoft Windows, and Apple macOS.
 
