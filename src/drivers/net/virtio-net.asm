@@ -431,27 +431,34 @@ net_virtio_transmit_wait:
 ; OUT:	RCX = Length of packet
 net_virtio_poll:
 	push rdi
+	push rsi
 	push rax
 
 	; Get size of packet that was received
-	; Add it to 16bit val at start of os_PacketBuffers
 	mov rdi, os_net_mem
 	add rdi, 0x2000			; Offset to Used Ring
 	xor eax, eax
 	mov ax, [rdi+2]			; Offset to Used Ring Index
-	shl eax, 3
-	add rdi, rax
-	mov rax, rdi
-	mov ax, [rdi]
-	mov cx, ax
+	shl eax, 3			; Quick multiply by 8
+	add rdi, rax			; RDI points to the Used Ring Entry
+	mov ax, [rdi]			; Load the received packet size
+	mov cx, ax			; Save the packet size to CX for later
+	cmp cx, 0
+	je net_virtio_poll_nodata	; Bail out if there was no data
+
+	; Add received packet size to start of os_PacketBuffers
 	push rdi
 	mov rdi, os_PacketBuffers
-	stosw
-	pop rdi
+	stosw				; Store the packet size
+	mov rsi, os_PacketBuffers+0x0E	; Skip over the size and 12 byte Virtio header
+	push cx
+	rep movsb			; Copy the packet data
+	pop cx
 	xor eax, eax
-	mov [rdi], ax
-	cmp cx, 0
-	je net_virtio_poll_nodata
+	stosq				; Clear the end of the packet in os_PacketBuffers
+	stosq
+	pop rdi
+	mov [rdi], ax			; Clear the Used Ring Entry
 
 	; Re-populate RX desc
 	mov rdi, os_net_mem
@@ -476,13 +483,9 @@ net_virtio_poll:
 	add word [netrxdescindex], 1
 	add word [netrxavailindex], 1
 
-	pop rax
-	pop rdi
-	ret
-
 net_virtio_poll_nodata:
-	xor ecx, ecx
 	pop rax
+	pop rsi
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
