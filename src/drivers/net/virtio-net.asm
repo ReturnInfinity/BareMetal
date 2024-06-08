@@ -16,7 +16,7 @@ net_virtio_init:
 	push rbx
 	push rax
 
-; Grab the Base I/O Address of the device
+	; Grab the Base I/O Address of the device
 	xor ebx, ebx
 	mov dl, 8			; Read register 8 for BAR4
 	call os_bus_read
@@ -33,12 +33,10 @@ virtio_net_init_32bit_bar:
 	add rax, rbx			; Add the upper 32 and lower 32 together
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
-	mov rsi, rax			; RSI holds the base for MMIO
-
-	; Grab the IRQ of the device
-	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
-	call os_bus_read
-	mov [os_NetIRQ], al		; AL holds the IRQ
+;	; Grab the IRQ of the device
+;	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
+;	call os_bus_read
+;	mov [os_NetIRQ], al		; AL holds the IRQ
 
 	; Disable INTX
 	mov dl, 0x01			; Read Status/Command
@@ -193,6 +191,8 @@ virtio_net_init_cap_end:
 	pop rsi
 
 	; Device Initialization (section 3.1)
+
+	mov rsi, [os_NetIOBaseMem]
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
 	mov al, 0x00			

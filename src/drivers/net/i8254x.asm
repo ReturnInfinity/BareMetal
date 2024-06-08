@@ -33,10 +33,10 @@ net_i8254x_init_32bit_bar:
 	add rax, rbx			; Add the upper 32 and lower 32 together
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
-	; Grab the IRQ of the device
-	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
-	call os_bus_read
-	mov [os_NetIRQ], al		; AL holds the IRQ
+;	; Grab the IRQ of the device
+;	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
+;	call os_bus_read
+;	mov [os_NetIRQ], al		; AL holds the IRQ
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command

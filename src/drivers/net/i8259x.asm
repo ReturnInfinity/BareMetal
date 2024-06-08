@@ -33,10 +33,10 @@ net_i8259x_init_32bit_bar:
 	add rax, rbx			; Add the upper 32 and lower 32 together
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
-	; Grab the IRQ of the device
-	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
-	call os_bus_read
-	mov [os_NetIRQ], al		; AL holds the IRQ
+;	; Grab the IRQ of the device
+;	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
+;	call os_bus_read
+;	mov [os_NetIRQ], al		; AL holds the IRQ
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
@@ -48,7 +48,7 @@ net_i8259x_init_32bit_bar:
 
 	; Grab the MAC address
 	mov rsi, [os_NetIOBaseMem]
-	mov eax, [rsi+i8259x_RAL]
+	mov eax, [rsi+i8259x_RAL]	; RAL
 	mov [os_NetMAC], al
 	shr rax, 8
 	mov [os_NetMAC+1], al
@@ -56,12 +56,12 @@ net_i8259x_init_32bit_bar:
 	mov [os_NetMAC+2], al
 	shr rax, 8
 	mov [os_NetMAC+3], al
-	mov eax, [rsi+i8259x_RAH]
+	mov eax, [rsi+i8259x_RAH]	; RAH
 	mov [os_NetMAC+4], al
 	shr eax, 8
 	mov [os_NetMAC+5], al
 
-;	; Reset the device
+	; Reset the device
 	call net_i8259x_reset
 
 net_i8259x_init_error:
