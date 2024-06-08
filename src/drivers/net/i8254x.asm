@@ -117,12 +117,18 @@ net_i8254x_reset:
 	stosd
 	pop rdi
 
-	; Create RX descriptor
+	; Create RX descriptors
 	push rdi
+	mov ecx, i8254x_MAX_DESC
 	mov rdi, os_rx_desc
+net_i8254x_reset_nextdesc:	
 	mov rax, os_PacketBuffers	; Default packet will go here
 	add rax, 2			; Room for packet length
-	stosd
+	stosq
+	xor eax, eax
+	stosq
+	dec ecx
+	jnz net_i8254x_reset_nextdesc
 	pop rdi
 
 	; Initialize receive
@@ -130,11 +136,11 @@ net_i8254x_reset:
 	mov [rsi+i8254x_RDBAL], eax	; Receive Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8254x_RDBAH], eax	; Receive Descriptor Base Address High
-	mov eax, (32 * 8)		; Multiples of 8, each descriptor is 16 bytes
+	mov eax, i8254x_MAX_DESC * 16	; Each descriptor is 16 bytes
 	mov [rsi+i8254x_RDLEN], eax	; Receive Descriptor Length
-	xor eax, eax
+	xor eax, eax			; 0 is the first valid descriptor
 	mov [rsi+i8254x_RDH], eax	; Receive Descriptor Head
-	mov eax, 1
+	mov eax, 8
 	mov [rsi+i8254x_RDT], eax	; Receive Descriptor Tail
 	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
 	mov [rsi+i8254x_RCTL], eax	; Receive Control Register
@@ -218,31 +224,35 @@ net_i8254x_transmit:
 ;	Bytes 15:14 - Special
 net_i8254x_poll:
 	push rdi
-	push rsi
+	push rsi			; Used for the base MMIO of the NIC
 	push rax
 
-	xor ecx, ecx
-	mov cx, [os_rx_desc+8]		; Get the packet length
-	cmp cx, 0
-	je net_i8254x_poll_end
-	mov rdi, os_PacketBuffers
-	mov [rdi], word cx
-
-	; Reset the descriptor head and tail
-	; TODO - Fix this to actually make use of all the available descriptors
-	mov rsi, [os_NetIOBaseMem]
-	xor eax, eax
-	mov [rsi+i8254x_RDH], eax	; Receive Descriptor Head
-	inc eax
-	mov [rsi+i8254x_RDT], eax	; Receive Descriptor Tail
-
-	; Reset the Receive Descriptor Buffer Address for a new packet
 	mov rdi, os_rx_desc
-	mov rax, os_PacketBuffers	; Packet will go here
-	add rax, 2			; Room for packet length
-	stosd
+	mov rsi, [os_NetIOBaseMem]	; Load the base MMIO of the NIC
+
+	; Calculate the descriptor to read from
+	mov eax, [lasthead]
+	shl eax, 4			; Quick multiply by 16
+	add eax, 8			; Offset to bytes received
+	add rdi, rax			; Add offset to RDI
+	; todo: check status bit for DD
+	xor ecx, ecx			; Clear RCX
+	mov cx, [rdi]			; Get the packet length
+	cmp cx, 0
+	je net_i8254x_poll_end		; No data? Bail out
+
 	xor eax, eax
-	mov [os_rx_desc+8], ax
+	stosq				; Clear the descriptor length and status
+	mov rdi, os_PacketBuffers
+	mov [rdi], word cx		; Save the packet size to PacketBuffers
+
+	; Increment lasthead and the Receive Descriptor Tail
+	mov eax, [rsi+i8254x_RDH]
+	mov [lasthead], eax
+	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
+	add eax, 1			; Add 1 to the Receive Descriptor Tail
+	and eax, 0xF
+	mov [rsi+i8254x_RDT], eax	; Write the updated Receive Descriptor Tail
 
 	pop rax
 	pop rsi
@@ -256,7 +266,7 @@ net_i8254x_poll_end:
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
-
+lasthead: dd 0
 
 ; -----------------------------------------------------------------------------
 ; net_i8254x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
@@ -276,6 +286,7 @@ net_i8254x_poll_end:
 
 ; Maximum packet size
 i8254x_MAX_PKT_SIZE	equ 16384
+i8254x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
 
 ; Register list
 i8254x_CTRL		equ 0x0000 ; Control Register
@@ -303,7 +314,7 @@ i8254x_PBA		equ 0x1000 ; Packet Buffer Allocation
 
 i8254x_RDBAL		equ 0x2800 ; RX Descriptor Base Address Low
 i8254x_RDBAH		equ 0x2804 ; RX Descriptor Base Address High
-i8254x_RDLEN		equ 0x2808 ; RX Descriptor Length
+i8254x_RDLEN		equ 0x2808 ; RX Descriptor Length (128-byte aligned)
 i8254x_RDH		equ 0x2810 ; RX Descriptor Head
 i8254x_RDT		equ 0x2818 ; RX Descriptor Tail
 i8254x_RDTR		equ 0x2820 ; RX Delay Timer Register
