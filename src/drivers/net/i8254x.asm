@@ -235,7 +235,7 @@ net_i8254x_poll:
 	shl eax, 4			; Quick multiply by 16
 	add eax, 8			; Offset to bytes received
 	add rdi, rax			; Add offset to RDI
-	; todo: check status bit for DD
+	; Todo: read all 64 bits. check status bit for DD
 	xor ecx, ecx			; Clear RCX
 	mov cx, [rdi]			; Get the packet length
 	cmp cx, 0
