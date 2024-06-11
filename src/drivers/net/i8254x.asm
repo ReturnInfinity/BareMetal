@@ -150,7 +150,7 @@ net_i8254x_reset_nextdesc:
 	mov [rsi+i8254x_TDBAL], eax	; Transmit Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8254x_TDBAH], eax	; Transmit Descriptor Base Address High
-	mov eax, (32 * 8)		; Multiples of 8, each descriptor is 16 bytes
+	mov eax, i8254x_MAX_DESC * 16	; Each descriptor is 16 bytes
 	mov [rsi+i8254x_TDLEN], eax	; Transmit Descriptor Length
 	xor eax, eax
 	mov [rsi+i8254x_TDH], eax	; Transmit Descriptor Head
@@ -231,7 +231,7 @@ net_i8254x_poll:
 	mov rsi, [os_NetIOBaseMem]	; Load the base MMIO of the NIC
 
 	; Calculate the descriptor to read from
-	mov eax, [lasthead]
+	mov eax, [i8254x_rx_lasthead]
 	shl eax, 4			; Quick multiply by 16
 	add eax, 8			; Offset to bytes received
 	add rdi, rax			; Add offset to RDI
@@ -246,9 +246,9 @@ net_i8254x_poll:
 	mov rdi, os_PacketBuffers
 	mov [rdi], word cx		; Save the packet size to PacketBuffers
 
-	; Increment lasthead and the Receive Descriptor Tail
+	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
 	mov eax, [rsi+i8254x_RDH]
-	mov [lasthead], eax
+	mov [i8254x_rx_lasthead], eax
 	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
 	and eax, 0xF
@@ -266,7 +266,7 @@ net_i8254x_poll_end:
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
-lasthead: dd 0
+i8254x_rx_lasthead: dd 0
 
 ; -----------------------------------------------------------------------------
 ; net_i8254x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC

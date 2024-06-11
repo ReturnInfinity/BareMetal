@@ -143,7 +143,7 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_RDBAL], eax	; Receive Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8257x_RDBAH], eax	; Receive Descriptor Base Address High
-	mov eax, 0x1000
+	mov eax, i8257x_MAX_DESC * 16
 	mov [rsi+i8257x_RDLEN], eax	; Receive Descriptor Length
 	xor eax, eax
 	mov [rsi+i8257x_RDH], eax	; Receive Descriptor Head
@@ -160,7 +160,7 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_TDBAL], eax	; Transmit Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8257x_TDBAH], eax	; Transmit Descriptor Base Address High
-	mov eax, 0x1000
+	mov eax, i8257x_MAX_DESC * 16
 	mov [rsi+i8257x_TDLEN], eax	; Transmit Descriptor Length
 	xor eax, eax
 	mov [rsi+i8257x_TDH], eax	; Transmit Descriptor Head
@@ -299,7 +299,8 @@ net_i8257x_poll_end:
 
 
 ; Maximum packet size
-I8257X_MAX_PKT_SIZE	equ 16384
+i8257x_MAX_PKT_SIZE	equ 16384
+i8257x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
 
 ; Register list (13.3) (All registers should be accessed as 32-bit values)
 
