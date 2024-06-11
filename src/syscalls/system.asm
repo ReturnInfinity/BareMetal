@@ -93,8 +93,6 @@ b_system_smp_busy:
 
 b_system_reset:
 	xor eax, eax
-	mov qword [os_NetworkCallback], rax	; clear callbacks
-	mov qword [os_ClockCallback], rax
 	call b_smp_get_id		; Reset all other cpu cores
 	mov rbx, rax
 	mov rsi, 0x0000000000005100	; Location in memory of the Pure64 CPU data

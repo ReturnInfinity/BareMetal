@@ -33,11 +33,6 @@ net_i8257x_init_32bit_bar:
 	add rax, rbx			; Add the upper 32 and lower 32 together
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
-;	; Grab the IRQ of the device
-;	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
-;	call os_bus_read
-;	mov [os_NetIRQ], al		; AL holds the IRQ
-
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
 	call os_bus_read
@@ -136,7 +131,6 @@ net_i8257x_init_reset_wait:
 	mov rdi, os_rx_desc
 net_i8257x_reset_nextdesc:	
 	mov rax, os_PacketBuffers	; Default packet will go here
-	add rax, 2			; Room for packet length
 	stosq
 	xor eax, eax
 	stosq
@@ -173,14 +167,14 @@ net_i8257x_reset_nextdesc:
 	mov [rsi+i8257x_TDT], eax	; Transmit Descriptor Tail
 	mov eax, 0x0341011F		; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
 	mov [rsi+i8257x_TXDCTL], eax
-	mov eax, 0x00602008		; IPGT (9:0) 8, IPGR1 (19:10) 8, IPGR2 (29:20) 6
-	mov [rsi+i8257x_TIPG], eax	; Transmit IPG Register
-	mov eax, 0x08
-	mov [rsi+i8257x_TIDV], eax
-	mov eax, 0x20
-	mov [rsi+i8257x_TADV], eax
-	mov eax, 0x00000400 		; Enable (10)
-	mov [rsi+i8257x_TARC0], eax
+;	mov eax, 0x00602008		; IPGT (9:0) 8, IPGR1 (19:10) 8, IPGR2 (29:20) 6
+;	mov [rsi+i8257x_TIPG], eax	; Transmit IPG Register
+;	mov eax, 0x08
+;	mov [rsi+i8257x_TIDV], eax
+;	mov eax, 0x20
+;	mov [rsi+i8257x_TADV], eax
+;	mov eax, 0x00000400 		; Enable (10)
+;	mov [rsi+i8257x_TARC0], eax
 	mov eax, 1 << i8257x_TCTL_EN | 1 << i8257x_TCTL_PSP | 15 << i8257x_TCTL_CT | 0x3F << i8257x_TCTL_COLD
 	mov [rsi+i8257x_TCTL], eax	; Transmit Control Register
 
@@ -218,6 +212,14 @@ net_i8257x_transmit:
 	push rax
 
 	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
+
+	; Calculate the descriptor to write to
+	mov eax, [i8257x_tx_lasttail]
+	push rax			; Save lasttail
+	shl eax, 4			; Quick multiply by 16
+	add rdi, rax			; Add offset to RDI
+
+	; Write to the descriptor
 	mov rax, rsi
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
@@ -225,17 +227,20 @@ net_i8257x_transmit:
 	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS (CRC)
 	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
+
+	; Increment i8257x_tx_lasttail and the Transmit Descriptor Tail
+	pop rax				; Restore lasttail
+	add eax, 1
+	and eax, 0xF
+	mov [i8257x_tx_lasttail], eax
 	mov rdi, [os_NetIOBaseMem]
-	xor eax, eax
-	mov [rdi+i8257x_TDH], eax	; TDH - Transmit Descriptor Head
-	inc eax
 	mov [rdi+i8257x_TDT], eax	; TDL - Transmit Descriptor Tail
 
 	pop rax
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
-
+i8257x_tx_lasttail: dd 0
 
 ; -----------------------------------------------------------------------------
 ; net_i8257x_poll - Polls the Intel 8257x NIC for a received packet
@@ -271,8 +276,6 @@ net_i8257x_poll:
 
 	xor eax, eax
 	stosq				; Clear the descriptor length and status
-	mov rdi, os_PacketBuffers
-	mov [rdi], word cx		; Save the packet size to PacketBuffers
 
 	; Increment i8257x_rx_lasthead and the Receive Descriptor Tail
 	mov eax, [i8257x_rx_lasthead]

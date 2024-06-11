@@ -322,7 +322,7 @@ virtio_net_init_pop:
 	; Populate RX desc
 	mov rdi, os_net_mem
 	mov rax, os_PacketBuffers	; Address for storing the data
-	add rax, 2			; Room for packet length
+;	add rax, 2			; Room for packet length
 	stosq
 	mov eax, 1500			; Number of bytes
 	stosd
@@ -449,8 +449,7 @@ net_virtio_poll:
 	; Add received packet size to start of os_PacketBuffers
 	push rdi
 	mov rdi, os_PacketBuffers
-	stosw				; Store the packet size
-	mov rsi, os_PacketBuffers+0x0E	; Skip over the size and 12 byte Virtio header
+	mov rsi, os_PacketBuffers+0x0C	; Skip over the 12 byte Virtio header
 	push cx
 	rep movsb			; Copy the packet data
 	pop cx
@@ -463,7 +462,6 @@ net_virtio_poll:
 	; Re-populate RX desc
 	mov rdi, os_net_mem
 	mov rax, os_PacketBuffers	; Address for storing the data
-	add rax, 2			; Room for packet length
 	stosq
 	mov eax, 1500			; Number of bytes
 	stosd

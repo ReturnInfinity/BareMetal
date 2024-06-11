@@ -21,11 +21,6 @@ net_r8169_init:
 	and eax, 0xFFFFFFFC		; EAX now holds the Base IO Address (clear the low 2 bits)
 	mov word [os_NetIOAddress], ax
 
-;	; Grab the IRQ of the device
-;	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
-;	call os_bus_read
-;	mov [os_NetIRQ], al		; AL holds the IRQ
-
 	; Grab the MAC address
 	mov dx, word [os_NetIOAddress]
 	in al, dx

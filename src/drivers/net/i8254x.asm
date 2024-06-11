@@ -33,11 +33,6 @@ net_i8254x_init_32bit_bar:
 	add rax, rbx			; Add the upper 32 and lower 32 together
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
-;	; Grab the IRQ of the device
-;	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
-;	call os_bus_read
-;	mov [os_NetIRQ], al		; AL holds the IRQ
-
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
 	call os_bus_read
@@ -123,7 +118,6 @@ net_i8254x_reset:
 	mov rdi, os_rx_desc
 net_i8254x_reset_nextdesc:	
 	mov rax, os_PacketBuffers	; Default packet will go here
-	add rax, 2			; Room for packet length
 	stosq
 	xor eax, eax
 	stosq
@@ -140,7 +134,7 @@ net_i8254x_reset_nextdesc:
 	mov [rsi+i8254x_RDLEN], eax	; Receive Descriptor Length
 	xor eax, eax			; 0 is the first valid descriptor
 	mov [rsi+i8254x_RDH], eax	; Receive Descriptor Head
-	mov eax, 8
+	mov eax, i8254x_MAX_DESC / 2
 	mov [rsi+i8254x_RDT], eax	; Receive Descriptor Tail
 	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
 	mov [rsi+i8254x_RCTL], eax	; Receive Control Register
@@ -243,8 +237,6 @@ net_i8254x_poll:
 
 	xor eax, eax
 	stosq				; Clear the descriptor length and status
-	mov rdi, os_PacketBuffers
-	mov [rdi], word cx		; Save the packet size to PacketBuffers
 
 	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
 	mov eax, [i8254x_rx_lasthead]
