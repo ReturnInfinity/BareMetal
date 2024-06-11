@@ -247,7 +247,9 @@ net_i8254x_poll:
 	mov [rdi], word cx		; Save the packet size to PacketBuffers
 
 	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
-	mov eax, [rsi+i8254x_RDH]
+	mov eax, [i8254x_rx_lasthead]
+	add eax, 1
+	and eax, 0xF
 	mov [i8254x_rx_lasthead], eax
 	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
 	add eax, 1			; Add 1 to the Receive Descriptor Tail

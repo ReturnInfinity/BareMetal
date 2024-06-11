@@ -130,12 +130,18 @@ net_i8257x_init_reset_wait:
 	mov eax, [rsi+i8257x_GOTCL]
 	mov eax, [rsi+i8257x_GOTCH]	; TX bytes = GOTCL + (GOTCH << 32)
 
-	; Create RX descriptor
+	; Create RX descriptors
 	push rdi
+	mov ecx, i8257x_MAX_DESC
 	mov rdi, os_rx_desc
+net_i8257x_reset_nextdesc:	
 	mov rax, os_PacketBuffers	; Default packet will go here
 	add rax, 2			; Room for packet length
-	stosd
+	stosq
+	xor eax, eax
+	stosq
+	dec ecx
+	jnz net_i8257x_reset_nextdesc
 	pop rdi
 
 	; Initialize receive (14.6)
@@ -147,7 +153,7 @@ net_i8257x_init_reset_wait:
 	mov [rsi+i8257x_RDLEN], eax	; Receive Descriptor Length
 	xor eax, eax
 	mov [rsi+i8257x_RDH], eax	; Receive Descriptor Head
-	mov eax, 1
+	mov eax, i8257x_MAX_DESC / 2
 	mov [rsi+i8257x_RDT], eax	; Receive Descriptor Tail
 ; RADV, RDTR, RFCTL (for descriptor format), RXCSUM?
 	mov eax, 0x00140420		; PTHRESH (5:0), HTHRESH (13:8), WTHRESH (21:16), GRAN (24)
@@ -201,11 +207,11 @@ net_i8257x_init_reset_wait:
 ;	Bits 63:0 - Buffer Address
 ;	Second Qword:
 ;	Bits 15:0 - Length
-;	Bits 23:16 - CSO
-;	Bits 31:24 - CMD
-;	Bits 35:32 - STA
-;	Bits 39:36 - ExtCMD
-;	Bits 47:40 - CSS
+;	Bits 23:16 - CSO - Checksum Offset
+;	Bits 31:24 - CMD - Command Byte
+;	Bits 35:32 - STA - Status
+;	Bits 39:36 - ExtCMD - Extended Command
+;	Bits 47:40 - CSS - Checksum Start
 ;	Bits 63:48 - VLAN
 net_i8257x_transmit:
 	push rdi
@@ -241,36 +247,42 @@ net_i8257x_transmit:
 ;	Second Qword:
 ;	Bits 15:0 - Length
 ;	Bits 31:16 - Fragment Checksum
-;	Bits 39:32 - STA
+;	Bits 39:32 - STA - Status
 ;	Bits 47:40 - Errors
 ;	Bits 63:48 - VLAN
 net_i8257x_poll:
 	push rdi
-	push rsi
+	push rsi			; Used for the base MMIO of the NIC
 	push rax
 
-	xor ecx, ecx
-	mov cx, [os_rx_desc+8]		; Get the packet length
-	cmp cx, 0
-	je net_i8257x_poll_end
-	mov rdi, os_PacketBuffers
-	mov [rdi], word cx
-
-	; Reset the descriptor head and tail
-	; TODO - Fix this to actually make use of all the available descriptors
-	mov rsi, [os_NetIOBaseMem]
-	xor eax, eax
-	mov [rsi+i8257x_RDH], eax	; Receive Descriptor Head
-	inc eax
-	mov [rsi+i8257x_RDT], eax	; Receive Descriptor Tail
-
-	; Reset the Receive Descriptor Buffer Address for a new packet
 	mov rdi, os_rx_desc
-	mov rax, os_PacketBuffers	; Packet will go here
-	add rax, 2			; Room for packet length
-	stosd
+	mov rsi, [os_NetIOBaseMem]	; Load the base MMIO of the NIC
+
+	; Calculate the descriptor to read from
+	mov eax, [i8257x_rx_lasthead]
+	shl eax, 4			; Quick multiply by 16
+	add eax, 8			; Offset to bytes received
+	add rdi, rax			; Add offset to RDI
+	; Todo: read all 64 bits. check status bit for DD
+	xor ecx, ecx			; Clear RCX
+	mov cx, [rdi]			; Get the packet length
+	cmp cx, 0
+	je net_i8257x_poll_end		; No data? Bail out
+
 	xor eax, eax
-	mov [os_rx_desc+8], ax
+	stosq				; Clear the descriptor length and status
+	mov rdi, os_PacketBuffers
+	mov [rdi], word cx		; Save the packet size to PacketBuffers
+
+	; Increment i8257x_rx_lasthead and the Receive Descriptor Tail
+	mov eax, [i8257x_rx_lasthead]
+	add eax, 1
+	and eax, 0xF
+	mov [i8257x_rx_lasthead], eax
+	mov eax, [rsi+i8257x_RDT]	; Read the current Receive Descriptor Tail
+	add eax, 1			; Add 1 to the Receive Descriptor Tail
+	and eax, 0xF
+	mov [rsi+i8257x_RDT], eax	; Write the updated Receive Descriptor Tail
 
 	pop rax
 	pop rsi
@@ -284,7 +296,7 @@ net_i8257x_poll_end:
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
-
+i8257x_rx_lasthead: dd 0
 
 ; -----------------------------------------------------------------------------
 ; net_i8257x_ack_int - Acknowledge an internal interrupt of the Intel 8257x NIC
