@@ -265,7 +265,7 @@ i8254x_rx_lasthead: dd 0
 ; -----------------------------------------------------------------------------
 
 
-; Maximum packet size
+; Constants
 i8254x_MAX_PKT_SIZE	equ 16384
 i8254x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
 

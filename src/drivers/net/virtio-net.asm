@@ -157,7 +157,7 @@ virtio_net_init_cap_next_offset:
 virtio_net_init_cap_end:
 
 	; Grab the MAC address
-	push rsi
+	mov rsi, [os_NetIOBaseMem]
 	add rsi, [virtio_net_device_offset]
 	lodsb
 	mov [os_NetMAC], al
@@ -171,7 +171,28 @@ virtio_net_init_cap_end:
 	mov [os_NetMAC+4], al
 	lodsb
 	mov [os_NetMAC+5], al
+
+	call net_virtio_reset
+
+virtio_net_init_error:
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
 	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; net_virtio_reset - Reset a Virtio NIC
+;  IN:	Nothing
+; OUT:	Nothing, all registers preserved
+net_virtio_reset:
+	push rdi
+	push rsi
+	push rcx
+	push rax
 
 	; Device Initialization (section 3.1)
 
@@ -305,7 +326,6 @@ virtio_net_init_pop:
 	; Populate RX desc
 	mov rdi, os_net_mem
 	mov rax, os_PacketBuffers	; Address for storing the data
-;	add rax, 2			; Room for packet length
 	stosq
 	mov eax, 1500			; Number of bytes
 	stosd
@@ -326,21 +346,10 @@ virtio_net_init_pop:
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
-virtio_net_init_error:
 	pop rax
-	pop rbx
 	pop rcx
-	pop rdx
 	pop rsi
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; net_virtio_reset - Reset a Virtio NIC
-;  IN:	Nothing
-; OUT:	Nothing, all registers preserved
-net_virtio_reset:
+	pop rdi
 
 	ret
 ; -----------------------------------------------------------------------------
@@ -472,16 +481,6 @@ net_virtio_poll_nodata:
 ; -----------------------------------------------------------------------------
 
 
-; -----------------------------------------------------------------------------
-; net_virtio_ack_int - Acknowledge an internal interrupt of the Virtio NIC
-;  IN:	Nothing
-; OUT:	RAX = Ethernet status
-;	Uses RDI
-;net_virtio_ack_int:
-;	bts ax, 7
-;	ret
-; -----------------------------------------------------------------------------
-
 ; Variables
 virtio_net_notify_offset: dq 0
 virtio_net_notify_offset_multiplier: dq 0
@@ -497,12 +496,6 @@ netheader:
 dd 0x00000000
 dd 0x00000000
 dd 0x00000000
-
-;align 16
-;rxnetheader:
-;dd 0x00000000
-;dd 0x00000000
-;dd 0x00000000
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_NET_F_CSUM		equ 0 ; Device handles packets with partial checksum

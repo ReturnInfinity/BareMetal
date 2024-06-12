@@ -77,9 +77,9 @@ net_i8259x_reset:
 	; Issue a global reset (4.6.3.2)
 	mov eax, i8259x_CTRL_RST_MASK	; Load the mask for a software reset and link reset
 	mov [rsi+i8259x_CTRL], eax	; Write the reset value
-net_i8259x_init_reset_wait:
+net_i8259x_reset_wait:
 	mov eax, [rsi+i8259x_CTRL]	; Read CTRL
-	jnz net_i8259x_init_reset_wait	; Wait for it to read back as 0x0
+	jnz net_i8259x_reset_wait	; Wait for it to read back as 0x0
 
 	; Wait 10ns
 
@@ -94,19 +94,19 @@ net_i8259x_init_reset_wait:
 	mov eax, [rsi+i8259x_EEC]	; Read current value
 	bts eax, 9			; i8259x_EEC_ARD
 	mov [rsi+i8259x_EEC], eax	; Write the new value
-net_i8259x_init_eeprom_wait:
+net_i8259x_reset_eeprom_wait:
 	mov eax, [rsi+i8259x_EEC]	; Read current value
 	bt eax, 9			; i8259x_EEC_ARD
-	jnc net_i8259x_init_eeprom_wait	; If not equal, keep waiting
+	jnc net_i8259x_reset_eeprom_wait	; If not equal, keep waiting
 
 	; Wait for DMA initialization done (4.6.3)
 	mov eax, [rsi+i8259x_RDRXCTL]	; Read current value
 	bts eax, 3			; i8259x_RDRXCTL_DMAIDONE
 	mov [rsi+i8259x_RDRXCTL], eax	; Write the new value
-net_i8259x_init_dma_wait:
+net_i8259x_reset_dma_wait:
 	mov eax, [rsi+i8259x_RDRXCTL]	; Read current value
 	bt eax, 3			; i8259x_RDRXCTL_DMAIDONE
-	jnc net_i8259x_init_dma_wait	; If not equal, keep waiting
+	jnc net_i8259x_reset_dma_wait	; If not equal, keep waiting
 
 	; Set up the PHY and the link (4.6.4)
 ;	mov eax, [rsi+i8259x_AUTOC]
@@ -128,14 +128,17 @@ net_i8259x_init_dma_wait:
 	mov eax, [rsi+i8259x_GOTCL]
 	mov eax, [rsi+i8259x_GOTCH]	; TX bytes = GOTCL + (GOTCH << 32)
 
-	; Create a single receive descriptor
+	; Create RX descriptors
 	push rdi
+	mov ecx, i8259x_MAX_DESC
 	mov rdi, os_rx_desc
+net_i8259x_reset_nextdesc:	
 	mov rax, os_PacketBuffers	; Default packet will go here
-;	add rax, 2			; Room for packet length
 	stosq
 	xor eax, eax
 	stosq
+	dec ecx
+	jnz net_i8259x_reset_nextdesc
 	pop rdi
 
 	; Initialize receive (4.6.7)
@@ -175,10 +178,11 @@ net_i8259x_init_dma_wait:
 	mov [rsi+i8259x_RDBAL], eax
 	shr rax, 32
 	mov [rsi+i8259x_RDBAH], eax
-	mov eax, 32768
+	mov eax, i8259x_MAX_DESC * 16
 	mov [rsi+i8259x_RDLEN], eax
 	xor eax, eax
 	mov [rsi+i8259x_RDH], eax
+	mov eax, i8259x_MAX_DESC / 2
 	mov [rsi+i8259x_RDT], eax
 	; Enable Multicast
 	mov eax, 0xFFFFFFFF
@@ -240,7 +244,7 @@ net_i8259x_init_rx_secrx_rdy_wait:
 	mov [rsi+i8259x_TDBAL], eax	; Bits 6:0 are ignored, memory alignment at 128bytes
 	shr rax, 32
 	mov [rsi+i8259x_TDBAH], eax
-	mov eax, 32768
+	mov eax, i8259x_MAX_DESC * 16
 	mov [rsi+i8259x_TDLEN], eax
 	xor eax, eax
 	mov [rsi+i8259x_TDH], eax
@@ -297,19 +301,32 @@ net_i8259x_transmit:
 	push rax
 
 	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
+
+	; Calculate the descriptor to write to
+	mov eax, [i8259x_tx_lasttail]
+	push rax			; Save lasttail
+	shl eax, 4			; Quick multiply by 16
+	add rdi, rax			; Add offset to RDI
+
+	; Write to the descriptor
 	mov rax, rsi
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
 	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
-	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS
+	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS (CRC)
 	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
+
+	; Increment i8259x_tx_lasttail and the Transmit Descriptor Tail
+	pop rax				; Restore lasttail
+	add eax, 1
+	and eax, 0xF
+	mov [i8259x_tx_lasttail], eax
 	mov rdi, [os_NetIOBaseMem]
-	xor eax, eax
-	mov [rdi+i8259x_TDH], eax	; TDH - Transmit Descriptor Head
-	inc eax
 	mov [rdi+i8259x_TDT], eax	; TDL - Transmit Descriptor Tail
+
 	; TDESC.STA.DD (bit 32) should be 1 once the hardware has sent the packet
+
 	pop rax
 	pop rdi
 	ret
@@ -325,21 +342,57 @@ net_i8259x_transmit:
 ;	Bits 95:64 - Fragment Checksum (Bits 31:16) / Length (Bits 15:0)
 ;	Bits 127:96 - VLAN (Bits 63:48) / Errors (Bits 47:40) / STA (Bits 39:32)
 net_i8259x_poll:
+	push rdi
+	push rsi			; Used for the base MMIO of the NIC
+	push rax
+
+	mov rdi, os_rx_desc
+	mov rsi, [os_NetIOBaseMem]	; Load the base MMIO of the NIC
+
+	; Calculate the descriptor to read from
+	mov eax, [i8259x_rx_lasthead]
+	shl eax, 4			; Quick multiply by 16
+	add eax, 8			; Offset to bytes received
+	add rdi, rax			; Add offset to RDI
+	; Todo: read all 64 bits. check status bit for DD
+	xor ecx, ecx			; Clear RCX
+	mov cx, [rdi]			; Get the packet length
+	cmp cx, 0
+	je net_i8259x_poll_end		; No data? Bail out
+
+	xor eax, eax
+	stosq				; Clear the descriptor length and status
+
+	; Increment i8259x_rx_lasthead and the Receive Descriptor Tail
+	mov eax, [i8259x_rx_lasthead]
+	add eax, 1
+	and eax, 0xF
+	mov [i8259x_rx_lasthead], eax
+	mov eax, [rsi+i8259x_RDT]	; Read the current Receive Descriptor Tail
+	add eax, 1			; Add 1 to the Receive Descriptor Tail
+	and eax, 0xF
+	mov [rsi+i8259x_RDT], eax	; Write the updated Receive Descriptor Tail
+
+	pop rax
+	pop rsi
+	pop rdi
+	ret
+
+net_i8259x_poll_end:
+	xor ecx, ecx
+	pop rax
+	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
+; Variables
+i8259x_tx_lasttail: dd 0
+i8259x_rx_lasthead: dd 0
 
-; -----------------------------------------------------------------------------
-; net_i8259x_ack_int - Acknowledge an internal interrupt of the Intel 8259x NIC
-;  IN:	Nothing
-; OUT:	RAX = Ethernet status
-;net_i8259x_ack_int:
-;	ret
-; -----------------------------------------------------------------------------
-
-
-; Maximum packet size
+; Constants
 i8259x_MAX_PKT_SIZE	equ 16384
+i8259x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
 
 ; Register list (All registers should be accessed as 32-bit values)
 

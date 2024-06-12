@@ -90,7 +90,7 @@ reset_8169_completed:
 
 	; Power management?
 
-	; Recieve configuration
+	; Receive configuration
 	mov dx, word [os_NetIOAddress]
 	add edx, R8169_REG_RCR
 	mov eax, 0x0000E70A		; Set bits 1 (APM), 3 (AB), 8-10 (Unlimited), 13-15 (No limit)

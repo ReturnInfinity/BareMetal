@@ -222,7 +222,7 @@ net_i8257x_transmit:
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
-i8257x_tx_lasttail: dd 0
+
 
 ; -----------------------------------------------------------------------------
 ; net_i8257x_poll - Polls the Intel 8257x NIC for a received packet
@@ -281,10 +281,12 @@ net_i8257x_poll_end:
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
+
+; Variables
+i8257x_tx_lasttail: dd 0
 i8257x_rx_lasthead: dd 0
 
-
-; Maximum packet size
+; Constants
 i8257x_MAX_PKT_SIZE	equ 16384
 i8257x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
 
