@@ -58,7 +58,7 @@ os_bus_write_pci:
 ; os_bus_read_bar -- Read a BAR (Base Address Register)
 ;  IN:	RDX = Register to read from
 ;	AL = BAR #
-; OUT:	RAX = Register value to be written
+; OUT:	RAX = BAR I/O Address
 os_bus_read_bar:
 	push rdx
 	push rbx

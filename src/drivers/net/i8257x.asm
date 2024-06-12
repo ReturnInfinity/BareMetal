@@ -12,8 +12,6 @@
 net_i8257x_init:
 	push rsi
 	push rdx
-	push rcx
-	push rbx
 	push rax
 
 	mov al, 0			; Read BAR0
@@ -49,8 +47,6 @@ net_i8257x_init:
 net_i8257x_init_error:
 
 	pop rax
-	pop rbx
-	pop rcx
 	pop rdx
 	pop rsi
 	ret

@@ -31,22 +31,9 @@ virtio_blk_init_next_dev:
 	jne virtio_blk_init_next_dev	; No match? Try next entry
 
 	; Grab the Base I/O Address of the device
-	xor ebx, ebx
-	mov dl, 8			; Read register 8 for BAR4
-	call os_bus_read
-	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
-	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
-	jc virtio_blk_init_error
-	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
-	jnc virtio_blk_init_32bit_bar
-	mov dl, 9			; Read register 9 for BAR5 (Upper 32-bits for BAR4)
-	call os_bus_read
-	shl rax, 32			; Shift the bits to the upper 32
-virtio_blk_init_32bit_bar:
-	and ebx, 0xFFFFFFF0		; Clear the low four bits
-	add rax, rbx			; Add the upper 32 and lower 32 together
+	mov al, 4			; Read BAR4
+	call os_bus_read_bar
 	mov [os_virtioblk_base], rax	; Save it as the base
-
 	mov rsi, rax			; RSI holds the base for MMIO
 
 	; Gather required values from PCI Capabilities
