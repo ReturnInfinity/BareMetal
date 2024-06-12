@@ -16,32 +16,15 @@ net_virtio_init:
 	push rbx
 	push rax
 
-	; Grab the Base I/O Address of the device
-	xor ebx, ebx
-	mov dl, 8			; Read register 8 for BAR4
-	call os_bus_read
-	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
-	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
-	jc virtio_net_init_error
-	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
-	jnc virtio_net_init_32bit_bar
-	mov dl, 9			; Read register 9 for BAR5 (Upper 32-bits for BAR4)
-	call os_bus_read
-	shl rax, 32			; Shift the bits to the upper 32
-virtio_net_init_32bit_bar:
-	and ebx, 0xFFFFFFF0		; Clear the low four bits
-	add rax, rbx			; Add the upper 32 and lower 32 together
+	mov al, 4			; Read BAR4
+	call os_bus_read_bar
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
-;	; Grab the IRQ of the device
-;	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
-;	call os_bus_read
-;	mov [os_NetIRQ], al		; AL holds the IRQ
-
-	; Disable INTX
+	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
 	call os_bus_read
-	bts eax, 10			; Set Interrupt Disable (bit 10)
+	bts eax, 10			; Set Interrupt Disable
+	bts eax, 1			; Enable Memory Space
 	call os_bus_write
 
 	; Gather required values from PCI Capabilities

@@ -16,21 +16,8 @@ net_i8257x_init:
 	push rbx
 	push rax
 
-	; Grab the Base I/O Address of the device
-	xor ebx, ebx
-	mov dl, 0x04			; Read register 4 for BAR0
-	call os_bus_read
-	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
-	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
-	jc net_i8257x_init_error
-	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
-	jnc net_i8257x_init_32bit_bar
-	mov dl, 0x05			; Read register 5 for BAR1 (Upper 32-bits of BAR0)
-	call os_bus_read
-	shl rax, 32			; Shift the bits to the upper 32
-net_i8257x_init_32bit_bar:
-	and ebx, 0xFFFFFFF0		; Clear the low four bits
-	add rax, rbx			; Add the upper 32 and lower 32 together
+	mov al, 0			; Read BAR0
+	call os_bus_read_bar
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
 	; Set PCI Status/Command values
