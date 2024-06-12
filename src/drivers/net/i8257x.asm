@@ -84,6 +84,7 @@ net_i8257x_reset:
 
 	; Disable Interrupts (14.4)
 	xor eax, eax
+	mov [rsi+i8257x_ITR], eax	; Disable interrupt throttling logic
 	mov [rsi+i8257x_IMS], eax
 	mov eax, i8257x_IRQ_CLEAR_MASK
 	mov [rsi+i8257x_IMC], eax
@@ -109,13 +110,7 @@ net_i8257x_init_reset_wait:
 	and eax, 0xFFFFFFFF - (1 << i8257x_CTRL_LRST | 1 << i8257x_CTRL_VME)
 	; Set the bits we do want
 	or eax, 1 << i8257x_CTRL_FD | 1 << i8257x_CTRL_SLU
-;	bts eax, 0			; FD = 1
-;	btr eax, 3			; LRST = 0
-;	bts eax, 6			; SLU = 1
-;	btr eax, 30			; VME = 0 (Disable 802.1Q)
 	mov [rsi+i8257x_CTRL], eax
-	; Disable TSO?
-	; CTRL_EXT?
 
 	; Initialize all statistical counters ()
 	mov eax, [rsi+i8257x_GPRC]	; RX packets
@@ -150,8 +145,8 @@ net_i8257x_reset_nextdesc:
 	mov eax, i8257x_MAX_DESC / 2
 	mov [rsi+i8257x_RDT], eax	; Receive Descriptor Tail
 ; RADV, RDTR, RFCTL (for descriptor format), RXCSUM?
-	mov eax, 0x00140420		; PTHRESH (5:0), HTHRESH (13:8), WTHRESH (21:16), GRAN (24)
-	mov [rsi+i8257x_RXDCTL], eax
+;	mov eax, 0x00140420		; PTHRESH (5:0), HTHRESH (13:8), WTHRESH (21:16), GRAN (24)
+;	mov [rsi+i8257x_RXDCTL], eax
 	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
 	mov [rsi+i8257x_RCTL], eax	; Receive Control Register
 
@@ -165,8 +160,8 @@ net_i8257x_reset_nextdesc:
 	xor eax, eax
 	mov [rsi+i8257x_TDH], eax	; Transmit Descriptor Head
 	mov [rsi+i8257x_TDT], eax	; Transmit Descriptor Tail
-	mov eax, 0x0341011F		; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
-	mov [rsi+i8257x_TXDCTL], eax
+;	mov eax, 0x0341011F		; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
+;	mov [rsi+i8257x_TXDCTL], eax
 ;	mov eax, 0x00602008		; IPGT (9:0) 8, IPGR1 (19:10) 8, IPGR2 (29:20) 6
 ;	mov [rsi+i8257x_TIPG], eax	; Transmit IPG Register
 ;	mov eax, 0x08
@@ -300,17 +295,6 @@ net_i8257x_poll_end:
 	ret
 ; -----------------------------------------------------------------------------
 i8257x_rx_lasthead: dd 0
-
-; -----------------------------------------------------------------------------
-; net_i8257x_ack_int - Acknowledge an internal interrupt of the Intel 8257x NIC
-;  IN:	Nothing
-; OUT:	RAX = Ethernet status
-;net_i8257x_ack_int:
-;	push rdi
-;
-;	pop rdi
-;	ret
-; -----------------------------------------------------------------------------
 
 
 ; Maximum packet size
