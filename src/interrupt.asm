@@ -42,10 +42,14 @@ keyboard:
 	in al, 0x60			; Get the scan code from the keyboard
 	cmp al, 0x01
 	je keyboard_escape
+	cmp al, 0x1D
+	je keyboard_control
 	cmp al, 0x2A			; Left Shift Make
 	je keyboard_shift
 	cmp al, 0x36			; Right Shift Make
 	je keyboard_shift
+	cmp al, 0x9D
+	je keyboard_nocontrol
 	cmp al, 0xAA			; Left Shift Break
 	je keyboard_noshift
 	cmp al, 0xB6			; Right Shift Break
@@ -75,6 +79,14 @@ keyboard_escape:
 	jmp reboot
 
 keyup:
+	jmp keyboard_done
+
+keyboard_control:
+	mov byte [key_control], 0x01
+	jmp keyboard_done
+
+keyboard_nocontrol:
+	mov byte [key_control], 0x00
 	jmp keyboard_done
 
 keyboard_shift:
