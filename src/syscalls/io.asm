@@ -10,19 +10,16 @@
 ; b_input -- Scans keyboard for input
 ;  IN:	Nothing
 ; OUT:	AL = 0 if no key pressed, otherwise ASCII code, other regs preserved
-;	Carry flag is set if there was a keystroke, clear if there was not
 ;	All other registers preserved
 b_input:
 	mov al, [key]
 	test al, al
 	jz b_input_no_key
 	mov byte [key], 0x00		; clear the variable as the keystroke is in AL now
-	stc				; set the carry flag
 	ret
 
 b_input_no_key:
 	call serial_recv		; Try from the serial port
-	clc				; clear the carry flag
 	ret
 ; -----------------------------------------------------------------------------
 
