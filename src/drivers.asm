@@ -12,7 +12,7 @@
 %include "drivers/ioapic.asm"
 %include "drivers/pcie.asm"
 %include "drivers/pci.asm"
-%include "drivers/keyboard.asm"
+%include "drivers/ps2.asm"
 %include "drivers/serial.asm"
 %include "drivers/virtio.asm"
 
