@@ -18,6 +18,14 @@ ps2_init:
 	mov al, PS2_COMMAND_DI_AUX
 	call ps2_send_cmd
 
+	; Execute a self-test on the PS/2 Controller
+	call ps2_flush
+	mov al, PS2_COMMAND_TEST
+	call ps2_send_cmd
+	call ps2_read_data
+	cmp al, 0x55			; 0x55 means test passed
+	jne ps2_init_error		; Bail out otherwise
+
 	; Read Controller Configuration Byte
 	mov al, PS2_COMMAND_RD_CCB	; Command to Read "byte 0" from internal RAM
 	call ps2_send_cmd
@@ -27,10 +35,10 @@ ps2_init:
 	mov bl, al			; Save the CCB to BL
 	; Clear bit 1 for Second PS/2 port interrupt disabled
 	; Clear bit 4 for First PS/2 port clock enabled
+	and bl, 0b11101101		; Clear bits 1 and 4
 	; Set bit 0 for First PS/2 port interrupt enabled
 	; Set bit 5 for Second PS/2 port clock disabled
 	; Set bit 6 for First PS/2 port translation enabled
-	and bl, 0b11101101		; Clear bits 1 and 4
 	or bl, 0b01100001		; Set bits 0, 5, and 6
 
 	; Write Controller Configuration Byte
@@ -44,6 +52,10 @@ ps2_init:
 	mov al, PS2_COMMAND_EN_KBD
 	call ps2_send_cmd
 
+	; Set flag that the PS/2 keyboard was enabled
+	or qword [os_SysConfEn], 1 << 0
+
+ps2_init_error:
 	ret
 ; -----------------------------------------------------------------------------
 

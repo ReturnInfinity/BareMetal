@@ -316,7 +316,7 @@ net_i8259x_transmit:
 	; Increment i8259x_tx_lasttail and the Transmit Descriptor Tail
 	pop rax				; Restore lasttail
 	add eax, 1
-	and eax, 0xF
+	and eax, i8259x_MAX_DESC - 1
 	mov [i8259x_tx_lasttail], eax
 	mov rdi, [os_NetIOBaseMem]
 	mov [rdi+i8259x_TDT], eax	; TDL - Transmit Descriptor Tail
@@ -362,11 +362,11 @@ net_i8259x_poll:
 	; Increment i8259x_rx_lasthead and the Receive Descriptor Tail
 	mov eax, [i8259x_rx_lasthead]
 	add eax, 1
-	and eax, 0xF
+	and eax, i8259x_MAX_DESC - 1
 	mov [i8259x_rx_lasthead], eax
 	mov eax, [rsi+i8259x_RDT]	; Read the current Receive Descriptor Tail
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
-	and eax, 0xF
+	and eax, i8259x_MAX_DESC - 1
 	mov [rsi+i8259x_RDT], eax	; Write the updated Receive Descriptor Tail
 
 	pop rax

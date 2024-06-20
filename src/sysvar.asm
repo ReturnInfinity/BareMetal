@@ -59,7 +59,7 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
-;os_ClockCounter:	equ os_SystemVariables + 0x0010
+os_SysConfEn:		equ os_SystemVariables + 0x0010
 os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
 os_net_transmit:	equ os_SystemVariables + 0x0028
@@ -133,8 +133,7 @@ os_AHCIIRQ:		equ os_SystemVariables + 0x0315
 os_screen_bpp:		equ os_SystemVariables + 0x0316
 os_ioapic_ver:		equ os_SystemVariables + 0x0317
 os_ioapic_mde:		equ os_SystemVariables + 0x0318
-os_HPETEnabled:		equ os_SystemVariables + 0x0319 ; 1 if the HPET was enabled
-key_control:		equ os_SystemVariables + 0x031A
+key_control:		equ os_SystemVariables + 0x0319
 
 
 ; Misc

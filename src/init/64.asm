@@ -8,6 +8,12 @@
 
 ; -----------------------------------------------------------------------------
 init_64:
+	; Clear all memory after the kernel up to 2MiB
+	mov edi, os_SystemVariables
+	mov ecx, 122880			; Clear 960 KiB
+	xor eax, eax
+	rep stosq
+
 	; Configure the PS/2 keyboard
 	call ps2_init
 
@@ -18,12 +24,6 @@ init_64:
 	mov al, 0xFF
 	out 0x21, al
 	out 0xA1, al
-
-	; Clear all memory after the kernel up to 2MiB
-	mov edi, os_SystemVariables
-	mov ecx, 122880			; Clear 960 KiB
-	xor eax, eax
-	rep stosq
 
 	; Create exception gate stubs (Pure64 has already set the correct gate markers)
 	xor edi, edi			; 64-bit IDT at linear address 0x0000000000000000

@@ -47,7 +47,7 @@ os_hpet_init:
 	call os_hpet_write
 
 	; Set flag that HPET was enabled
-	mov byte [os_HPETEnabled], 1
+	or qword [os_SysConfEn], 1 << 4
 
 os_hpet_init_error:
 	ret

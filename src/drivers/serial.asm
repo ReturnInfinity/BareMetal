@@ -41,6 +41,9 @@ serial_init:
 	mov al, 0xC7			; Enable FIFO, clear them, 14-byte threshold
 	out dx, al
 
+	; Set flag that Serial was enabled
+	or qword [os_SysConfEn], 1 << 1
+
 	ret
 ; -----------------------------------------------------------------------------
 

@@ -171,6 +171,14 @@ net_i8254x_transmit:
 	push rax
 
 	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
+
+	; Calculate the descriptor to write to
+	mov eax, [i8254x_tx_lasttail]
+	push rax			; Save lasttail
+	shl eax, 4			; Quick multiply by 16
+	add rdi, rax			; Add offset to RDI
+
+	; Write to the descriptor
 	mov rax, rsi
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
@@ -178,10 +186,13 @@ net_i8254x_transmit:
 	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS
 	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
+
+	; Increment i8254x_tx_lasttail and the Transmit Descriptor Tail
+	pop rax				; Restore lasttail
+	add eax, 1
+	and eax, i8254x_MAX_DESC - 1
+	mov [i8254x_tx_lasttail], eax
 	mov rdi, [os_NetIOBaseMem]
-	xor eax, eax
-	mov [rdi+i8254x_TDH], eax	; TDH - Transmit Descriptor Head
-	inc eax
 	mov [rdi+i8254x_TDT], eax	; TDL - Transmit Descriptor Tail
 
 	pop rax
@@ -224,11 +235,11 @@ net_i8254x_poll:
 	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
 	mov eax, [i8254x_rx_lasthead]
 	add eax, 1
-	and eax, 0xF
+	and eax, i8254x_MAX_DESC - 1
 	mov [i8254x_rx_lasthead], eax
 	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
-	and eax, 0xF
+	and eax, i8254x_MAX_DESC - 1
 	mov [rsi+i8254x_RDT], eax	; Write the updated Receive Descriptor Tail
 
 	pop rax
@@ -243,7 +254,7 @@ net_i8254x_poll_end:
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
-i8254x_rx_lasthead: dd 0
+
 
 ; -----------------------------------------------------------------------------
 ; net_i8254x_ack_int - Acknowledge an internal interrupt of the Intel 8254x NIC
@@ -260,6 +271,9 @@ i8254x_rx_lasthead: dd 0
 ;	ret
 ; -----------------------------------------------------------------------------
 
+; Variables
+i8254x_tx_lasttail: dd 0
+i8254x_rx_lasthead: dd 0
 
 ; Constants
 i8254x_MAX_PKT_SIZE	equ 16384
