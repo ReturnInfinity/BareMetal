@@ -155,6 +155,7 @@ PS2_COMMAND_TEST	equ 0xAA ; Test PS/2 Controller
 PS2_COMMAND_TEST_KBD	equ 0xAB ; Test first PS/2 port
 PS2_COMMAND_DI_KBD	equ 0xAD ; Disable first PS/2 port
 PS2_COMMAND_EN_KBD	equ 0xAE ; Enable first PS/2 port
+PS2_COMMAND_RESET_CPU	equ 0xFE ; Reset the CPU
 
 ; PS/2 Keyboard Commands
 PS2_COMMAND_SET_LEDS	equ 0xED
