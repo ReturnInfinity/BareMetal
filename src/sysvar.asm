@@ -13,24 +13,33 @@ newline:		db 10, 0
 
 
 ; Memory addresses
+
+; x86-64 structures
 sys_idt:		equ 0x0000000000000000	; 0x000000 -> 0x000FFF	4K Interrupt descriptor table
 sys_gdt:		equ 0x0000000000001000	; 0x001000 -> 0x001FFF	4K Global descriptor table
 sys_pml4:		equ 0x0000000000002000	; 0x002000 -> 0x002FFF	4K PML4 table
 sys_pdpl:		equ 0x0000000000003000	; 0x003000 -> 0x003FFF	4K PDP table low
 sys_pdph:		equ 0x0000000000004000	; 0x004000 -> 0x004FFF	4K PDP table high
 sys_Pure64:		equ 0x0000000000005000	; 0x005000 -> 0x007FFF	12K Pure64 system data
+
 						; 0x008000 -> 0x00FFFF	32K Free
 
 sys_pdl:		equ 0x0000000000010000	; 0x010000 -> 0x01FFFF	64K Page directory low (Maps up to 16GB)
 sys_pdh:		equ 0x0000000000020000	; 0x020000 -> 0x05FFFF	256K Page directory high (Maps up to 64GB)
+
 						; 0x060000 -> 0x09FFFF	256K Free
+
 sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
+
+; Kernel memory
 os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 
 ; System memory
 bus_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K Bus Table
+
 						; 0x130000 -> 0x13FFFF	64K Free
+
 ; Storage memory
 os_storage_mem:		equ 0x0000000000140000
 ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
@@ -46,12 +55,16 @@ os_nvme_CTRLID:		equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Ide
 os_nvme_ANS:		equ 0x0000000000175000	; 0x175000 -> 0x175FFF	4K Namespace Data
 os_nvme_NSID:		equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identify Data
 os_nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
+
 						; 0x180000 -> 0x19FFFF	128K Free
-; Network Memory
+
+; Network memory
 os_net_mem:		equ 0x00000000001A0000
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
 os_PacketBuffers:	equ 0x00000000001B0000	;
+
+; Misc memory
 os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
 app_start:		equ 0xFFFF800000000000	; Location of application memory
 
@@ -64,7 +77,7 @@ os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
 os_net_transmit:	equ os_SystemVariables + 0x0028
 os_net_poll:		equ os_SystemVariables + 0x0030
-;os_net_ackint:		equ os_SystemVariables + 0x0038
+os_net_ackint:		equ os_SystemVariables + 0x0038
 os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
 os_NetMAC:		equ os_SystemVariables + 0x0048
 os_HPET_Address:	equ os_SystemVariables + 0x0050
@@ -114,12 +127,12 @@ key_shift:		equ os_SystemVariables + 0x0302
 os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe is enabled
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
 os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is connected to
-os_NetActivity_TX:	equ os_SystemVariables + 0x0306
-os_NetActivity_RX:	equ os_SystemVariables + 0x0307
-os_EthernetBuffer_C1:	equ os_SystemVariables + 0x0308	; Counter 1 for the Ethernet RX Ring Buffer
-os_EthernetBuffer_C2:	equ os_SystemVariables + 0x0309	; Counter 2 for the Ethernet RX Ring Buffer
-os_StorageEnabled:	equ os_SystemVariables + 0x030A
-os_StorageActivity:	equ os_SystemVariables + 0x030B
+;os_NetActivity_TX:	equ os_SystemVariables + 0x0306
+;os_NetActivity_RX:	equ os_SystemVariables + 0x0307
+;os_EthernetBuffer_C1:	equ os_SystemVariables + 0x0308	; Counter 1 for the Ethernet RX Ring Buffer
+;os_EthernetBuffer_C2:	equ os_SystemVariables + 0x0309	; Counter 2 for the Ethernet RX Ring Buffer
+;os_StorageEnabled:	equ os_SystemVariables + 0x030A
+;os_StorageActivity:	equ os_SystemVariables + 0x030B
 os_NVMeIRQ:		equ os_SystemVariables + 0x030C
 os_NVMeMJR:		equ os_SystemVariables + 0x030D
 os_NVMeMNR:		equ os_SystemVariables + 0x030E

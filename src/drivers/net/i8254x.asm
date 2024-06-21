@@ -83,8 +83,8 @@ net_i8254x_reset:
 	; Clear the bits we don't want
 	and eax, 0xFFFFFFFF - (1 << i8254x_CTRL_LRST | 1 << i8254x_CTRL_VME)
 	; Set the bits we do want
-	or eax, 1 << i8254x_CTRL_FD | 1 << i8254x_CTRL_SLU | 1 << i8254x_CTRL_ASDE 
-	mov [rsi+i8254x_CTRL], eax	; CTRL: clear LRST, set SLU and ASDE, clear RSTPHY, VME, and ILOS
+	or eax, 1 << i8254x_CTRL_FD | 1 << i8254x_CTRL_SLU | 1 << i8254x_CTRL_ASDE
+	mov [rsi+i8254x_CTRL], eax
 
 	; Initialize all statistical counters ()
 	mov eax, [rsi+i8254x_GPRC]	; RX packets
@@ -127,7 +127,7 @@ net_i8254x_reset_nextdesc:
 	mov [rsi+i8254x_RDH], eax	; Receive Descriptor Head
 	mov eax, i8254x_MAX_DESC / 2
 	mov [rsi+i8254x_RDT], eax	; Receive Descriptor Tail
-	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
+	mov eax, 1 << i8254x_RCTL_EN | 1 << i8254x_RCTL_UPE | 1 << i8254x_RCTL_MPE | 1 << i8254x_RCTL_LPE | 1 << i8254x_RCTL_BAM | 1 << i8254x_RCTL_SECRC
 	mov [rsi+i8254x_RCTL], eax	; Receive Control Register
 
 	; Initialize transmit
@@ -140,9 +140,9 @@ net_i8254x_reset_nextdesc:
 	xor eax, eax
 	mov [rsi+i8254x_TDH], eax	; Transmit Descriptor Head
 	mov [rsi+i8254x_TDT], eax	; Transmit Descriptor Tail
-	mov eax, 0x010400FA		; Enabled, Pad Short Packets, 15 retries, 64-byte COLD, Re-transmit on Late Collision
+	mov eax, 1 << i8254x_TCTL_EN | 1 << i8254x_TCTL_PSP | 15 << i8254x_TCTL_CT | 0x40 << i8254x_TCTL_COLD | 1 << i8254x_TCTL_RTLC
 	mov [rsi+i8254x_TCTL], eax	; Transmit Control Register
-	mov eax, 0x0060200A		; IPGT 10, IPGR1 8, IPGR2 6
+	mov eax, 0x0060200A		; IPGT 10 (9:0), IPGR1 8 (19:10), IPGR2 6 (29:20)
 	mov [rsi+i8254x_TIPG], eax	; Transmit IPG Register
 
 	xor eax, eax
@@ -430,34 +430,32 @@ i8254x_ICR_GPI_SDP7	equ 0x00004000 ; GPI on SDP7
 i8254x_ICR_TXD_LOW	equ 0x00008000 ; TX Desc low threshold hit
 i8254x_ICR_SRPD		equ 0x00010000 ; Small RX packet detected
 
-; RCTL - Receive Control Register (0x0100)
-i8254x_RCTL_EN		equ 0x00000002 ; Receiver Enable
-i8254x_RCTL_SBP		equ 0x00000004 ; Store Bad Packets
-i8254x_RCTL_UPE		equ 0x00000008 ; Unicast Promiscuous Enabled
-i8254x_RCTL_MPE		equ 0x00000010 ; Xcast Promiscuous Enabled
-i8254x_RCTL_LPE		equ 0x00000020 ; Long Packet Reception Enable
-i8254x_RCTL_LBM_MASK	equ 0x000000C0 ; Loopback Mode
-i8254x_RCTL_LBM_SHIFT	equ 6
-i8254x_RCTL_RDMTS_MASK	equ 0x00000300 ; RX Desc Min Threshold Size
-i8254x_RCTL_RDMTS_SHIFT	equ 8
-i8254x_RCTL_MO_MASK	equ 0x00003000 ; Multicast Offset
-i8254x_RCTL_MO_SHIFT	equ 12
-i8254x_RCTL_BAM		equ 0x00008000 ; Broadcast Accept Mode
-i8254x_RCTL_BSIZE_MASK	equ 0x00030000 ; RX Buffer Size
-i8254x_RCTL_BSIZE_SHIFT	equ 16
-i8254x_RCTL_VFE		equ 0x00040000 ; VLAN Filter Enable
-i8254x_RCTL_CFIEN	equ 0x00080000 ; CFI Enable
-i8254x_RCTL_CFI		equ 0x00100000 ; Canonical Form Indicator Bit
-i8254x_RCTL_DPF		equ 0x00400000 ; Discard Pause Frames
-i8254x_RCTL_PMCF	equ 0x00800000 ; Pass MAC Control Frames
-i8254x_RCTL_BSEX	equ 0x02000000 ; Buffer Size Extension
-i8254x_RCTL_SECRC	equ 0x04000000 ; Strip Ethernet CRC
+; RCTL (Receive Control Register, 0x00100, RW) Bit Masks
+i8254x_RCTL_EN		equ 1 ; Receiver Enable
+i8254x_RCTL_SBP		equ 2 ; Store Bad Packets
+i8254x_RCTL_UPE		equ 3 ; Unicast Promiscuous Enabled
+i8254x_RCTL_MPE		equ 4 ; Xcast Promiscuous Enabled
+i8254x_RCTL_LPE		equ 5 ; Long Packet Reception Enable
+i8254x_RCTL_LBM		equ 6 ; 2 bits - Loopback Mode
+i8254x_RCTL_RDMTS	equ 8 ; 2 bits - RX Desc Min Threshold Size
+i8254x_RCTL_MO		equ 12 ; 2 bits - Multicast Offset
+i8254x_RCTL_BAM		equ 15 ; Broadcast Accept Mode
+i8254x_RCTL_BSIZE	equ 16 ;  2 bits - RX Buffer Size
+i8254x_RCTL_VFE		equ 18 ; VLAN Filter Enable
+i8254x_RCTL_CFIEN	equ 19 ; CFI Enable
+i8254x_RCTL_CFI		equ 20 ; Canonical Form Indicator Bit
+i8254x_RCTL_DPF		equ 22 ; Discard Pause Frames
+i8254x_RCTL_PMCF	equ 23 ; Pass MAC Control Frames
+i8254x_RCTL_BSEX	equ 25 ; Buffer Size Extension
+i8254x_RCTL_SECRC	equ 26 ; Strip Ethernet CRC
 
 ; TCTL (Transmit Control Register, 0x00400, RW) Bit Masks
 i8254x_TCTL_EN		equ 1 ; Transmit Enable
 i8254x_TCTL_PSP		equ 3 ; Pad Short Packets
 i8254x_TCTL_CT		equ 4 ; Collision Threshold (11:4)
 i8254x_TCTL_COLD	equ 12 ; Collision Distance (21:12)
+i8254x_TCTL_RTLC	equ 24 ; Re-transmit on Late Collision
+
 
 ; PBA - Packet Buffer Allocation (0x1000)
 i8254x_PBA_RXA_MASK	equ 0x0000FFFF ; RX Packet Buffer
