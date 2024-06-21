@@ -382,6 +382,7 @@ net_i8259x_poll_end:
 	ret
 ; -----------------------------------------------------------------------------
 
+
 ; Variables
 i8259x_tx_lasttail: dd 0
 i8259x_rx_lasthead: dd 0

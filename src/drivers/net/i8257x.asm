@@ -66,13 +66,13 @@ net_i8257x_reset:
 	mov rdi, rsi
 
 	; Disable Interrupts (14.4)
+	mov eax, i8257x_IRQ_CLEAR_MASK
+	mov [rsi+i8257x_IMC], eax	; Disable all interrupt causes
 	xor eax, eax
 	mov [rsi+i8257x_ITR], eax	; Disable interrupt throttling logic
-	mov [rsi+i8257x_IMS], eax
-	mov eax, i8257x_IRQ_CLEAR_MASK
-	mov [rsi+i8257x_IMC], eax
-	mov eax, [rsi+i8257x_ICR]
-	
+	mov [rsi+i8257x_IMS], eax	; Mask all interrupts
+	mov eax, [rsi+i8257x_ICR]	; Clear any pending interrupts
+
 	; Issue a global reset (14.5)
 	mov eax, i8257x_CTRL_RST_MASK	; Load the mask for a software reset and link reset
 	mov [rsi+i8257x_CTRL], eax	; Write the reset value
@@ -81,11 +81,12 @@ net_i8257x_init_reset_wait:
 	jnz net_i8257x_init_reset_wait	; Wait for it to read back as 0x0
 
 	; Disable Interrupts again (14.4)
-	xor eax, eax
-	mov [rsi+i8257x_IMS], eax
 	mov eax, i8257x_IRQ_CLEAR_MASK
-	mov [rsi+i8257x_IMC], eax
-	mov eax, [rsi+i8257x_ICR]
+	mov [rsi+i8257x_IMC], eax	; Disable all interrupt causes
+	xor eax, eax
+	mov [rsi+i8257x_ITR], eax	; Disable interrupt throttling logic
+	mov [rsi+i8257x_IMS], eax	; Mask all interrupts
+	mov eax, [rsi+i8257x_ICR]	; Clear any pending interrupts
 
 	; Set up the PHY and the link (14.8.1)
 	mov eax, [rsi+i8257x_CTRL]
@@ -278,6 +279,7 @@ net_i8257x_poll_end:
 	ret
 ; -----------------------------------------------------------------------------
 
+
 ; Variables
 i8257x_tx_lasttail: dd 0
 i8257x_rx_lasthead: dd 0
@@ -363,7 +365,7 @@ i8257x_CTRL_TFCE	equ 28 ; Transmit Flow Control Enable
 i8257x_CTRL_VME		equ 30 ; VLAN Mode Enable
 i8257x_CTRL_PHY_RST	equ 31 ; PHY Reset
 ; All other bits are reserved and should be written as 0
-i8257x_CTRL_RST_MASK	equ 1 << i8259x_CTRL_LRST | 1 << i8259x_CTRL_RST
+i8257x_CTRL_RST_MASK	equ 1 << i8257x_CTRL_LRST | 1 << i8257x_CTRL_RST
 
 ; STATUS (Device Status Register, 0x00008, R)
 i8257x_STATUS_FD	equ 0 ; Link Full Duplex configuration Indication

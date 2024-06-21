@@ -65,26 +65,34 @@ net_i8254x_reset:
 	mov rsi, [os_NetIOBaseMem]
 	mov rdi, rsi
 
-	mov eax, 0xFFFFFFFF
+	; Disable Interrupts
+	mov eax, i8254x_IRQ_CLEAR_MASK
 	mov [rsi+i8254x_IMC], eax	; Disable all interrupt causes
-	mov eax, [rsi+i8254x_ICR]	; Clear any pending interrupts
 	xor eax, eax
 	mov [rsi+i8254x_ITR], eax	; Disable interrupt throttling logic
+	mov [rsi+i8254x_IMS], eax	; Mask all interrupts
+	mov eax, [rsi+i8254x_ICR]	; Clear any pending interrupts
 
-	mov eax, 0x00000030
-	mov [rsi+i8254x_PBA], eax	; PBA: set the RX buffer size to 48KB (TX buffer is calculated as 64-RX buffer)
-
-	mov eax, 0x80008060
-	mov [rsi+i8254x_TXCW], eax	; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Request)
+; TODO - Needed?
+;	mov eax, 0x00000030
+;	mov [rsi+i8254x_PBA], eax	; PBA: set the RX buffer size to 48KB (TX buffer is calculated as 64-RX buffer)
+;	mov eax, 0x80008060
+;	mov [rsi+i8254x_TXCW], eax	; TXCW: set ANE, TxConfigWord (Half/Full duplex, Next Page Request)
 
 	mov eax, [rsi+i8254x_CTRL]
-	btr eax, 3			; LRST = 0
-	bts eax, 6			; SLU = 1
-	bts eax, 5			; ASDE = 1
-	btr eax, 31			; PHY_RST = 0
-	btr eax, 30			; VME = 0 (Disable 802.1Q)
-	btr eax, 7			; ILOS = 0
+	; Clear the bits we don't want
+	and eax, 0xFFFFFFFF - (1 << i8254x_CTRL_LRST | 1 << i8254x_CTRL_VME)
+	; Set the bits we do want
+	or eax, 1 << i8254x_CTRL_FD | 1 << i8254x_CTRL_SLU | 1 << i8254x_CTRL_ASDE 
 	mov [rsi+i8254x_CTRL], eax	; CTRL: clear LRST, set SLU and ASDE, clear RSTPHY, VME, and ILOS
+
+	; Initialize all statistical counters ()
+	mov eax, [rsi+i8254x_GPRC]	; RX packets
+	mov eax, [rsi+i8254x_GPTC]	; TX packets
+	mov eax, [rsi+i8254x_GORCL]
+	mov eax, [rsi+i8254x_GORCH]	; RX bytes = GORCL + (GORCH << 32)
+	mov eax, [rsi+i8254x_GOTCL]
+	mov eax, [rsi+i8254x_GOTCH]	; TX bytes = GOTCL + (GOTCH << 32)
 
 	push rdi
 	add rdi, i8254x_MTA		; MTA: reset
@@ -154,17 +162,17 @@ net_i8254x_reset_nextdesc:
 ;  IN:	RSI = Location of packet
 ;	RCX = Length of packet
 ; OUT:	Nothing
-; Note:	This driver uses the "legacy format" so TDESC.DEXT is set to 0
-;	Descriptor Format:
+; Note:	This driver uses the "legacy format" so TDESC.CMD.DEXT (5) is cleared to 0
+;	TDESC Descriptor Format:
 ;	First Qword:
 ;	Bits 63:0 - Buffer Address
 ;	Second Qword:
 ;	Bits 15:0 - Length
-;	Bits 23:16 - CSO
-;	Bits 31:24 - CMD
-;	Bits 35:32 - STA
+;	Bits 23:16 - CSO - Checksum Offset
+;	Bits 31:24 - CMD - Command Byte
+;	Bits 35:32 - STA - Status
 ;	Bits 39:36 - Reserved
-;	Bits 47:40 - CSS
+;	Bits 47:40 - CSS - Checksum Start
 ;	Bits 63:48 - Special
 net_i8254x_transmit:
 	push rdi
@@ -183,7 +191,7 @@ net_i8254x_transmit:
 	stosq				; Store the data location
 	mov rax, rcx			; The packet size is in CX
 	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
-	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS
+	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS (CRC)
 	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
 	stosq
 
@@ -205,11 +213,15 @@ net_i8254x_transmit:
 ; net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
 ;  IN:	RDI = Location to store packet
 ; OUT:	RCX = Length of packet
-; Note:	Descriptor Format:
-;	Bytes 7:0 - Buffer Address
-;	Bytes 9:8 - Length
-;	Bytes 13:10 - Flags
-;	Bytes 15:14 - Special
+; Note:	RDESC Descriptor Format:
+;	First Qword:
+;	Bits 63:0 - Buffer Address
+;	Second Qword:
+;	Bits 15:0 - Length
+;	Bits 31:16 - Fragment Checksum
+;	Bits 39:32 - STA - Status
+;	Bits 47:40 - Errors
+;	Bits 63:48 - Special
 net_i8254x_poll:
 	push rdi
 	push rsi			; Used for the base MMIO of the NIC
@@ -271,6 +283,7 @@ net_i8254x_poll_end:
 ;	ret
 ; -----------------------------------------------------------------------------
 
+
 ; Variables
 i8254x_tx_lasttail: dd 0
 i8254x_rx_lasthead: dd 0
@@ -279,7 +292,9 @@ i8254x_rx_lasthead: dd 0
 i8254x_MAX_PKT_SIZE	equ 16384
 i8254x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
 
-; Register list
+; Register list (13.2) (All registers should be accessed as 32-bit values)
+
+; General Control Registers
 i8254x_CTRL		equ 0x0000 ; Control Register
 i8254x_STATUS		equ 0x0008 ; Device Status Register
 i8254x_CTRLEXT		equ 0x0018 ; Extended Control Register
@@ -288,21 +303,21 @@ i8254x_FCAL		equ 0x0028 ; Flow Control Address Low
 i8254x_FCAH		equ 0x002C ; Flow Control Address High
 i8254x_FCT		equ 0x0030 ; Flow Control Type
 i8254x_VET		equ 0x0038 ; VLAN Ether Type
+i8254x_FCTTV		equ 0x0170 ; Flow Control Transmit Timer Value
+i8254x_TXCW		equ 0x0178 ; Transmit Configuration Word
+i8254x_RXCW		equ 0x0180 ; Receive Configuration Word
+i8254x_LEDCTL		equ 0x0E00 ; LED Control
+i8254x_PBA		equ 0x1000 ; Packet Buffer Allocation
+
+; Interrupts Registers
 i8254x_ICR		equ 0x00C0 ; Interrupt Cause Read
 i8254x_ITR		equ 0x00C4 ; Interrupt Throttling Register
 i8254x_ICS		equ 0x00C8 ; Interrupt Cause Set Register
 i8254x_IMS		equ 0x00D0 ; Interrupt Mask Set/Read Register
 i8254x_IMC		equ 0x00D8 ; Interrupt Mask Clear Register
+
+; Receive Registers
 i8254x_RCTL		equ 0x0100 ; Receive Control Register
-i8254x_FCTTV		equ 0x0170 ; Flow Control Transmit Timer Value
-i8254x_TXCW		equ 0x0178 ; Transmit Configuration Word
-i8254x_RXCW		equ 0x0180 ; Receive Configuration Word
-i8254x_TCTL		equ 0x0400 ; Transmit Control Register
-i8254x_TIPG		equ 0x0410 ; Transmit Inter Packet Gap
-
-i8254x_LEDCTL		equ 0x0E00 ; LED Control
-i8254x_PBA		equ 0x1000 ; Packet Buffer Allocation
-
 i8254x_RDBAL		equ 0x2800 ; RX Descriptor Base Address Low
 i8254x_RDBAH		equ 0x2804 ; RX Descriptor Base Address High
 i8254x_RDLEN		equ 0x2808 ; RX Descriptor Length (128-byte aligned)
@@ -312,7 +327,14 @@ i8254x_RDTR		equ 0x2820 ; RX Delay Timer Register
 i8254x_RXDCTL		equ 0x3828 ; RX Descriptor Control
 i8254x_RADV		equ 0x282C ; RX Int. Absolute Delay Timer
 i8254x_RSRPD		equ 0x2C00 ; RX Small Packet Detect Interrupt
+i8254x_RXCSUM		equ 0x5000 ; RX Checksum Control
+i8254x_MTA		equ 0x5200 ; Multicast Table Array
+i8254x_RAL		equ 0x5400 ; Receive Address Low (Lower 32-bits of 48-bit address)
+i8254x_RAH		equ 0x5404 ; Receive Address High (Upper 16-bits of 48-bit address). Bit 31 should be set for Address Valid
 
+; Transmit Registers
+i8254x_TCTL		equ 0x0400 ; Transmit Control Register
+i8254x_TIPG		equ 0x0410 ; Transmit Inter Packet Gap
 i8254x_TXDMAC		equ 0x3000 ; TX DMA Control
 i8254x_TDBAL		equ 0x3800 ; TX Descriptor Base Address Low
 i8254x_TDBAH		equ 0x3804 ; TX Descriptor Base Address High
@@ -324,33 +346,33 @@ i8254x_TXDCTL		equ 0x3828 ; TX Descriptor Control
 i8254x_TADV		equ 0x382C ; TX Absolute Interrupt Delay Value
 i8254x_TSPMT		equ 0x3830 ; TCP Segmentation Pad & Min Threshold
 
-i8254x_RXCSUM		equ 0x5000 ; RX Checksum Control
-i8254x_MTA		equ 0x5200 ; Multicast Table Array
-i8254x_RAL		equ 0x5400 ; Receive Address Low (Lower 32-bits of 48-bit address)
-i8254x_RAH		equ 0x5404 ; Receive Address High (Upper 16-bits of 48-bit address). Bit 31 should be set for Address Valid
-
+; Statistic Registers
+i8254x_GPRC		equ 0x04074 ; Good Packets Received Count
+i8254x_BPRC		equ 0x04078 ; Broadcast Packets Received Count
+i8254x_MPRC		equ 0x0407C ; Multicast Packets Received Count
+i8254x_GPTC		equ 0x04080 ; Good Packets Transmitted Count
+i8254x_GORCL		equ 0x04088 ; Good Octets Received Count Low
+i8254x_GORCH		equ 0x0408C ; Good Octets Received Count High
+i8254x_GOTCL		equ 0x04090 ; Good Octets Transmitted Count Low
+i8254x_GOTCH		equ 0x04094 ; Good Octets Transmitted Count High
 
 ; Register bits
 
-; CTRL - Control Register (0x0000)
-i8254x_CTRL_FD		equ 0x00000001 ; Full Duplex
-i8254x_CTRL_LRST	equ 0x00000008 ; Link Reset
-i8254x_CTRL_ASDE	equ 0x00000020 ; Auto-speed detection
-i8254x_CTRL_SLU		equ 0x00000040 ; Set Link Up
-i8254x_CTRL_ILOS	equ 0x00000080 ; Invert Loss of Signal
-i8254x_CTRL_SPEED_MASK	equ 0x00000300 ; Speed selection
-i8254x_CTRL_SPEED_SHIFT	equ 8
-i8254x_CTRL_FRCSPD	equ 0x00000800 ; Force Speed
-i8254x_CTRL_FRCDPLX	equ 0x00001000 ; Force Duplex
-i8254x_CTRL_SDP0_DATA	equ 0x00040000 ; SDP0 data
-i8254x_CTRL_SDP1_DATA	equ 0x00080000 ; SDP1 data
-i8254x_CTRL_SDP0_IODIR	equ 0x00400000 ; SDP0 direction
-i8254x_CTRL_SDP1_IODIR	equ 0x00800000 ; SDP1 direction
-i8254x_CTRL_RST		equ 0x04000000 ; Device Reset
-i8254x_CTRL_RFCE	equ 0x08000000 ; RX Flow Ctrl Enable
-i8254x_CTRL_TFCE	equ 0x10000000 ; TX Flow Ctrl Enable
-i8254x_CTRL_VME		equ 0x40000000 ; VLAN Mode Enable
-i8254x_CTRL_PHY_RST	equ 0x80000000 ; PHY reset
+; CTRL (Device Control Register, 0x00000 / 0x00004, RW) Bit Masks
+i8254x_CTRL_FD		equ 0 ; Full-Duplex
+i8254x_CTRL_LRST	equ 3 ; Link Reset
+i8254x_CTRL_ASDE	equ 5 ; Auto-Speed Detection Enable
+i8254x_CTRL_SLU		equ 6 ; Set Link Up
+i8254x_CTRL_SPEED	equ 8 ; 2 bits - Speed selection
+i8254x_CTRL_FRCSPD	equ 11 ; Force Speed
+i8254x_CTRL_FRCDPLX	equ 12 ; Force Duplex
+i8254x_CTRL_RST		equ 26 ; Device Reset
+i8254x_CTRL_RFCE	equ 27 ; Receive Flow Control Enable
+i8254x_CTRL_TFCE	equ 28 ; Transmit Flow Control Enable
+i8254x_CTRL_VME		equ 30 ; VLAN Mode Enable
+i8254x_CTRL_PHY_RST	equ 31 ; PHY Reset
+
+i8254x_CTRL_RST_MASK	equ 1 << i8254x_CTRL_LRST | 1 << i8254x_CTRL_RST
 
 ; STATUS - Device Status Register (0x0008)
 i8254x_STATUS_FD		equ 0x00000001 ; Full Duplex
@@ -480,6 +502,9 @@ i8254x_RXDESC_VP	equ 0x00000008 ; Packet is 802.1Q
 i8254x_RXDESC_IXSM	equ 0x00000004 ; Ignore cksum indication
 i8254x_RXDESC_EOP	equ 0x00000002 ; End Of Packet
 i8254x_RXDESC_DD	equ 0x00000001 ; Descriptor Done
+
+
+i8254x_IRQ_CLEAR_MASK	equ 0xFFFFFFFF
 
 ; =============================================================================
 ; EOF
