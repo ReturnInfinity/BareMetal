@@ -11,10 +11,8 @@ nvme_init:
 	push rsi			; Used in init_storage
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 
-	mov dl, 4			; Read register 4 for BAR0
-	xor eax, eax
-	call os_bus_read		; BAR0 (NVMe Base Address Register)
-	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
+	mov al, 0			; Read BAR0
+	call os_bus_read_bar
 	mov [os_NVMe_Base], rax
 	mov rsi, rax			; RSI holds the ABAR
 

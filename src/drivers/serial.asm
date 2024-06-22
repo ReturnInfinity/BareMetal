@@ -41,6 +41,9 @@ serial_init:
 	mov al, 0xC7			; Enable FIFO, clear them, 14-byte threshold
 	out dx, al
 
+	; Set flag that Serial was enabled
+	or qword [os_SysConfEn], 1 << 1
+
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -73,7 +76,7 @@ serial_send_wait:
 ; -----------------------------------------------------------------------------
 ; serial_recv -- Receives a character via the configured serial port
 ;  IN:	Nothing
-; OUT:	AL = Character received
+; OUT:	AL = Character received, 0 if no character
 serial_recv:
 	push rdx
 
@@ -92,20 +95,21 @@ serial_recv:
 	cmp al, 0x7F			; Backspace via serial?
 	je serial_recv_backspace
 
-	; Store the receive character to the key var
-serial_recv_store:
-	mov [key], al
+serial_recv_done:
+	pop rdx
+	ret
 
 serial_recv_nochar:
+	xor al, al
 	pop rdx
 	ret
 
 serial_recv_enter:
 	mov al, 0x1C			; Adjust it to the same value as a keyboard
-	jmp serial_recv_store
+	jmp serial_recv_done
 serial_recv_backspace:
 	mov al, 0x0E			; Adjust it to the same value as a keyboard
-	jmp serial_recv_store
+	jmp serial_recv_done
 ; -----------------------------------------------------------------------------
 
 

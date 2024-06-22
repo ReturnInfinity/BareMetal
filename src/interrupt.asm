@@ -42,10 +42,14 @@ keyboard:
 	in al, 0x60			; Get the scan code from the keyboard
 	cmp al, 0x01
 	je keyboard_escape
+	cmp al, 0x1D
+	je keyboard_control
 	cmp al, 0x2A			; Left Shift Make
 	je keyboard_shift
 	cmp al, 0x36			; Right Shift Make
 	je keyboard_shift
+	cmp al, 0x9D
+	je keyboard_nocontrol
 	cmp al, 0xAA			; Left Shift Break
 	je keyboard_noshift
 	cmp al, 0xB6			; Right Shift Break
@@ -77,6 +81,14 @@ keyboard_escape:
 keyup:
 	jmp keyboard_done
 
+keyboard_control:
+	mov byte [key_control], 0x01
+	jmp keyboard_done
+
+keyboard_nocontrol:
+	mov byte [key_control], 0x00
+	jmp keyboard_done
+
 keyboard_shift:
 	mov byte [key_shift], 0x01
 	jmp keyboard_done
@@ -100,87 +112,6 @@ keyboard_done:
 	pop rbx
 	pop rdi
 	iretq
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; Network interrupt handler
-align 8
-network:
-	push rdi
-	push rsi
-	push rcx
-	push rax
-	pushfq
-	cld				; Clear direction flag
-
-	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
-
-	bt ax, 0			; TX bit set (caused the IRQ?)
-	jc network_tx			; If so then jump past RX section
-	bt ax, 7			; RX bit set
-	jnc network_end
-network_rx_as_well:
-	mov byte [os_NetActivity_RX], 1
-	call b_net_rx_from_interrupt	; Call driver
-	cmp qword [os_NetworkCallback], 0	; Is it valid?
-	je network_end			; If not then bail out.
-
-	; We could do a 'call [os_NetworkCallback]' here but that would not be ideal.
-	; A defective callback would hang the system if it never returned back to the
-	; interrupt handler. Instead, we modify the stack so that the callback is
-	; executed after the interrupt handler has finished. Once the callback has
-	; finished, the execution flow will pick up back in the program.
-	mov rcx, network_callback	; RCX stores the callback function address
-	mov rsi, rsp			; Copy the current stack pointer to RSI
-	sub rsp, 8			; Subtract 8 since we add a 64-bit value to the stack
-	mov rdi, rsp			; Copy the 'new' stack pointer to RDI
-	movsq				; Flags
-	movsq				; RAX
-	movsq				; RCX
-	movsq				; RSI
-	movsq				; RDI
-	lodsq				; RIP
-	xchg rax, rcx
-	stosq				; Callback address
-	movsq				; CS
-	movsq				; Flags
-	lodsq				; RSP
-	sub rax, 8
-	stosq
-	movsq				; SS
-	mov [rax], rcx			; Original RIP
-	jmp network_end
-
-network_tx:
-	mov byte [os_NetActivity_TX], 1
-	bt ax, 7
-	jc network_rx_as_well
-
-network_end:
-	; Acknowledge the IRQ
-	mov rcx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
-
-	popfq
-	pop rax
-	pop rcx
-	pop rsi
-	pop rdi
-	iretq
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; Network interrupt callback.
-align 8
-network_callback:
-	pushfq
-	cld				; Clear direction flag
-	call [os_NetworkCallback]
-	popfq
-	ret
 ; -----------------------------------------------------------------------------
 
 

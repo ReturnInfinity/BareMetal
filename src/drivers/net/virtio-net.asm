@@ -16,34 +16,15 @@ net_virtio_init:
 	push rbx
 	push rax
 
-; Grab the Base I/O Address of the device
-	xor ebx, ebx
-	mov dl, 8			; Read register 8 for BAR4
-	call os_bus_read
-	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
-	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
-	jc virtio_net_init_error
-	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
-	jnc virtio_net_init_32bit_bar
-	mov dl, 9			; Read register 9 for BAR5 (Upper 32-bits for BAR4)
-	call os_bus_read
-	shl rax, 32			; Shift the bits to the upper 32
-virtio_net_init_32bit_bar:
-	and ebx, 0xFFFFFFF0		; Clear the low four bits
-	add rax, rbx			; Add the upper 32 and lower 32 together
+	mov al, 4			; Read BAR4
+	call os_bus_read_bar
 	mov [os_NetIOBaseMem], rax	; Save it as the base
 
-	mov rsi, rax			; RSI holds the base for MMIO
-
-	; Grab the IRQ of the device
-	mov dl, 0x0F			; Get device's IRQ number from Bus Register 15 (IRQ is bits 7-0)
-	call os_bus_read
-	mov [os_NetIRQ], al		; AL holds the IRQ
-
-	; Disable INTX
+	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
 	call os_bus_read
-	bts eax, 10			; Set Interrupt Disable (bit 10)
+	bts eax, 10			; Set Interrupt Disable
+	bts eax, 1			; Enable Memory Space
 	call os_bus_write
 
 	; Gather required values from PCI Capabilities
@@ -176,7 +157,7 @@ virtio_net_init_cap_next_offset:
 virtio_net_init_cap_end:
 
 	; Grab the MAC address
-	push rsi
+	mov rsi, [os_NetIOBaseMem]
 	add rsi, [virtio_net_device_offset]
 	lodsb
 	mov [os_NetMAC], al
@@ -190,9 +171,32 @@ virtio_net_init_cap_end:
 	mov [os_NetMAC+4], al
 	lodsb
 	mov [os_NetMAC+5], al
+
+	call net_virtio_reset
+
+virtio_net_init_error:
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
 	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; net_virtio_reset - Reset a Virtio NIC
+;  IN:	Nothing
+; OUT:	Nothing, all registers preserved
+net_virtio_reset:
+	push rdi
+	push rsi
+	push rcx
+	push rax
 
 	; Device Initialization (section 3.1)
+
+	mov rsi, [os_NetIOBaseMem]
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
 	mov al, 0x00			
@@ -342,21 +346,10 @@ virtio_net_init_pop:
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
-virtio_net_init_error:
 	pop rax
-	pop rbx
 	pop rcx
-	pop rdx
 	pop rsi
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; net_virtio_reset - Reset a Virtio NIC
-;  IN:	Nothing
-; OUT:	Nothing, all registers preserved
-net_virtio_reset:
+	pop rdi
 
 	ret
 ; -----------------------------------------------------------------------------
@@ -430,20 +423,43 @@ net_virtio_transmit_wait:
 ; OUT:	RCX = Length of packet
 net_virtio_poll:
 	push rdi
+	push rsi
 	push rax
 
 	; Get size of packet that was received
-	; Add it to 16bit val at start of os_PacketBuffers
+	mov rdi, os_net_mem
+	add rdi, 0x2000			; Offset to Used Ring
+	xor eax, eax
+	mov ax, [rdi+2]			; Offset to Used Ring Index
+	shl eax, 3			; Quick multiply by 8
+	add rdi, rax			; RDI points to the Used Ring Entry
+	mov ax, [rdi]			; Load the received packet size
+	mov cx, ax			; Save the packet size to CX for later
+	cmp cx, 0
+	je net_virtio_poll_nodata	; Bail out if there was no data
+
+	; Add received packet size to start of os_PacketBuffers
+	push rdi
+	mov rdi, os_PacketBuffers
+	mov rsi, os_PacketBuffers+0x0C	; Skip over the 12 byte Virtio header
+	push cx
+	rep movsb			; Copy the packet data
+	pop cx
+	xor eax, eax
+	stosq				; Clear the end of the packet in os_PacketBuffers
+	stosq
+	pop rdi
+	mov [rdi], ax			; Clear the Used Ring Entry
 
 	; Re-populate RX desc
 	mov rdi, os_net_mem
 	mov rax, os_PacketBuffers	; Address for storing the data
 	stosq
-	mov eax, 1526			; Number of bytes
+	mov eax, 1500			; Number of bytes
 	stosd
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
-	
+
 	; Populate RX avail
 	mov rdi, os_net_mem
 	add rdi, 0x1000
@@ -457,21 +473,13 @@ net_virtio_poll:
 	add word [netrxdescindex], 1
 	add word [netrxavailindex], 1
 
+net_virtio_poll_nodata:
 	pop rax
+	pop rsi
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
-
-; -----------------------------------------------------------------------------
-; net_virtio_ack_int - Acknowledge an internal interrupt of the Virtio NIC
-;  IN:	Nothing
-; OUT:	RAX = Ethernet status
-;	Uses RDI
-net_virtio_ack_int:
-	bts ax, 7
-	ret
-; -----------------------------------------------------------------------------
 
 ; Variables
 virtio_net_notify_offset: dq 0
@@ -479,37 +487,15 @@ virtio_net_notify_offset_multiplier: dq 0
 virtio_net_isr_offset: dq 0
 virtio_net_device_offset: dq 0
 netrxdescindex: dw 0
-netrxavailindex: dw 1
+netrxavailindex: dw 0
 nettxdescindex: dw 0
 nettxavailindex: dw 1
 
 align 16
 netheader:
-dd 0x00
-dd 0x00
-dd 0x00
-
-;align 16
-;rxnetheader:
-;dd 0x00
-;dd 0x00
-;dd 0x00
-
-; VIRTIO NET Registers
-;VIRTIO_NET_MAC1			equ 0x14 ; 8-bit
-;VIRTIO_NET_MAC2			equ 0x15 ; 8-bit
-;VIRTIO_NET_MAC3			equ 0x16 ; 8-bit
-;VIRTIO_NET_MAC4			equ 0x17 ; 8-bit
-;VIRTIO_NET_MAC5			equ 0x18 ; 8-bit
-;VIRTIO_NET_MAC6			equ 0x19 ; 8-bit
-;VIRTIO_NET_STATUS		equ 0x1A ; 16-bit
-;VIRTIO_NET_MAX_VIRTQ_PAIRS	equ 0x1C ; 16-bit
-;VIRTIO_NET_MTU			equ 0x1E ; 16-bit
-;VIRTIO_NET_SPEED		equ 0x20 ; 32-bit in units of 1 MBit per second, 0 to 0x7fffffff, or 0xffffffff for unknown
-;VIRTIO_NET_DUPLEX		equ 0x24 ; 8-bit 0x01 for full duplex, 0x00 for half duplex
-;VIRTIO_NET_RSS_MAX_KEY_SIZE	equ 0x25 ; 8-bit
-;VIRTIO_NET_RSS_MAX_INT_TAB_LEN	equ 0x26 ; 16-bit
-;VIRTIO_NET_SUPPORTED_HASH_TYPES	equ 0x28 ; 32-bit
+dd 0x00000000
+dd 0x00000000
+dd 0x00000000
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_NET_F_CSUM		equ 0 ; Device handles packets with partial checksum

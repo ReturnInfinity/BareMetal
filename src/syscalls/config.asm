@@ -18,14 +18,14 @@ b_config:
 	je b_config_timecounter
 	cmp rcx, 0x01
 	je b_config_smp_get_id
-	cmp rcx, 0x03
-	je b_config_networkcallback_get
-	cmp rcx, 0x04
-	je b_config_networkcallback_set
-	cmp rcx, 0x05
-	je b_config_clockcallback_get
-	cmp rcx, 0x06
-	je b_config_clockcallback_set
+;	cmp rcx, 0x03
+;	je b_config_networkcallback_get
+;	cmp rcx, 0x04
+;	je b_config_networkcallback_set
+;	cmp rcx, 0x05
+;	je b_config_clockcallback_get
+;	cmp rcx, 0x06
+;	je b_config_clockcallback_set
 
 ; Video
 	cmp rcx, 0x20
@@ -59,28 +59,31 @@ b_config:
 	ret
 
 b_config_timecounter:
-	mov rax, [os_ClockCounter]	; Grab the timer counter value. It increments 8 times a second
+	push rcx
+	mov ecx, 0xF0
+	call os_hpet_read
+	pop rcx
 	ret
 
 b_config_smp_get_id:
 	call b_smp_get_id
 	ret
 
-b_config_networkcallback_get:
-	mov rax, [os_NetworkCallback]
-	ret
+;b_config_networkcallback_get:
+;	mov rax, [os_NetworkCallback]
+;	ret
 
-b_config_networkcallback_set:
-	mov qword [os_NetworkCallback], rax
-	ret
+;b_config_networkcallback_set:
+;	mov qword [os_NetworkCallback], rax
+;	ret
 
-b_config_clockcallback_get:
-	mov rax, [os_ClockCallback]
-	ret
+;b_config_clockcallback_get:
+;	mov rax, [os_ClockCallback]
+;	ret
 
-b_config_clockcallback_set:
-	mov qword [os_ClockCallback], rax
-	ret
+;b_config_clockcallback_set:
+;	mov qword [os_ClockCallback], rax
+;	ret
 
 ; Video
 

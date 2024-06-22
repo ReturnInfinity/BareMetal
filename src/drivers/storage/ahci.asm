@@ -11,10 +11,8 @@ ahci_init:
 	push rsi			; Used in init_storage
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 
-	mov dl, 9			; Read register 9 for BAR5
-	xor eax, eax
-	call os_bus_read		; BAR5 (AHCI Base Address Register)
-	and eax, 0xFFFFFFF0		; Clear the lowest 4 bits
+	mov al, 5			; Read BAR5
+	call os_bus_read_bar
 	mov [ahci_base], rax
 	mov rsi, rax			; RSI holds the ABAR
 

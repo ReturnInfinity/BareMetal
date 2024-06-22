@@ -12,7 +12,7 @@
 %include "drivers/ioapic.asm"
 %include "drivers/pcie.asm"
 %include "drivers/pci.asm"
-%include "drivers/keyboard.asm"
+%include "drivers/ps2.asm"
 %include "drivers/serial.asm"
 %include "drivers/virtio.asm"
 
@@ -77,7 +77,7 @@ dw 0x107B		; 82546GB
 dw 0x107C		; 82541PI
 dw 0x108A		; 82546GB
 dw 0x1099		; 82546GB (Copper)
-dw 0x10b5		; 82546GB (Copper)
+dw 0x10B5		; 82546GB (Copper)
 dw 0x0000
 
 ; Intel 8257x Gigabit Ethernet

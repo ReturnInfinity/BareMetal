@@ -65,8 +65,6 @@ init_net_probe_found_virtio:
 	stosq
 	mov rax, net_virtio_poll
 	stosq
-	mov rax, net_virtio_ack_int
-	stosq
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_i8254x:
@@ -75,8 +73,6 @@ init_net_probe_found_i8254x:
 	mov rax, net_i8254x_transmit
 	stosq
 	mov rax, net_i8254x_poll
-	stosq
-	mov rax, net_i8254x_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 
@@ -87,8 +83,6 @@ init_net_probe_found_i8257x:
 	stosq
 	mov rax, net_i8257x_poll
 	stosq
-	mov rax, net_i8257x_ack_int
-	stosq
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_i8259x:
@@ -97,8 +91,6 @@ init_net_probe_found_i8259x:
 	mov rax, net_i8259x_transmit
 	stosq
 	mov rax, net_i8259x_poll
-	stosq
-	mov rax, net_i8259x_ack_int
 	stosq
 	jmp init_net_probe_found_finish
 
@@ -109,27 +101,12 @@ init_net_probe_found_r8169:
 	stosq
 	mov rax, net_r8169_poll
 	stosq
-	mov rax, net_r8169_ack_int
-	stosq
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_finish:
-	; Create the entry in the Interrupt Descriptor Table
-	xor eax, eax
-	mov al, [os_NetIRQ]
-	add al, 0x20
-	mov rdi, rax
-	mov rax, network
-	call create_gate
-
-	; Enable the Network interrupt on the I/O APIC
-	mov al, [os_NetIRQ]
-	call os_ioapic_redirection
-
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
 	add r9, 15			; Add offset to driver enabled byte
 	mov byte [r9], 1		; Mark device as having a driver
-	call b_net_ack_int		; Call the driver function to acknowledge the interrupt internally
 
 init_net_probe_not_found:
 

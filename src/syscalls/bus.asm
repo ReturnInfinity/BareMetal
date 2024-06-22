@@ -54,5 +54,45 @@ os_bus_write_pci:
 ; -----------------------------------------------------------------------------
 
 
+; -----------------------------------------------------------------------------
+; os_bus_read_bar -- Read a BAR (Base Address Register)
+;  IN:	RDX = Register to read from
+;	AL = BAR #
+; OUT:	RAX = BAR I/O Address
+os_bus_read_bar:
+	push rdx
+	push rbx
+
+	add al, 0x04			; BARs start at register 4
+	mov dl, al
+	xor eax, eax
+	xor ebx, ebx
+	call os_bus_read
+	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
+	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
+	jc os_bus_read_bar_io
+	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
+	jnc os_bus_read_bar_32bit
+	inc dl				; Read next register for next BAR (Upper 32-bits of BAR0)
+	call os_bus_read
+	shl rax, 32			; Shift the bits to the upper 32
+os_bus_read_bar_32bit:
+	and ebx, 0xFFFFFFF0		; Clear the low four bits
+	add rax, rbx			; Add the upper 32 and lower 32 together
+
+	pop rbx
+	pop rdx
+	ret
+
+os_bus_read_bar_io:
+	and ebx, 0xFFFFFFFC		; Clear the low two bits
+	mov rax, rbx			; Store Base IO address in RAX
+
+	pop rbx
+	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
 ; =============================================================================
 ; EOF

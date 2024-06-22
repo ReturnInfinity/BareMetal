@@ -93,8 +93,6 @@ b_system_smp_busy:
 
 b_system_reset:
 	xor eax, eax
-	mov qword [os_NetworkCallback], rax	; clear callbacks
-	mov qword [os_ClockCallback], rax
 	call b_smp_get_id		; Reset all other cpu cores
 	mov rbx, rax
 	mov rsi, 0x0000000000005100	; Location in memory of the Pure64 CPU data
@@ -123,11 +121,7 @@ os_delay:
 	push rcx
 	push rax
 
-	mov rcx, [os_ClockCounter]	; Grab the initial timer counter. It increments 8 times a second
-	add rax, rcx			; Add RCX so we get the end time we want
-os_delay_loop:
-	cmp qword [os_ClockCounter], rax	; Compare it against our end time
-	jle os_delay_loop		; Loop if RAX is still lower
+; TODO - Use HPET
 
 	pop rax
 	pop rcx
@@ -138,11 +132,8 @@ os_delay_loop:
 ; -----------------------------------------------------------------------------
 ; reboot -- Reboot the computer
 reboot:
-	in al, 0x64
-	test al, 00000010b		; Wait for an empty Input Buffer
-	jne reboot
-	mov al, 0xFE
-	out 0x64, al			; Send the reboot call to the keyboard controller
+	mov al, PS2_COMMAND_RESET_CPU
+	call ps2_send_cmd
 	jmp reboot
 ; -----------------------------------------------------------------------------
 
