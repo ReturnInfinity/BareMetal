@@ -3,6 +3,9 @@
 ; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; Intel 8257x Gigabit Ethernet Driver
+;
+; This driver has been tested on physical hardware with a 82574L PCIe card
+; (device ID 0x10D3) as well as QEMU (-device e1000e)
 ; =============================================================================
 
 
@@ -128,10 +131,7 @@ net_i8257x_reset_nextdesc:
 	mov [rsi+i8257x_RDH], eax	; Receive Descriptor Head
 	mov eax, i8257x_MAX_DESC / 2
 	mov [rsi+i8257x_RDT], eax	; Receive Descriptor Tail
-; RADV, RDTR, RFCTL (for descriptor format), RXCSUM?
-;	mov eax, 0x00140420		; PTHRESH (5:0), HTHRESH (13:8), WTHRESH (21:16), GRAN (24)
-;	mov [rsi+i8257x_RXDCTL], eax
-	mov eax, 0x0400803A		; Receiver Enable (1), Unicast Prom. Enabled (3), Multicast Prom. Enabled (4), Long Packet Reception (5), Broadcast Accept Mode (15), Strip Ethernet CRC from incoming packet (26)
+	mov eax, 1 << i8257x_RCTL_EN | 1 << i8257x_RCTL_UPE | 1 << i8257x_RCTL_MPE | 1 << i8257x_RCTL_LPE | 1 << i8257x_RCTL_BAM | 1 << i8257x_RCTL_SECRC
 	mov [rsi+i8257x_RCTL], eax	; Receive Control Register
 
 	; Initialize transmit (14.7)
@@ -144,16 +144,6 @@ net_i8257x_reset_nextdesc:
 	xor eax, eax
 	mov [rsi+i8257x_TDH], eax	; Transmit Descriptor Head
 	mov [rsi+i8257x_TDT], eax	; Transmit Descriptor Tail
-;	mov eax, 0x0341011F		; PTHRESH (5:0), HTHRESH (15:8), WTHRESH (21:16), GRAN (24), LWTHRESH (31:25)
-;	mov [rsi+i8257x_TXDCTL], eax
-;	mov eax, 0x00602008		; IPGT (9:0) 8, IPGR1 (19:10) 8, IPGR2 (29:20) 6
-;	mov [rsi+i8257x_TIPG], eax	; Transmit IPG Register
-;	mov eax, 0x08
-;	mov [rsi+i8257x_TIDV], eax
-;	mov eax, 0x20
-;	mov [rsi+i8257x_TADV], eax
-;	mov eax, 0x00000400 		; Enable (10)
-;	mov [rsi+i8257x_TARC0], eax
 	mov eax, 1 << i8257x_TCTL_EN | 1 << i8257x_TCTL_PSP | 15 << i8257x_TCTL_CT | 0x3F << i8257x_TCTL_COLD
 	mov [rsi+i8257x_TCTL], eax	; Transmit Control Register
 
