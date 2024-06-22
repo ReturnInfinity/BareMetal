@@ -36,7 +36,7 @@
 ### Intel 8257x PCIe (e1000e)
 
 * Supports the Intel 8257x Gigabit network interfaces.
-* [PCIe Software Developer's Manual](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/pcie-gbe-controllers-open-source-manual.pdf?cmdf=PCI%2FPCI-E+Family+of+Gigabit+Ethernet+Controllers+Software+Developer’s+Manual)
+* [PCIe Software Developer's Manual](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/pcie-gbe-controllers-open-source-manual.pdf)
 
 ### Intel 8259x (ixbge)
 
