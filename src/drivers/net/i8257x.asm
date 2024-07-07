@@ -15,11 +15,13 @@
 net_i8257x_init:
 	push rsi
 	push rdx
+	push rcx
 	push rax
 
 	mov al, 0			; Read BAR0
 	call os_bus_read_bar
 	mov [os_NetIOBaseMem], rax	; Save it as the base
+	mov [os_NetIOLength], rcx	; Save the length
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
@@ -50,6 +52,7 @@ net_i8257x_init:
 net_i8257x_init_error:
 
 	pop rax
+	pop rcx
 	pop rdx
 	pop rsi
 	ret

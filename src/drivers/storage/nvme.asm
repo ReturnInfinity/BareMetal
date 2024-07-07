@@ -16,6 +16,14 @@ nvme_init:
 	mov [os_NVMe_Base], rax
 	mov rsi, rax			; RSI holds the ABAR
 
+	; Set PCI Status/Command values
+	mov dl, 0x01			; Read Status/Command
+	call os_bus_read
+	bts eax, 10			; Set Interrupt Disable
+	bts eax, 2			; Enable Bus Master
+	bts eax, 1			; Enable Memory Space
+	call os_bus_write		; Write updated Status/Command
+
 	; Mark controller memory as un-cacheable
 	shr rax, 18
 	and al, 0b11111000		; Clear the last 3 bits

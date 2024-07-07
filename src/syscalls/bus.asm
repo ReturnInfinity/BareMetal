@@ -56,29 +56,74 @@ os_bus_write_pci:
 
 ; -----------------------------------------------------------------------------
 ; os_bus_read_bar -- Read a BAR (Base Address Register)
-;  IN:	RDX = Register to read from
+;  IN:	RDX = Device to read from (low 8 bits is ignored and set by value in AL)
 ;	AL = BAR #
 ; OUT:	RAX = BAR I/O Address
+;	RCX = BAR Length in bytes
 os_bus_read_bar:
 	push rdx
 	push rbx
 
+	; Disable Memory and I/O Space
+	push rax
+	mov dl, 0x01			; Read Status/Command
+	call os_bus_read
+	btc eax, 1			; Disable Memory Space
+	btc eax, 0			; Disable I/O Space
+	call os_bus_write		; Write updated Status/Command
+	pop rax
+
+	; Read the lower 32-bit BAR and BAR Length
 	add al, 0x04			; BARs start at register 4
 	mov dl, al
 	xor eax, eax
 	xor ebx, ebx
 	call os_bus_read
 	xchg eax, ebx			; Exchange the result to EBX (low 32 bits of base)
+	not eax				; Flip all bits in EAX (which is currently 0 after XCHG with EBX)
+	call os_bus_write		; Write 0xFFFFFFFF to the BAR
+	call os_bus_read		; Read the low 32 bits of the length
+	push rax
+	mov eax, ebx			; Copy original BAR value to EAX
+	call os_bus_write		; Write the original value back
+	pop rax
+	not eax
+	mov ecx, eax
 	bt ebx, 0			; Bit 0 will be 0 if it is an MMIO space
 	jc os_bus_read_bar_io
 	bt ebx, 2			; Bit 2 will be 1 if it is a 64-bit MMIO space
 	jnc os_bus_read_bar_32bit
-	inc dl				; Read next register for next BAR (Upper 32-bits of BAR0)
+
+	; Read the upper 32-bit BAR and BAR Length
+	push r8
+	inc dl				; Read next register for next BAR (Upper 32-bits of BAR)
 	call os_bus_read
+	push rax
 	shl rax, 32			; Shift the bits to the upper 32
-os_bus_read_bar_32bit:
 	and ebx, 0xFFFFFFF0		; Clear the low four bits
 	add rax, rbx			; Add the upper 32 and lower 32 together
+	mov r8, rax
+	xor eax, eax
+	not eax				; Flip all bits in EAX (which is currently 0 after XCHG with EBX)
+	call os_bus_write		; Write 0xFFFFFFFF to the BAR
+	call os_bus_read		; Read the low 32 bits of the length
+	not eax
+	shl rax, 32			; Shift the bits to the upper 32
+	add rcx, rax			; Add the upper 32 and lower 32 together
+	inc rcx
+	pop rax
+	call os_bus_write		; Write the original value back
+	mov rax, r8
+	pop r8
+
+	pop rbx
+	pop rdx
+	ret
+
+os_bus_read_bar_32bit:
+	and ebx, 0xFFFFFFF0		; Clear the low four bits
+	mov rax, rbx			; Add the upper 32 and lower 32 together
+	inc rcx
 
 	pop rbx
 	pop rdx

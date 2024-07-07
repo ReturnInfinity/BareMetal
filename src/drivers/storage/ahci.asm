@@ -16,6 +16,14 @@ ahci_init:
 	mov [ahci_base], rax
 	mov rsi, rax			; RSI holds the ABAR
 
+	; Set PCI Status/Command values
+	mov dl, 0x01			; Read Status/Command
+	call os_bus_read
+	bts eax, 10			; Set Interrupt Disable
+	bts eax, 2			; Enable Bus Master
+	bts eax, 1			; Enable Memory Space
+	call os_bus_write		; Write updated Status/Command
+
 	; Mark controller memory as un-cacheable
 	shr rax, 18
 	and al, 0b11111000		; Clear the last 3 bits
@@ -117,7 +125,7 @@ ahci_init_config_active:
 ahci_init_config_active_skip:
 	inc rcx
 	jmp ahci_init_config_active
-	
+
 ahci_init_done:
 	bts word [os_StorageVar], 1	; Set the bit flag that AHCI has been initialized
 	mov rdi, os_storage_io

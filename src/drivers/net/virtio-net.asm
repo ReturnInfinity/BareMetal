@@ -19,6 +19,7 @@ net_virtio_init:
 	mov al, 4			; Read BAR4
 	call os_bus_read_bar
 	mov [os_NetIOBaseMem], rax	; Save it as the base
+	mov [os_NetIOLength], rcx	; Save the length
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command

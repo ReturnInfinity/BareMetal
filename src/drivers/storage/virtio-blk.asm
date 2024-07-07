@@ -36,6 +36,14 @@ virtio_blk_init_next_dev:
 	mov [os_virtioblk_base], rax	; Save it as the base
 	mov rsi, rax			; RSI holds the base for MMIO
 
+	; Set PCI Status/Command values
+	mov dl, 0x01			; Read Status/Command
+	call os_bus_read
+	bts eax, 10			; Set Interrupt Disable
+	bts eax, 2			; Enable Bus Master
+	bts eax, 1			; Enable Memory Space
+	call os_bus_write		; Write updated Status/Command
+
 	; Gather required values from PCI Capabilities
 	mov dl, 1
 	call os_bus_read		; Read register 1 for Status/Command
