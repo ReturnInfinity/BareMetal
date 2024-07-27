@@ -99,6 +99,8 @@ init_bus_pci_probe_next:
 	jmp init_bus_pci_probe
 
 init_bus_pci_probe_found:
+;	call os_debug_newline		; DEBUG - Dump PCI device/vendor ID on boot-up
+;	call os_debug_dump_eax
 	push rax			; Save the result
 	mov rax, rdx			; Move the value used for os_pci_read to RAX
 	stosd				; Store it to the Bus Table

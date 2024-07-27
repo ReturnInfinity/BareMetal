@@ -7,13 +7,14 @@
 
 
 ; Strings
-system_status_header:	db 'BareMetal v1.0.0', 0
-readymsg:		db 13, 10, 'BareMetal OK'	; This string falls through to newline
 newline:		db 13, 10, 0
+system_status_header:	db 'BareMetal v1.0.0', 0
+msg_start:		db 13, 10, '[ BareMetal ]'
 msg_init_64:		db 13, 10, '64      '
 msg_init_bus:		db 13, 10, 'bus     '
 msg_init_sto:		db 13, 10, 'storage '
 msg_init_net:		db 13, 10, 'network '
+msg_ready:		db 13, 10, 'system ready'
 
 ; Memory addresses
 
