@@ -38,7 +38,7 @@ start:
 	call init_net			; Initialize network
 
 	mov rsi, readymsg
-	mov rcx, 13
+	mov rcx, 14
 	call b_output
 
 	; Copy the payload after the kernel to the proper address

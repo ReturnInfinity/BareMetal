@@ -9,6 +9,11 @@
 ; -----------------------------------------------------------------------------
 ; init_storage -- Configure the first storage device it finds
 init_storage:
+	; Debug output
+	mov rsi, msg_init_sto
+	mov rcx, 10
+	call b_output
+
 	; Check Bus Table for a supported controller
 	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 16

@@ -8,38 +8,9 @@
 
 ; -----------------------------------------------------------------------------
 serial_init:
-	; Disable Interrupts
-	mov dx, COM_PORT_INTERRUPT_ENABLE
-	mov al, 0			; Disable all interrupts
-	out dx, al
+	; Pure64 has already initialized the serial port
 
-	; Enable divisor register for setting baud rate
-	mov dx, COM_PORT_LINE_CONTROL
-	mov dl, 0x80			; DLB (7 set)
-	out dx, al
-
-	; Send the divisor (baud rate will be 115200 / divisor)
-	mov dx, COM_PORT_DATA
-	mov ax, BAUD_115200
-	out dx, al
-	mov dx, COM_PORT_DATA+1
-	shr ax, 8
-	out dx, al
-
-	; Disable divisor register and set values
-	mov dx, COM_PORT_LINE_CONTROL
-	mov al, 00000111b		; 8 data bits (0-1 set), one stop bit (2 set), no parity (3-5 clear), DLB (7 clear)
-	out dx, al
-
-	; Disable modem control
-	mov dx, COM_PORT_MODEM_CONTROL
-	mov al, 0
-	out dx, al
-
-	; Set FIFO
-	mov dx, COM_PORT_FIFO_CONTROL
-	mov al, 0xC7			; Enable FIFO, clear them, 14-byte threshold
-	out dx, al
+	; TODO - Enable interrupts if needed
 
 	; Set flag that Serial was enabled
 	or qword [os_SysConfEn], 1 << 1
