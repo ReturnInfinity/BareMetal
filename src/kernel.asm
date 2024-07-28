@@ -32,13 +32,15 @@ align 16
 align 16
 start:
 	mov rsp, 0x10000		; Set the temporary stack
+	mov rsi, msg_start
+	mov rcx, 15
+	call b_output
 	call init_64			; After this point we are in a working 64-bit environment
 	call init_bus			; Initialize system bus
 	call init_storage		; Initialize storage
 	call init_net			; Initialize network
-
-	mov rsi, readymsg
-	mov rcx, 13
+	mov rsi, msg_ready
+	mov rcx, 14
 	call b_output
 
 	; Copy the payload after the kernel to the proper address

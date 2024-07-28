@@ -28,6 +28,11 @@
 
 ; -----------------------------------------------------------------------------
 init_bus:
+	; Debug output
+	mov rsi, msg_init_bus
+	mov rcx, 10
+	call b_output
+
 	mov rdi, bus_table		; Address of Bus Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
 
@@ -44,7 +49,10 @@ init_bus:
 init_bus_pcie_probe:
 	call os_pcie_read		; Read a Device ID/Vendor ID
 	cmp eax, 0xFFFFFFFF		; 0xFFFFFFFF is returned for an non-existent device
-	jne init_bus_pcie_probe_found	; Found a device
+	je init_bus_pcie_probe_next	; Skip to next device
+	cmp eax, 0x00000000		; TODO - Fix this. Should check for end bus number
+	je init_bus_end
+	jmp init_bus_pcie_probe_found
 init_bus_pcie_probe_next:
 	add rdx, 0x00010000		; Skip to next PCIe device/function
 	cmp edx, 0			; Overflow EDX for a maximum of 65536 devices per segment
@@ -52,6 +60,8 @@ init_bus_pcie_probe_next:
 	jmp init_bus_pcie_probe
 
 init_bus_pcie_probe_found:
+;	call os_debug_newline		; DEBUG - Dump PCIe device/vendor ID on boot-up
+;	call os_debug_dump_eax
 	push rax			; Save the result
 	mov rax, rdx			; Move the value used for os_pcie_read to RAX
 	stosd				; Store it to the Bus Table
@@ -89,6 +99,8 @@ init_bus_pci_probe_next:
 	jmp init_bus_pci_probe
 
 init_bus_pci_probe_found:
+;	call os_debug_newline		; DEBUG - Dump PCI device/vendor ID on boot-up
+;	call os_debug_dump_eax
 	push rax			; Save the result
 	mov rax, rdx			; Move the value used for os_pci_read to RAX
 	stosd				; Store it to the Bus Table

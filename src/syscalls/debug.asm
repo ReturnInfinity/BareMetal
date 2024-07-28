@@ -84,7 +84,7 @@ os_debug_dump_mem:
 
 	mov rax, rsi			; Output the memory address
 	call os_debug_dump_rax
-	call os_debug_dump_mem_newline
+	call os_debug_newline
 
 nextline:
 	mov dx, 0
@@ -104,13 +104,13 @@ nextchar:
 	inc rdx
 	cmp dx, 16			; End of line yet?
 	jne nextchar
-	call os_debug_dump_mem_newline
+	call os_debug_newline
 	cmp rcx, 0
 	je os_debug_dump_mem_done
 	jmp nextline
 
 os_debug_dump_mem_done_newline:
-	call os_debug_dump_mem_newline
+	call os_debug_newline
 
 os_debug_dump_mem_done:
 	pop rax
@@ -119,17 +119,23 @@ os_debug_dump_mem_done:
 	pop rsi
 	ret
 
-os_debug_dump_mem_newline:
-	push rsi			; Output newline
+os_debug_dump_mem_chars: db '0x: '
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_debug_newline -- Output a newline
+;  IN:	Nothing
+; OUT:	Nothing, all registers preserved
+os_debug_newline:
+	push rsi
 	push rcx
 	mov rsi, newline
-	mov rcx, 1
+	mov rcx, 2
 	call b_output
 	pop rcx
 	pop rsi
 	ret
-
-os_debug_dump_mem_chars: db '0x: '
 ; -----------------------------------------------------------------------------
 
 
