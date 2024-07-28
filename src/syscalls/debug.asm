@@ -140,7 +140,7 @@ os_debug_newline:
 
 
 ; -----------------------------------------------------------------------------
-; os_debug_block - Create a block of colour on the screen
+; os_debug_block - Create a block (8x8 pixels) of colour on the screen
 ; IN:	EAX = Colour
 ;	EBX = Index #
 os_debug_block:
@@ -150,16 +150,17 @@ os_debug_block:
 	push rdx
 	push rdi
 
-	add ebx, 60
-	mov rdi, [os_screen_lfb]	; Frame buffer base
-	add rdi, 1556480
-	; start at line 508 ((1024 - 8) / 2)
+	; Calculate parameters
+	mov rdi, [os_screen_lfb]	; Linear frame buffer base
+	add rdi, 1556480		; Start at the middle of the screen ((768 - 8) / 2 * 1024 * 4)
 	xor edx, edx
 	mov edx, [0x00005F00 + 0x14]	; PixelsPerScanLine
-	shl ebx, 5
+	add ebx, 60
+	shl ebx, 5			; Quick multiply by 32 (8 pixels * 4 bytes each)
 	add rdi, rbx
 	shl edx, 2			; Quick multiply by 4 for line offset
 
+	; Draw the 8x8 pixel block
 	mov ebx, 8			; 8 pixels tall
 os_debug_block_nextline:
 	mov ecx, 8			; 8 pixels wide
