@@ -50,7 +50,7 @@ init_bus_pcie_probe:
 	call os_pcie_read		; Read a Device ID/Vendor ID
 	cmp eax, 0xFFFFFFFF		; 0xFFFFFFFF is returned for an non-existent device
 	je init_bus_pcie_probe_next	; Skip to next device
-	cmp eax, 0x00000000
+	cmp eax, 0x00000000		; TODO - Fix this. Should check for end bus number
 	je init_bus_end
 	jmp init_bus_pcie_probe_found
 init_bus_pcie_probe_next:
