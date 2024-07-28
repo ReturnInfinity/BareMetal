@@ -53,6 +53,11 @@ init_storage_ata:
 	call ata_init	
 
 init_storage_done:
+	; Output to screen (3/4)
+	mov eax, 0x00808080
+	mov ebx, 4
+	call os_debug_block
+
 	ret
 ; -----------------------------------------------------------------------------
 

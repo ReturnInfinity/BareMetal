@@ -32,13 +32,19 @@ align 16
 align 16
 start:
 	mov rsp, 0x10000		; Set the temporary stack
+
+	; Output BareMetal start message
 	mov rsi, msg_start
 	mov rcx, 15
 	call b_output
+
+	; System and driver initialization
 	call init_64			; After this point we are in a working 64-bit environment
 	call init_bus			; Initialize system bus
 	call init_storage		; Initialize storage
 	call init_net			; Initialize network
+
+	; Output system ready message
 	mov rsi, msg_ready
 	mov rcx, 14
 	call b_output

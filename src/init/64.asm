@@ -19,6 +19,56 @@ init_64:
 	xor eax, eax
 	rep stosq
 
+	; Grab data from Pure64's InfoMap
+	mov esi, 0x00005060		; LAPIC
+	lodsq
+	mov [os_LocalAPICAddress], rax
+	mov esi, 0x00005010		; CPUSPEED
+	lodsw
+	mov [os_CoreSpeed], ax
+	mov esi, 0x00005012		; CORES_ACTIVE
+	lodsw
+	mov [os_NumCores], ax
+	mov esi, 0x00005020		; RAMAMOUNT
+	lodsd
+	sub eax, 2			; Save 2 MiB for the CPU stacks
+	push rax			; Save the free RAM size
+	mov [os_MemAmount], eax		; In MiB's
+	mov esi, 0x00005040		; HPET
+	lodsq
+	mov [os_HPET_Address], rax
+	mov esi, 0x00005050
+	lodsw
+	mov [os_HPET_CounterMin], ax
+	mov esi, 0x00005080		; VIDEO_*
+	xor eax, eax
+	lodsq
+	mov [os_screen_lfb], rax
+	lodsw
+	mov [os_screen_x], ax
+	lodsw
+	mov [os_screen_y], ax
+	lodsd
+	mov [os_screen_ppsl], eax
+	mov esi, 0x00005090		; PCIe bus count
+	lodsw
+	mov [os_pcie_count], ax
+	xor eax, eax
+	mov esi, 0x00005604		; IOAPIC
+	lodsd
+	mov [os_IOAPICAddress], rax
+
+	; Clear screen
+	xor eax, eax
+	xor ecx, ecx
+	mov ax, [os_screen_x]
+	mov cx, [os_screen_y]
+	mul ecx
+	mov ecx, eax
+	mov rdi, [os_screen_lfb]
+	mov eax, 0x00202020
+	rep stosd
+
 	; Configure the PS/2 keyboard
 	call ps2_init
 
@@ -70,55 +120,6 @@ make_interrupt_gate_stubs:
 	mov edi, 0x81
 	mov rax, ap_reset
 	call create_gate
-
-	; Grab data from Pure64's InfoMap
-	xor eax, eax
-	xor ebx, ebx
-	xor ecx, ecx
-	mov esi, 0x00005008		; BSP_ID
-	lodsd				; Load the BSP ID
-	mov esi, 0x00005012
-	lodsw				; Load the number of activated cores
-	mov cx, ax			; Save it to CX
-	mov esi, 0x00005060		; LAPIC
-	lodsq
-	mov [os_LocalAPICAddress], rax
-	mov esi, 0x00005010		; CPUSPEED
-	lodsw
-	mov [os_CoreSpeed], ax
-	mov esi, 0x00005012		; CORES_ACTIVE
-	lodsw
-	mov [os_NumCores], ax
-	mov esi, 0x00005020		; RAMAMOUNT
-	lodsd
-	sub eax, 2			; Save 2 MiB for the CPU stacks
-	push rax			; Save the free RAM size
-	mov [os_MemAmount], eax		; In MiB's
-	mov esi, 0x00005040		; HPET
-	lodsq
-	mov [os_HPET_Address], rax
-	mov esi, 0x00005050
-	lodsw
-	mov [os_HPET_CounterMin], ax
-	mov esi, 0x00005080		; VIDEO_*
-	xor eax, eax
-	lodsq
-	mov [os_screen_lfb], rax
-	lodsw
-	mov [os_screen_x], ax
-	lodsw
-	mov [os_screen_y], ax
-	lodsd
-	mov [os_screen_ppsl], eax
-	lodsb
-	mov [os_screen_bpp], al
-	mov esi, 0x00005090		; PCIe bus count
-	lodsw
-	mov [os_pcie_count], ax
-	xor eax, eax
-	mov esi, 0x00005604		; IOAPIC
-	lodsd
-	mov [os_IOAPICAddress], rax
 
 	; Set device syscalls to stub
 	mov rax, os_stub
@@ -180,6 +181,11 @@ no_more_aps:
 	mov ecx, 1			; Keyboard IRQ
 	mov eax, 0x21			; Keyboard Interrupt Vector
 	call os_ioapic_mask_clear
+
+	; Output to screen (1/4)
+	mov eax, 0x00808080
+	mov ebx, 0
+	call os_debug_block
 
 	ret
 ; -----------------------------------------------------------------------------

@@ -139,5 +139,44 @@ os_debug_newline:
 ; -----------------------------------------------------------------------------
 
 
+; -----------------------------------------------------------------------------
+; os_debug_block - Create a block of colour on the screen
+; IN:	EAX = Colour
+;	EBX = Index #
+os_debug_block:
+	push rax
+	push rbx
+	push rcx
+	push rdx
+	push rdi
+
+	add ebx, 60
+	mov rdi, [os_screen_lfb]	; Frame buffer base
+	add rdi, 1556480
+	; start at line 508 ((1024 - 8) / 2)
+	xor edx, edx
+	mov edx, [0x00005F00 + 0x14]	; PixelsPerScanLine
+	shl ebx, 5
+	add rdi, rbx
+	shl edx, 2			; Quick multiply by 4 for line offset
+
+	mov ebx, 8			; 8 pixels tall
+os_debug_block_nextline:
+	mov ecx, 8			; 8 pixels wide
+	rep stosd
+	add rdi, rdx			; Add line offset
+	sub rdi, 8*4
+	dec ebx
+	jnz os_debug_block_nextline
+
+	pop rdi
+	pop rdx
+	pop rcx
+	pop rbx
+	pop rax
+	ret
+; -----------------------------------------------------------------------------
+
+
 ; =============================================================================
 ; EOF
