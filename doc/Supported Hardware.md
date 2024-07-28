@@ -23,7 +23,7 @@
 ## Network
 
 
-### Virtio
+### Virtio-Net
 
 * [Specs](https://docs.oasis-open.org/virtio/virtio/v1.2/virtio-v1.2.pdf)
 * [Legacy specs](http://ozlabs.org/~rusty/virtio-spec/virtio-0.9.5.pdf)
@@ -52,6 +52,12 @@
 ## Storage
 
 
+### Virtio-Block
+
+* [Specs](https://docs.oasis-open.org/virtio/virtio/v1.2/virtio-v1.2.pdf)
+* [Legacy specs](http://ozlabs.org/~rusty/virtio-spec/virtio-0.9.5.pdf)
+
+
 ### NVMe
 
 * [Base Specification](https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-2.0c-2022.10.04-Ratified.pdf) - Revision 2.0c - October 4th, 2022
@@ -73,6 +79,7 @@
 ## Video
 
 
-### BGA
+### Linear Frame Buffer
 
-* [VBE BIOS for Bochs](http://cvs.savannah.nongnu.org/viewvc/*checkout*/vgabios/vgabios/vbe_display_api.txt)
+* [UEFI GOP](https://wiki.osdev.org/GOP) - UEFI Graphics Output Protocol
+* [BIOS VBE](https://wiki.osdev.org/VESA_Video_Modes) - BIOS VESA VBE
