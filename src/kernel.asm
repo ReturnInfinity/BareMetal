@@ -103,7 +103,7 @@ bsp:
 	mov eax, ebx			; Restore the APIC ID
 	shl rax, 16			; Shift left 16 bits for an 64 KiB stack
 	add rax, [os_StackBase]		; The stack decrements when you "push", start at 64 KiB in
-	add rax, 65536
+	add rax, 65536			; 64 KiB Stack
 	mov rsp, rax
 
 	; Clear registers. Gives us a clean slate to work with

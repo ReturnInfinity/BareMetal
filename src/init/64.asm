@@ -32,7 +32,7 @@ init_64:
 	mov esi, 0x00005020		; RAMAMOUNT
 	lodsd
 	sub eax, 2			; Save 2 MiB for the CPU stacks
-	push rax			; Save the free RAM size
+;	push rax			; Save the free RAM size
 	mov [os_MemAmount], eax		; In MiB's
 	mov esi, 0x00005040		; HPET
 	lodsq
@@ -132,22 +132,7 @@ make_interrupt_gate_stubs:
 	stosq	
 
 	; Configure the Stack base
-	; The top 2MB page of RAM is for the stack
-	; Divide it evenly between the available CPUs
-	; Take the last free page of RAM and remap it
-	pop rax				; Restore free RAM size
-	shl rax, 2			; Quick multiply by 2
-	add rax, sys_pdh
-	mov rsi, rax
-	mov rax, [rsi]
-	mov [rsi+8], rax
-	xor eax, eax
-	mov [rsi], rax
-	mov rbx, app_start
-	mov eax, [os_MemAmount]		; In MiB's
-	add eax, 2
-	shl rax, 20
-	add rax, rbx
+	mov rax, 0x200000		; Stacks start at 2MiB
 	mov [os_StackBase], rax
 
 	; Initialize the APIC
