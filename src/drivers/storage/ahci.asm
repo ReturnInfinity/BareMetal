@@ -292,9 +292,6 @@ ahci_io_poll:
 	add rax, rcx			; rax = start + number of sectors read
 	pop rsi
 	pop rdi
-	mov rbx, rcx			; rdi = dest addr + number of bytes read
-	shl rbx, 9
-	add rdi, rbx
 	pop rbx
 	pop rdx
 	pop r8

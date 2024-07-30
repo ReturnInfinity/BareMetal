@@ -16,21 +16,30 @@
 ;	All other registers preserved
 b_storage_read:
 	push rdi
+	push r8
 	push rcx
 	push rbx
 	push rax
+
+	mov r8, rcx
 
 	; Calculate where in physical memory the data should be written to
 	xchg rax, rdi
 	call os_virt_to_phys
 	xchg rax, rdi
 
+b_storage_read_sector:
+	mov rcx, 1
 	mov ebx, 2			; Read opcode for driver
 	call [os_storage_io]		; Call the storage driver IO command
+	add rdi, 4096
+	sub r8, 1
+	jne b_storage_read_sector
 
 	pop rax
 	pop rbx
 	pop rcx
+	pop r8
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
@@ -52,14 +61,20 @@ b_storage_write:
 	push rax
 
 	mov rdi, rsi			; The I/O functions only use RDI for the memory address
+	mov r8, rcx
 
 	; Calculate where in physical memory the data should be read from
 	xchg rax, rsi
 	call os_virt_to_phys
 	xchg rax, rsi
 
+b_storage_write_sector:
+	mov rcx, 1
 	mov ebx, 1			; Write opcode for driver
 	call qword [os_storage_io]	; Call the storage driver IO command
+	add rdi, 4096
+	sub r8, 1
+	jne b_storage_write_sector
 
 	pop rax
 	pop rbx
