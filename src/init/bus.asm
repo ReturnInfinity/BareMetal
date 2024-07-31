@@ -85,7 +85,7 @@ init_bus_pci:
 	in eax, dx
 	cmp eax, 0x80000000
 	jne init_bus_pci_not_found	; Exit if PCI wasn't found
-	mov byte [os_BusEnabled], 1
+	mov byte [os_BusEnabled], 1	; Bit 0 set for PCI
 	xor edx, edx
 
 init_bus_pci_probe:

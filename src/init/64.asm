@@ -37,7 +37,8 @@ init_64:
 	mov esi, 0x00005040		; HPET
 	lodsq
 	mov [os_HPET_Address], rax
-	mov esi, 0x00005050
+	lodsd
+	mov [os_HPET_Frequency], eax
 	lodsw
 	mov [os_HPET_CounterMin], ax
 	mov esi, 0x00005080		; VIDEO_*

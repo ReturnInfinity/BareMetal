@@ -12,39 +12,11 @@
 ; OUT:	Nothing
 ;	All other registers preserved
 os_hpet_init:
+	; Pure64 has already initialized the HPET (if it existed)
+
 	; Verify there is a valid HPET address
 	mov rax, [os_HPET_Address]
 	jz os_hpet_init_error
-
-	; Verify the capabilities of HPET
-	mov ecx, HPET_GEN_CAP
-	call os_hpet_read
-	bt rax, 13			; Check for 64-bit support
-	jnc os_hpet_init_error
-	shr rax, 32			; EAX contains the tick period in femtoseconds
-
-	; Verify the Counter Clock Period is valid
-	cmp eax, 0x05F5E100		; 100,000,000 femtoseconds is the maximum
-	jg os_hpet_init_error
-	cmp eax, 0			; The Period has to be greater than 1 femtosecond
-	je os_hpet_init_error
-
-	; Calculate the HPET frequency
-	mov rbx, rax			; Move Counter Clock Period to RBX
-	xor rdx, rdx
-	mov rax, 1000000000000000	; femotoseconds per second
-	div rbx				; RDX:RAX / RBX
-	mov [os_HPET_Frequency], eax	; Save the HPET frequency
-
-	; Clear the main counter before it is enabled
-	mov ecx, HPET_MAIN_COUNTER
-	xor eax, eax
-	call os_hpet_write
-
-	; Enable HPET main counter (0) and set legacy replacement mapping (1)
-	mov eax, 0b01
-	mov ecx, HPET_GEN_CONF
-	call os_hpet_write
 
 	; Set flag that HPET was enabled
 	or qword [os_SysConfEn], 1 << 4
