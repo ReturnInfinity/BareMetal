@@ -32,7 +32,6 @@ init_64:
 	mov esi, 0x00005020		; RAMAMOUNT
 	lodsd
 	sub eax, 2			; Save 2 MiB for the CPU stacks
-;	push rax			; Save the free RAM size
 	mov [os_MemAmount], eax		; In MiB's
 	mov esi, 0x00005040		; HPET
 	lodsq

@@ -199,12 +199,12 @@ Currently the following functions are supported:
  - 0: timecounter
 
    get the timecounter, the timecounter increments 8 times a second
- - 1: argc
+ - 1: smp_get_id
 
-   get the argument count
- - 2: argv
+   Get the local ID of the processor
+ - 2: free_memory
 
-   get the nth argument
+   Return the amount of free memory in MiB
  - 3: networkcallback_get
 
    get the current networkcallback entrypoint

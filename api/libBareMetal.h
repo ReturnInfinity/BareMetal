@@ -28,6 +28,7 @@ void b_system(unsigned long function, void *var1, void *var2);
 // Index for b_config calls
 #define TIMECOUNTER		0x00
 #define SMP_GET_ID		0x01
+#define FREE_MEMORY		0x02
 #define NETWORKCALLBACK_GET	0x03
 #define NETWORKCALLBACK_SET	0x04
 #define CLOCKCALLBACK_GET	0x05

@@ -18,6 +18,8 @@ b_config:
 	je b_config_timecounter
 	cmp rcx, 0x01
 	je b_config_smp_get_id
+	cmp rcx, 0x02
+	je b_config_free_memory
 ;	cmp rcx, 0x03
 ;	je b_config_networkcallback_get
 ;	cmp rcx, 0x04
@@ -67,6 +69,10 @@ b_config_timecounter:
 
 b_config_smp_get_id:
 	call b_smp_get_id
+	ret
+
+b_config_free_memory:
+	mov eax, [os_MemAmount]
 	ret
 
 ;b_config_networkcallback_get:

@@ -22,6 +22,7 @@ b_system		equ 0x0000000000100048	; Call a system function. IN: RCX = Function, R
 ; Index for b_config calls
 timecounter		equ 0x00
 smp_get_id		equ 0x01
+free_memory		equ 0x02
 networkcallback_get	equ 0x03
 networkcallback_set	equ 0x04
 clockcallback_get	equ 0x05
