@@ -54,7 +54,7 @@ void b_system(unsigned long function, void *var1, void *var2);
 #define MEM_GET_FREE		8
 #define SMP_NUMCORES		9
 #define SMP_SET			10
-#define SMP_BUSY  11
+#define SMP_BUSY		11
 #define RESET			256
 
 #endif

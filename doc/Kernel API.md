@@ -268,8 +268,8 @@ Currently the following functions are supported:
 	- Dump rax in Hex
 	- in rax: The Content that gets printed to memory
 6. delay
-	- Delay by X eights of a second
-	- in rax: Time in eights of a second
+	- Delay by X microseconds
+	- in rax: number of microseconds
 7. net_status
 	- Get the current mac address (or 0 if ethernet is down)
 	- Same as system_config 30 (mac)
