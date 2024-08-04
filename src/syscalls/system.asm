@@ -140,9 +140,9 @@ b_delay_loop:				; Stay in this loop until the HPET timer reaches the expected v
 	mov ecx, 0xF0
 	call os_hpet_read		; Get HPET counter in RAX
 	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
-	jae b_delay_microsleep_end
+	jae b_delay_end
 ;	hlt
-	jmp b_delay_microsleep_loop
+	jmp b_delay_loop
 b_delay_end:
 
 	pop rax
