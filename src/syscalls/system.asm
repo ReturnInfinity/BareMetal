@@ -63,7 +63,7 @@ b_system_debug_dump_rax:
 	ret
 
 b_system_delay:
-	call os_delay
+	call b_delay
 	ret
 
 b_system_net_status:
@@ -112,19 +112,43 @@ b_system_reset_no_more_aps:
 
 
 ; -----------------------------------------------------------------------------
-; os_delay -- Delay by X eights of a second
-; IN:	RAX = Time in eights of a second
+; b_delay -- Delay by X microseconds
+; IN:	RAX = Time microseconds
 ; OUT:	All registers preserved
-; A value of 8 in RAX will delay 1 second and a value of 1 will delay 1/8 of a second
-; This function depends on the RTC (IRQ 8) so interrupts must be enabled.
-os_delay:
+; Note:	There are 1,000,000 microseconds in a second
+;	There are 1,000 milliseconds in a second
+b_delay:
+	push rdx
 	push rcx
+	push rbx
 	push rax
 
-; TODO - Use HPET
+	mov rbx, rax			; Save delay to RBX
+	xor edx, edx
+	xor ecx, ecx
+	call os_hpet_read		; Get HPET General Capabilities and ID Register
+	shr rax, 32
+	mov rcx, rax			; RCX = RAX >> 32 (timer period in femtoseconds)
+	mov rax, 1000000000
+	div rcx				; Divide 10E9 (RDX:RAX) / RCX (converting from period in femtoseconds to frequency in MHz)
+	mul rbx				; RAX *= RBX, should get number of HPET cycles to wait, save result in RBX
+	mov rbx, rax
+	mov ecx, 0xF0
+	call os_hpet_read		; Get HPET counter in RAX
+	add rbx, rax			; RBX += RAX Until when to wait
+b_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
+	mov ecx, 0xF0
+	call os_hpet_read		; Get HPET counter in RAX
+	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
+	jae b_delay_microsleep_end
+;	hlt
+	jmp b_delay_microsleep_loop
+b_delay_end:
 
 	pop rax
+	pop rbx
 	pop rcx
+	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
