@@ -14,51 +14,54 @@
 ; OUT:	RAX = Result
 ;	All other registers preserved
 b_config:
-	cmp rcx, 0x00
+	cmp rcx, 0xFF
+	jg b_config_end
+
+; Basic
+	cmp cl, 0x00
 	je b_config_timecounter
-	cmp rcx, 0x01
+	cmp cl, 0x01
 	je b_config_smp_get_id
-	cmp rcx, 0x02
-	je b_config_free_memory
-;	cmp rcx, 0x03
-;	je b_config_networkcallback_get
-;	cmp rcx, 0x04
-;	je b_config_networkcallback_set
-;	cmp rcx, 0x05
-;	je b_config_clockcallback_get
-;	cmp rcx, 0x06
-;	je b_config_clockcallback_set
+;	cmp cl, 0x02
+;	je b_config_free_memory
 
 ; Video
-	cmp rcx, 0x20
+	cmp cl, 0x20
 	je b_config_screen_lfb_get
-	cmp rcx, 0x21
+	cmp cl, 0x21
 	je b_config_screen_x_get
-	cmp rcx, 0x22
+	cmp cl, 0x22
 	je b_config_screen_y_get
-	cmp rcx, 0x23
+	cmp cl, 0x23
 	je b_config_screen_ppsl_get
-	cmp rcx, 0x24
+	cmp cl, 0x24
 	je b_config_screen_bpp_get
 
 ; Network
-	cmp rcx, 0x30
+	cmp cl, 0x30
 	je b_config_mac_get
 
 ; PCI
-	cmp rcx, 0x40
+	cmp cl, 0x40
 	je b_config_pci_read
-	cmp rcx, 0x41
+	cmp cl, 0x41
 	je b_config_pci_write
 
 ; Standard Output
-	cmp rcx, 0x42
+	cmp cl, 0x42
 	je b_config_stdout_set
-	cmp rcx, 0x43
+	cmp cl, 0x43
 	je b_config_stdout_get
-	cmp rcx, 0x50
+
+; Misc
+	cmp cl, 0x50
 	je b_config_drive_id
+
+; End of options
+b_config_end:
 	ret
+
+; Basic
 
 b_config_timecounter:
 	push rcx
@@ -74,22 +77,6 @@ b_config_smp_get_id:
 b_config_free_memory:
 	mov eax, [os_MemAmount]
 	ret
-
-;b_config_networkcallback_get:
-;	mov rax, [os_NetworkCallback]
-;	ret
-
-;b_config_networkcallback_set:
-;	mov qword [os_NetworkCallback], rax
-;	ret
-
-;b_config_clockcallback_get:
-;	mov rax, [os_ClockCallback]
-;	ret
-
-;b_config_clockcallback_set:
-;	mov qword [os_ClockCallback], rax
-;	ret
 
 ; Video
 
@@ -132,6 +119,8 @@ b_config_pci_write:
 	call os_bus_write
 	ret
 
+; Standard Output
+
 b_config_stdout_get:
 	mov rax, qword [0x100018]
 	ret
@@ -139,6 +128,8 @@ b_config_stdout_get:
 b_config_stdout_set:
 	mov qword [0x100018], rax
 	ret
+
+; Misc
 
 b_config_drive_id:
 	push rdi
