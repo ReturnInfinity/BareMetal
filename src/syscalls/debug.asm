@@ -20,12 +20,12 @@ os_debug_dump_rax:
 	rol rax, 8
 	call os_debug_dump_al
 	rol rax, 32
-os_debug_dump_eax:
-	rol eax, 8
+os_debug_dump_eax:			; RAX is used here instead of EAX to preserve the upper 32-bits
+	rol rax, 40
 	call os_debug_dump_al
-	rol eax, 8
+	rol rax, 8
 	call os_debug_dump_al
-	rol eax, 16
+	rol rax, 16
 os_debug_dump_ax:
 	rol ax, 8
 	call os_debug_dump_al
@@ -132,6 +132,22 @@ os_debug_newline:
 	push rcx
 	mov rsi, newline
 	mov rcx, 2
+	call b_output
+	pop rcx
+	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_debug_space -- Output a space
+;  IN:	Nothing
+; OUT:	Nothing, all registers preserved
+os_debug_space:
+	push rsi
+	push rcx
+	mov rsi, space
+	mov rcx, 1
 	call b_output
 	pop rcx
 	pop rsi
