@@ -125,7 +125,7 @@ b_delay:
 
 	mov rbx, rax			; Save delay to RBX
 	xor edx, edx
-	xor ecx, ecx
+	mov ecx, HPET_GEN_CAP
 	call os_hpet_read		; Get HPET General Capabilities and ID Register
 	shr rax, 32
 	mov rcx, rax			; RCX = RAX >> 32 (timer period in femtoseconds)
@@ -133,11 +133,11 @@ b_delay:
 	div rcx				; Divide 10E9 (RDX:RAX) / RCX (converting from period in femtoseconds to frequency in MHz)
 	mul rbx				; RAX *= RBX, should get number of HPET cycles to wait, save result in RBX
 	mov rbx, rax
-	mov ecx, 0xF0
+	mov ecx, HPET_MAIN_COUNTER
 	call os_hpet_read		; Get HPET counter in RAX
 	add rbx, rax			; RBX += RAX Until when to wait
 b_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
-	mov ecx, 0xF0
+	mov ecx, HPET_MAIN_COUNTER
 	call os_hpet_read		; Get HPET counter in RAX
 	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
 	jae b_delay_end

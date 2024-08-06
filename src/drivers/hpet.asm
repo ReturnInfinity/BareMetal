@@ -32,11 +32,8 @@ os_hpet_init_error:
 ; OUT:	RAX = Register value
 ;	All other registers preserved
 os_hpet_read:
-	push rsi
-	mov rsi, [os_HPET_Address]
-	add rsi, rcx			; Add offset
-	lodsq
-	pop rsi
+	mov rax, [os_HPET_Address]
+	mov rax, [rax + rcx]
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -47,11 +44,10 @@ os_hpet_read:
 ;	RAX = Value to write
 ; OUT:	All registers preserved
 os_hpet_write:
-	push rdi
-	mov rdi, [os_HPET_Address]
-	add rdi, rcx			; Add offset
-	stosq
-	pop rdi
+	push rcx
+	add rcx, [os_HPET_Address]
+	mov [rcx], rax
+	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
