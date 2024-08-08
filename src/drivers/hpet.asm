@@ -13,10 +13,19 @@
 ;	All other registers preserved
 os_hpet_init:
 	; Pure64 has already initialized the HPET (if it existed)
+	; Pure64 enables legacy replacement mode. IRQ2 maps to HPET timer 0 and IRQ8 maps to HPET timer 1
 
 	; Verify there is a valid HPET address
 	mov rax, [os_HPET_Address]
 	jz os_hpet_init_error
+
+	; Configure interrupt vector and unmask the IO-APIC
+	mov edi, 0x22
+	mov rax, hpet
+	call create_gate
+	mov ecx, 2			; HPET IRQ
+	mov eax, 0x22			; HPET Interrupt Vector
+	call os_ioapic_mask_clear
 
 	; Set flag that HPET was enabled
 	or qword [os_SysConfEn], 1 << 4

@@ -116,6 +116,26 @@ keyboard_done:
 
 
 ; -----------------------------------------------------------------------------
+; HPET Timer 0 interrupt. IRQ 0x02, INT 0x22
+; This IRQ runs whenever HPET Timer 0 expires
+align 8
+hpet:
+	push rax
+	push rcx
+	pushfq
+
+	mov rcx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+	popfq
+	pop rcx
+	pop rax
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; A simple interrupt that just acknowledges an IPI. Useful for getting an AP past a 'hlt' in the code.
 align 8
 ap_wakeup:

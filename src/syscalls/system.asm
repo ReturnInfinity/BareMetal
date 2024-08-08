@@ -136,12 +136,20 @@ b_delay:
 	mov ecx, HPET_MAIN_COUNTER
 	call os_hpet_read		; Get HPET counter in RAX
 	add rbx, rax			; RBX += RAX Until when to wait
+; Setup a one shot HPET interrupt when main counter=RBX
+	mov ecx, HPET_TIMER_0_CONF
+	call os_hpet_read
+	mov rax, (2 << 9) | (1 << 2)	; IRQ 2, interrupts enabled
+	call os_hpet_write
+	mov rax, rbx
+	mov ecx, HPET_TIMER_0_COMP
+	call os_hpet_write
 b_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
 	mov ecx, HPET_MAIN_COUNTER
 	call os_hpet_read		; Get HPET counter in RAX
 	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
 	jae b_delay_end
-;	hlt
+	hlt				; Otherwise halt and the CPU will wait for an interrupt
 	jmp b_delay_loop
 b_delay_end:
 
