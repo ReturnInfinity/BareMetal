@@ -159,6 +159,7 @@ os_debug_space:
 ; os_debug_block - Create a block (8x8 pixels) of colour on the screen
 ; IN:	EAX = Colour
 ;	EBX = Index #
+; Note:	This code expects 1024x768x32 for the screen
 os_debug_block:
 	push rax
 	push rbx
@@ -170,7 +171,7 @@ os_debug_block:
 	mov rdi, [os_screen_lfb]	; Linear frame buffer base
 	add rdi, 1556480		; Start at the middle of the screen ((768 - 8) / 2 * 1024 * 4)
 	xor edx, edx
-	mov edx, [0x00005F00 + 0x14]	; PixelsPerScanLine
+	mov dx, [0x00005F00 + 0x14]	; PixelsPerScanLine
 	add ebx, 60
 	shl ebx, 5			; Quick multiply by 32 (8 pixels * 4 bytes each)
 	add rdi, rbx
