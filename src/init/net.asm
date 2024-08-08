@@ -114,8 +114,7 @@ init_net_probe_found_finish:
 	mov byte [r9], 1		; Mark device as having a driver
 
 init_net_probe_not_found:
-	; Output to screen (4/4)
-	mov eax, 0x00808080
+	; Output block to screen (4/4)
 	mov ebx, 6
 	call os_debug_block
 

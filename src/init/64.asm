@@ -58,17 +58,6 @@ init_64:
 	lodsd
 	mov [os_IOAPICAddress], rax
 
-	; Clear screen
-	xor eax, eax
-	xor ecx, ecx
-	mov ax, [os_screen_x]
-	mov cx, [os_screen_y]
-	mul ecx
-	mov ecx, eax
-	mov rdi, [os_screen_lfb]
-	mov eax, 0x00202020
-	rep stosd
-
 	; Configure the PS/2 keyboard
 	call ps2_init
 
@@ -167,8 +156,7 @@ no_more_aps:
 	mov eax, 0x21			; Keyboard Interrupt Vector
 	call os_ioapic_mask_clear
 
-	; Output to screen (1/4)
-	mov eax, 0x00808080
+	; Output block to screen (1/4)
 	mov ebx, 0
 	call os_debug_block
 

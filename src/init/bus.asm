@@ -125,8 +125,7 @@ init_bus_end:
 	mov ecx, 4
 	rep stosd
 
-	; Output to screen (2/4)
-	mov eax, 0x00808080
+	; Output block to screen (2/4)
 	mov ebx, 2
 	call os_debug_block
 

@@ -162,6 +162,31 @@ b_delay_end:
 
 
 ; -----------------------------------------------------------------------------
+; cls - Clear screen
+cls:
+	push rax
+	push rcx
+	push rdx
+	push rdi
+	xor eax, eax
+	xor ecx, ecx
+	xor edx, edx
+	mov ax, [os_screen_x]
+	mov cx, [os_screen_y]
+	mul ecx
+	mov ecx, eax
+	mov rdi, [os_screen_lfb]
+	mov eax, 0x00404040
+	rep stosd
+	pop rdi
+	pop rdx
+	pop rcx
+	pop rax
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; reboot -- Reboot the computer
 reboot:
 	mov al, PS2_COMMAND_RESET_CPU

@@ -179,6 +179,7 @@ os_debug_block:
 
 	; Draw the 8x8 pixel block
 	mov ebx, 8			; 8 pixels tall
+	mov eax, 0x00F7CA54		; Return Infinity Yellow/Orange
 os_debug_block_nextline:
 	mov ecx, 8			; 8 pixels wide
 	rep stosd
