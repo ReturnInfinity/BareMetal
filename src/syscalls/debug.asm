@@ -157,9 +157,7 @@ os_debug_space:
 
 ; -----------------------------------------------------------------------------
 ; os_debug_block - Create a block (8x8 pixels) of colour on the screen
-; IN:	EAX = Colour
-;	EBX = Index #
-; Note:	This code expects 1024x768x32 for the screen
+; IN:	EBX = Index #
 os_debug_block:
 	push rax
 	push rbx
@@ -168,14 +166,31 @@ os_debug_block:
 	push rdi
 
 	; Calculate parameters
-	mov rdi, [os_screen_lfb]	; Linear frame buffer base
-	add rdi, 1556480		; Start at the middle of the screen ((768 - 8) / 2 * 1024 * 4)
+	push rbx
+	push rax
+	xor edx, edx
+	xor eax, eax
+	xor ebx, ebx
+	mov ax, [0x00005F00 + 0x12]	; Screen Y
+	add ax, 16			; Lower row
+	shr ax, 1			; Quick divide by 2
+	mov bx, [0x00005F00 + 0x10]	; Screen X
+	shl ebx, 2			; Quick multiply by 4
+	mul ebx				; Multiply EDX:EAX by EBX
+	mov rdi, [0x00005F00]		; Frame buffer base
+	add rdi, rax			; Offset is ((screeny - 8) / 2 + screenx * 4)
+	pop rax
+	pop rbx
 	xor edx, edx
 	mov dx, [0x00005F00 + 0x14]	; PixelsPerScanLine
-	add ebx, 60
-	shl ebx, 5			; Quick multiply by 32 (8 pixels * 4 bytes each)
-	add rdi, rbx
 	shl edx, 2			; Quick multiply by 4 for line offset
+	xor ecx, ecx
+	mov cx, [0x00005F00 + 0x10]	; Screen X
+	shr cx, 4			; CX = total amount of 8-pixel wide blocks
+	sub cx, 4
+	add ebx, ecx
+	shl ebx, 5			; Quick multiply by 32 (8 pixels by 4 bytes each)
+	add rdi, rbx
 
 	; Draw the 8x8 pixel block
 	mov ebx, 8			; 8 pixels tall
