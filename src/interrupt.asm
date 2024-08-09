@@ -171,7 +171,7 @@ ap_reset:
 ; -----------------------------------------------------------------------------
 ; CPU Exception Gates
 align 8
-exception_gate_00:
+exception_gate_00:			; DE
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -180,7 +180,7 @@ exception_gate_00:
 	jmp exception_gate_main
 
 align 8
-exception_gate_01:
+exception_gate_01:			; DB
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -356,15 +356,15 @@ exception_gate_main:
 	push rax			; Save RAX since b_smp_get_id clobbers it
 	mov rsi, newline
 	mov rcx, 1
-	call b_output
+	call [0x00100018]		; b_output
 	mov rsi, int_string00
-	mov rcx, 24
-	call b_output
+	mov rcx, 36
+	call [0x00100018]		; b_output
 	call b_smp_get_id		; Get the local CPU ID and print it
 	call os_debug_dump_ax
 	mov rsi, int_string01
 	mov rcx, 13
-	call b_output
+	call [0x00100018]		; b_output
 	mov rsi, exc_string00
 	pop rax
 	and rax, 0x00000000000000FF	; Clear out everything in RAX except for AL
@@ -375,7 +375,7 @@ exception_gate_main:
 	pop rax
 	mov bl, 0x0F
 	mov rcx, 6
-	call b_output
+	call [0x00100018]		; b_output
 	pop rcx
 	pop rsi
 	pop rdi
@@ -383,17 +383,17 @@ exception_gate_main:
 	pop rax
 	mov rsi, int_string02
 	mov rcx, 5
-	call b_output
-	mov rax, [rsp+8] 			; RIP of caller
+	call [0x00100018]		; b_output
+	mov rax, [rsp+8] 		; RIP of caller
 	call os_debug_dump_rax
 	mov rsi, newline
 	mov rcx, 1
-	call b_output
+	call [0x00100018]		; b_output
 	jmp $				; For debugging
 	jmp ap_clear			; jump to AP clear code
 
 
-int_string00 db 'Fatal Exception - CPU 0x'
+int_string00 db 'BareMetal - Fatal Exception - CPU 0x'
 int_string01 db ' - Interrupt '
 int_string02 db ' @ 0x'
 ; Strings for the error messages
