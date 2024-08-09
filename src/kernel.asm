@@ -58,11 +58,13 @@ start:
 	rep movsq			; Copy 16384 bytes
 
 	; Set the payload to run
+bsp_run_payload:
 	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
 	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
 	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
 	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
 	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
+	mov [os_BSP], al		; Keep a record of the BSP APIC ID
 	mov ebx, eax			; Save the APIC ID
 	mov rdi, os_SMP			; Clear the entry in the work table
 	shl rax, 3			; Quick multiply by 8 to get to proper record

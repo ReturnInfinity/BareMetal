@@ -389,7 +389,9 @@ exception_gate_main:
 	mov rsi, newline
 	mov rcx, 1
 	call [0x00100018]		; b_output
-	jmp $				; For debugging
+	call b_smp_get_id		; Get the local CPU ID
+	cmp [os_BSP], al
+	je bsp_run_payload
 	jmp ap_clear			; jump to AP clear code
 
 

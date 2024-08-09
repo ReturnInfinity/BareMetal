@@ -153,6 +153,7 @@ os_screen_bpp:		equ os_SystemVariables + 0x0316
 os_ioapic_ver:		equ os_SystemVariables + 0x0317
 os_ioapic_mde:		equ os_SystemVariables + 0x0318
 key_control:		equ os_SystemVariables + 0x0319
+os_BSP:			equ os_SystemVariables + 0x0320
 
 
 ; Misc
