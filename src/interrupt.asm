@@ -364,12 +364,12 @@ exception_gate_main:
 	mov rcx, 1
 	call [0x00100018]		; b_output
 	mov rsi, int_string00
-	mov rcx, 36
+	mov rcx, 6
 	call [0x00100018]		; b_output
 	call b_smp_get_id		; Get the local CPU ID and print it
 	call os_debug_dump_ax
 	mov rsi, int_string01
-	mov rcx, 13
+	mov rcx, 15
 	call [0x00100018]		; b_output
 	mov rsi, exc_string00
 	pop rax
@@ -405,16 +405,25 @@ exception_gate_main:
 	push rcx
 	push rbx
 	push rax
-	mov rsi, reg_string00
-	mov ecx, 4
-	mov edx, 16
+	mov rsi, reg_string00		; Load address of first register string
+	mov ecx, 4			; Number of characters per reg_string
+	mov edx, 16			; Counter of registers to left to output
+	xor ebx, ebx			; Counter of registers output per line
 	call os_debug_newline
 exception_gate_main_nextreg:
 	call [0x00100018]		; b_output
 	add rsi, 4
 	pop rax
 	call os_debug_dump_rax
+	add ebx, 1
+	cmp ebx, 4			; Number of registers to output per line
+	jne exception_gate_main_nextreg_space
+	call os_debug_newline
+	xor ebx, ebx
+	jmp exception_gate_main_nextreg_continue
+exception_gate_main_nextreg_space:
 	call os_debug_space
+exception_gate_main_nextreg_continue:
 	dec edx
 	jnz exception_gate_main_nextreg
 	call [0x00100018]		; b_output
@@ -434,8 +443,8 @@ exception_gate_main_nextreg:
 ; -----------------------------------------------------------------------------
 
 
-int_string00 db 'BareMetal - Fatal Exception - CPU 0x'
-int_string01 db ' - Interrupt '
+int_string00 db 'CPU 0x'
+int_string01 db ' - Exception 0x'
 ; Strings for the error messages
 exc_string db 'Unknown Fatal Exception!'
 exc_string00 db '00(DE)'
