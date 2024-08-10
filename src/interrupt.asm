@@ -171,7 +171,7 @@ ap_reset:
 ; -----------------------------------------------------------------------------
 ; CPU Exception Gates
 align 8
-exception_gate_00:			; DE
+exception_gate_00:			; DE (Division Error)
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -198,7 +198,7 @@ exception_gate_02:
 	jmp exception_gate_main
 
 align 8
-exception_gate_03:
+exception_gate_03:			; BP
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -207,7 +207,7 @@ exception_gate_03:
 	jmp exception_gate_main
 
 align 8
-exception_gate_04:
+exception_gate_04:			; OF
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -216,7 +216,7 @@ exception_gate_04:
 	jmp exception_gate_main
 
 align 8
-exception_gate_05:
+exception_gate_05:			; BR
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -225,7 +225,7 @@ exception_gate_05:
 	jmp exception_gate_main
 
 align 8
-exception_gate_06:
+exception_gate_06:			; UD (Invalid Opcode)
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -234,7 +234,7 @@ exception_gate_06:
 	jmp exception_gate_main
 
 align 8
-exception_gate_07:
+exception_gate_07:			; NM
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -243,7 +243,7 @@ exception_gate_07:
 	jmp exception_gate_main
 
 align 8
-exception_gate_08:
+exception_gate_08:			; DF
 	push rax
 	mov al, 0x08
 	jmp exception_gate_main
@@ -259,35 +259,37 @@ exception_gate_09:
 	jmp exception_gate_main
 
 align 8
-exception_gate_10:
+exception_gate_10:			; TS
 	push rax
 	mov al, 0x0A
 	jmp exception_gate_main
 	times 16 db 0x90
 
 align 8
-exception_gate_11:
+exception_gate_11:			; NP
 	push rax
 	mov al, 0x0B
 	jmp exception_gate_main
 	times 16 db 0x90
 
 align 8
-exception_gate_12:
+exception_gate_12:			; SS
 	push rax
 	mov al, 0x0C
 	jmp exception_gate_main
 	times 16 db 0x90
 
 align 8
-exception_gate_13:
+exception_gate_13:			; GP
 	push rax
 	mov al, 0x0D
 	jmp exception_gate_main
 	times 16 db 0x90
 
 align 8
-exception_gate_14:
+exception_gate_14:			; PF (Page Fault)
+	; An error code is store in RAX (EAX padded)
+	; Register CR2 is set to the virtual address which caused the Page Fault
 	push rax
 	mov al, 0x0E
 	jmp exception_gate_main
@@ -303,7 +305,7 @@ exception_gate_15:
 	jmp exception_gate_main
 
 align 8
-exception_gate_16:
+exception_gate_16:			; MF
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -312,14 +314,14 @@ exception_gate_16:
 	jmp exception_gate_main
 
 align 8
-exception_gate_17:
+exception_gate_17:			; AC
 	push rax
 	mov al, 0x11
 	jmp exception_gate_main
 	times 16 db 0x90
 
 align 8
-exception_gate_18:
+exception_gate_18:			; MC
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -328,7 +330,7 @@ exception_gate_18:
 	jmp exception_gate_main
 
 align 8
-exception_gate_19:
+exception_gate_19:			; XM
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -337,7 +339,7 @@ exception_gate_19:
 	jmp exception_gate_main
 
 align 8
-exception_gate_20:
+exception_gate_20:			; VE
 	mov [rsp-16], rax
 	xor eax, eax
 	mov [rsp-8], rax
@@ -345,10 +347,14 @@ exception_gate_20:
 	mov al, 0x14
 	jmp exception_gate_main
 
+; -----------------------------------------------------------------------------
+; Main exception handler
 align 8
 exception_gate_main:
 	mov qword [os_NetworkCallback], 0	; Reset the network callback
 	mov qword [os_ClockCallback], 0		; Reset the clock callback
+
+	; Display exception message, APIC ID, and exception type
 	push rbx
 	push rdi
 	push rsi
@@ -381,23 +387,55 @@ exception_gate_main:
 	pop rdi
 	pop rbx
 	pop rax
-	mov rsi, int_string02
-	mov rcx, 5
+
+	; Dump all registers
+	push r15
+	push r14
+	push r13
+	push r12
+	push r11
+	push r10
+	push r9
+	push r8
+	push rsp
+	push rbp
+	push rdi
+	push rsi
+	push rdx
+	push rcx
+	push rbx
+	push rax
+	mov rsi, reg_string00
+	mov ecx, 4
+	mov edx, 16
+	call os_debug_newline
+exception_gate_main_nextreg:
+	call [0x00100018]		; b_output
+	add rsi, 4
+	pop rax
+	call os_debug_dump_rax
+	call os_debug_space
+	dec edx
+	jnz exception_gate_main_nextreg
 	call [0x00100018]		; b_output
 	mov rax, [rsp+8] 		; RIP of caller
 	call os_debug_dump_rax
-	mov rsi, newline
-	mov rcx, 1
+	call os_debug_space
+	add rsi, 4
 	call [0x00100018]		; b_output
+	mov rax, cr2
+	call os_debug_dump_rax
+
+	; Check if the exception was on the BSP. Rerun the payload if so
 	call b_smp_get_id		; Get the local CPU ID
 	cmp [os_BSP], al
 	je bsp_run_payload
 	jmp ap_clear			; jump to AP clear code
+; -----------------------------------------------------------------------------
 
 
 int_string00 db 'BareMetal - Fatal Exception - CPU 0x'
 int_string01 db ' - Interrupt '
-int_string02 db ' @ 0x'
 ; Strings for the error messages
 exc_string db 'Unknown Fatal Exception!'
 exc_string00 db '00(DE)'
@@ -421,6 +459,26 @@ exc_string17 db '17(AC)'
 exc_string18 db '18(MC)'
 exc_string19 db '19(XM)'
 exc_string20 db '20(VE)'
+
+; Strings for registers
+reg_string00 db 'RAX='
+reg_string01 db 'RBX='
+reg_string02 db 'RCX='
+reg_string03 db 'RDX='
+reg_string04 db 'RSI='
+reg_string05 db 'RDI='
+reg_string06 db 'RBP='
+reg_string07 db 'RSP='
+reg_string08 db 'R8 ='
+reg_string09 db 'R9 ='
+reg_string10 db 'R10='
+reg_string11 db 'R11='
+reg_string12 db 'R12='
+reg_string13 db 'R13='
+reg_string14 db 'R14='
+reg_string15 db 'R15='
+reg_string16 db 'RIP='
+reg_string17 db 'CR2='
 
 
 ; =============================================================================
