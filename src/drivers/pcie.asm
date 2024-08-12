@@ -62,8 +62,8 @@ os_pcie_write:
 ; -----------------------------------------------------------------------------
 ; os_pcie_convert -- Convert RDX to the memory address of the register
 ;  IN:	RDX = Register to read/write
-;	RDX = Memory address of register
-; OUT:	Nothing, all registers preserved
+; OUT:	RDX = Memory address of register
+;	All other registers preserved
 os_pcie_convert:
 	push rsi
 	push rax
