@@ -86,7 +86,7 @@ os_net_ackint:		equ os_SystemVariables + 0x0038
 os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
 os_NetMAC:		equ os_SystemVariables + 0x0048
 os_HPET_Address:	equ os_SystemVariables + 0x0050
-ahci_base:		equ os_SystemVariables + 0x0058
+os_AHCI_Base:		equ os_SystemVariables + 0x0058
 os_NetworkCallback:	equ os_SystemVariables + 0x0060
 os_KeyboardCallback:	equ os_SystemVariables + 0x0068
 os_ClockCallback:	equ os_SystemVariables + 0x0070
@@ -107,7 +107,7 @@ os_NetIOLength:		equ os_SystemVariables + 0x00D0
 ; DD - Starting at offset 256, increments by 4
 os_HPETRate:		equ os_SystemVariables + 0x0100
 os_MemAmount:		equ os_SystemVariables + 0x0104	; in MiB
-ahci_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
+os_AHCI_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_screen_ppsl:		equ os_SystemVariables + 0x0114
@@ -146,9 +146,9 @@ os_NVMeTER:		equ os_SystemVariables + 0x030F
 os_NVMeLBA:		equ os_SystemVariables + 0x0310
 os_NVMe_atail:		equ os_SystemVariables + 0x0311
 os_NVMe_iotail:		equ os_SystemVariables + 0x0312
-os_AHCIMJR:		equ os_SystemVariables + 0x0313
-os_AHCIMNR:		equ os_SystemVariables + 0x0314
-os_AHCIIRQ:		equ os_SystemVariables + 0x0315
+os_AHCI_MJR:		equ os_SystemVariables + 0x0313
+os_AHCI_MNR:		equ os_SystemVariables + 0x0314
+os_AHCI_IRQ:		equ os_SystemVariables + 0x0315
 os_screen_bpp:		equ os_SystemVariables + 0x0316
 os_ioapic_ver:		equ os_SystemVariables + 0x0317
 os_ioapic_mde:		equ os_SystemVariables + 0x0318

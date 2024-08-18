@@ -13,7 +13,7 @@ ahci_init:
 
 	mov al, 5			; Read BAR5
 	call os_bus_read_bar
-	mov [ahci_base], rax
+	mov [os_AHCI_Base], rax
 	mov rsi, rax			; RSI holds the ABAR
 
 	; Set PCI Status/Command values
@@ -25,6 +25,7 @@ ahci_init:
 	call os_bus_write		; Write updated Status/Command
 
 	; Mark controller memory as un-cacheable
+	mov rax, [os_AHCI_Base]
 	shr rax, 18
 	and al, 0b11111000		; Clear the last 3 bits
 	mov rdi, 0x10000		; Base of low PDE
@@ -39,14 +40,14 @@ ahci_init:
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
 	jl ahci_init_error
-	mov [os_AHCIMJR], al
+	mov [os_AHCI_MJR], al
 	rol eax, 8			; Rotate EAX so MNR is bits 07:00
-	mov [os_AHCIMNR], al
+	mov [os_AHCI_MNR], al
 
 	; Grab the IRQ of the device
 	mov dl, 0x0F			; Get device's IRQ number from PCI Register 15 (IRQ is bits 7-0)
 	call os_bus_read
-	mov [os_AHCIIRQ], al		; AL holds the IRQ
+	mov [os_AHCI_IRQ], al		; AL holds the IRQ
 
 	; Enable AHCI
 	xor eax, eax
@@ -71,7 +72,7 @@ ahci_init_search_ports:
 	cmp al, 0x03			; Check if device is present and comm enabled
 	jne ahci_init_skip_port		; If not skip the port
 
-	bts dword [ahci_PA], ecx	; Set the port # as active
+	bts dword [os_AHCI_PA], ecx	; Set the port # as active
 
 ahci_init_skip_port:
 	inc rcx
@@ -80,7 +81,7 @@ ahci_init_skip_port:
 ahci_init_search_ports_done:
 
 	; Configure the active ports
-	mov edx, [ahci_PA]
+	mov edx, [os_AHCI_PA]
 	xor ecx, ecx
 ahci_init_config_active:
 	cmp ecx, 32			; Maximum number of AHCI ports
@@ -182,7 +183,7 @@ ahci_io_prep:
 	shl rax, 3			; Convert to 512B starting sector
 	shl rcx, 3			; Convert 4K sectors to 512B sectors
 
-	mov r8d, [ahci_PA]		; Are there any active drives?
+	mov r8d, [os_AHCI_PA]		; Are there any active drives?
 	cmp r8d, 0
 	je achi_io_error		; If not, bail out
 
@@ -190,7 +191,7 @@ ahci_io_prep:
 	; Drive 0 is the first active drive, drive 1 is the second active drive, etc
 	; FIXME - any drive request will go to the first active drive
 ahci_io_prep_next_drive:
-	bt dword [ahci_PA], edx
+	bt dword [os_AHCI_PA], edx
 	jc ahci_io_prep_good_drive_id
 	add rdx, 1
 	bt rdx, 32
@@ -206,7 +207,7 @@ ahci_io_prep_good_drive_id:
 	push rax			; Save the block number
 	push rax
 
-	mov rsi, [ahci_base]
+	mov rsi, [os_AHCI_Base]
 	push rdx
 	shl rdx, 7			; Quick multiply by 0x80
 	add rdx, 0x100			; Offset to port 0
@@ -322,10 +323,10 @@ ahci_id:
 	push rax
 	push rdi			; Save the destination memory address
 
-	bt dword [ahci_PA], edx		; Is the requested drive marked as active?
+	bt dword [os_AHCI_PA], edx	; Is the requested drive marked as active?
 	jnc ahci_id_error		; If not, bail out
 
-	mov rsi, [ahci_base]
+	mov rsi, [os_AHCI_Base]
 	push rdx
 	shl rdx, 7			; Quick multiply by 0x80
 	add rdx, 0x100			; Offset to port 0

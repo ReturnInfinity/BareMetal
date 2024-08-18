@@ -25,6 +25,7 @@ nvme_init:
 	call os_bus_write		; Write updated Status/Command
 
 	; Mark controller memory as un-cacheable
+	mov rax, [os_NVMe_Base]
 	shr rax, 18
 	and al, 0b11111000		; Clear the last 3 bits
 	mov rdi, 0x10000		; Base of low PDE
