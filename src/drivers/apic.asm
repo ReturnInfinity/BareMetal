@@ -25,11 +25,8 @@ os_apic_init:
 ; OUT:	EAX = Register value
 ;	All other registers preserved
 os_apic_read:
-	push rsi
-	mov rsi, [os_LocalAPICAddress]
-	add rsi, rcx			; Add offset
-	lodsd
-	pop rsi
+	mov rax, [os_LocalAPICAddress]
+	mov eax, [rax + rcx]
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -40,11 +37,10 @@ os_apic_read:
 ;	EAX = Value to write
 ; OUT:	All registers preserved
 os_apic_write:
-	push rdi
-	mov rdi, [os_LocalAPICAddress]
-	add rdi, rcx			; Add offset
-	stosd
-	pop rdi
+	push rcx
+	add rcx, [os_LocalAPICAddress]
+	mov [rcx], eax
+	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
