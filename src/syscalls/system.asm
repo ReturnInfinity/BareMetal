@@ -95,7 +95,7 @@ b_system_reset:
 	xor eax, eax
 	call b_smp_get_id		; Reset all other cpu cores
 	mov rbx, rax
-	mov rsi, 0x0000000000005100	; Location in memory of the Pure64 CPU data
+	mov esi, 0x00005100		; Location in memory of the Pure64 CPU data
 b_system_reset_next_ap:
 	test cx, cx
 	jz b_system_reset_no_more_aps
@@ -157,6 +157,32 @@ b_delay_end:
 	pop rbx
 	pop rcx
 	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_delay -- Delay by X HPET ticks
+; IN:	RAX = HPET ticks
+; OUT:	All registers preserved
+os_delay:
+	push rcx
+	push rbx
+	push rax
+
+	xor ebx, ebx
+	mov ecx, HPET_MAIN_COUNTER
+	call os_hpet_read		; Get HPET counter in RAX
+	add rbx, rax			; RBX += RAX Until when to wait
+os_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
+	mov ecx, HPET_MAIN_COUNTER
+	call os_hpet_read		; Get HPET counter in RAX
+	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
+	jb os_delay_loop
+
+	pop rax
+	pop rbx
+	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 

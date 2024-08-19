@@ -23,11 +23,9 @@ b_smp_reset:
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x81		; Execute interrupt 0x81
 	call os_apic_write	; Then write to the low bits
+	mov eax, 1000
+	call os_delay		; A very small delay in case this function is called multiple times in rapid succession
 	sti
-
-;	mov ecx, APIC_ICRL
-;	call os_apic_read
-;	call os_debug_dump_eax
 
 	pop rax
 	pop rcx
@@ -51,6 +49,8 @@ b_smp_wakeup:
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x80		; Execute interrupt 0x81
 	call os_apic_write	; Then write to the low bits
+	mov eax, 1000
+	call os_delay		; A very small delay in case this function is called multiple times in rapid succession
 	sti
 
 	pop rax
