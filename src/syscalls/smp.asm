@@ -16,15 +16,19 @@ b_smp_reset:
 	push rax
 
 	cli
+b_smp_reset_wait:
+	mov ecx, APIC_ICRL
+	call os_apic_read
+	bt eax, 12		; Check if Delivery Status is 0 (Idle)
+	jc b_smp_reset_wait	; If not, wait - a send is already pending
+	mov rax, [rsp]		; Retrieve CPU APIC # from the stack
 	mov ecx, APIC_ICRH
-	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
+	shl eax, 24		; AL holds the CPU APIC #, shift left 24 bits to get it into 31:24, 23:0 are reserved
 	call os_apic_write	; Write to the high bits first
 	mov ecx, APIC_ICRL
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x81		; Execute interrupt 0x81
 	call os_apic_write	; Then write to the low bits
-	mov eax, 1000
-	call os_delay		; A very small delay in case this function is called multiple times in rapid succession
 	sti
 
 	pop rax
@@ -42,15 +46,19 @@ b_smp_wakeup:
 	push rax
 
 	cli
+b_smp_wakeup_wait:
+	mov ecx, APIC_ICRL
+	call os_apic_read
+	bt eax, 12		; Check if Delivery Status is 0 (Idle)
+	jc b_smp_wakeup_wait	; If not, wait - a send is already pending
+	mov rax, [rsp]		; Retrieve CPU APIC # from the stack
 	mov ecx, APIC_ICRH
-	shl eax, 24		; AL holds the CPU #, shift left 24 bits to get it into 31:24, 23:0 are reserved
+	shl eax, 24		; AL holds the CPU APIC #, shift left 24 bits to get it into 31:24, 23:0 are reserved
 	call os_apic_write	; Write to the high bits first
 	mov ecx, APIC_ICRL
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x80		; Execute interrupt 0x81
 	call os_apic_write	; Then write to the low bits
-	mov eax, 1000
-	call os_delay		; A very small delay in case this function is called multiple times in rapid succession
 	sti
 
 	pop rax
@@ -68,11 +76,16 @@ b_smp_wakeup_all:
 	push rax
 
 	cli
+b_smp_wakeup_all_wait:
+	mov ecx, APIC_ICRL
+	call os_apic_read
+	bt eax, 12		; Check if Delivery Status is 0 (Idle)
+	jc b_smp_wakeup_all_wait	; If not, wait - a send is already pending
 	mov ecx, APIC_ICRH
 	xor eax, eax
 	call os_apic_write	; Write to the high bits first
 	mov ecx, APIC_ICRL
-	mov eax, 0x000C0080	; Execute interrupt 0x80
+	mov eax, 0x000C0080	; Execute interrupt 0x80 on All Excluding Self (0xC)
 	call os_apic_write	; Then write to the low bits
 	sti
 
