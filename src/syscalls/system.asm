@@ -38,6 +38,8 @@ b_system:
 	je b_system_smp_busy
 	cmp rcx, 256
 	je b_system_reset
+	cmp rcx, 257
+	je b_system_shutdown
 	ret
 
 b_system_smp_lock:
@@ -108,6 +110,17 @@ b_system_reset_skip_ap:
 	jmp b_system_reset_next_ap
 b_system_reset_no_more_aps:
 	int 0x81			; Reset this core
+
+b_system_shutdown:
+	mov ax, 0x2000
+	mov dx, 0xB004
+	out dx, ax			; Bochs/QEMU < v2
+	mov dx, 0x0604
+	out dx, ax			; QEMU
+	mov ax, 0x3400
+	mov dx, 0x4004
+	out dx, ax			; VirtualBox
+	jmp $
 ; -----------------------------------------------------------------------------
 
 

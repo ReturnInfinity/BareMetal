@@ -54,6 +54,8 @@ smp_numcores		equ 9
 smp_set			equ 10
 smp_busy		equ 11
 reset			equ 256
+shutdown		equ 257
+
 
 ; =============================================================================
 ; EOF
