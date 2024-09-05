@@ -53,8 +53,8 @@ mem_get_free		equ 8
 smp_numcores		equ 9
 smp_set			equ 10
 smp_busy		equ 11
-reset			equ 256
-shutdown		equ 257
+sys_reset		equ 256
+sys_shutdown		equ 257
 
 
 ; =============================================================================
