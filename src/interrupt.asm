@@ -34,7 +34,6 @@ keyboard:
 	push rdi
 	push rbx
 	push rax
-	pushfq
 	cld				; Clear direction flag
 
 	xor eax, eax
@@ -107,7 +106,6 @@ keyboard_done:
 
 	call b_smp_wakeup_all		; A terrible hack
 
-	popfq
 	pop rax
 	pop rbx
 	pop rdi
@@ -122,13 +120,11 @@ align 8
 hpet:
 	push rax
 	push rcx
-	pushfq
 
 	mov rcx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
-	popfq
 	pop rcx
 	pop rax
 	iretq
