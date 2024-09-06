@@ -15,6 +15,7 @@ net_i8259x_init:
 	push rcx
 	push rax
 
+	; Get the Base Memory Address of the device
 	mov al, 0			; Read BAR0
 	call os_bus_read_bar
 	mov [os_NetIOBaseMem], rax	; Save it as the base
@@ -28,7 +29,7 @@ net_i8259x_init:
 	bts eax, 1			; Enable Memory Space
 	call os_bus_write		; Write updated Status/Command
 
-	; Grab the MAC address
+	; Get the MAC address
 	mov rsi, [os_NetIOBaseMem]
 	mov eax, [rsi+i8259x_RAL]	; RAL
 	mov [os_NetMAC], al

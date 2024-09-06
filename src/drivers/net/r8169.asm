@@ -15,13 +15,21 @@ net_r8169_init:
 	push rcx
 	push rax
 
-	; Grab the Base I/O Address of the device
+	; Get the Base I/O Address of the device
 	mov dl, 0x04			; BAR0
 	call os_bus_read
 	and eax, 0xFFFFFFFC		; EAX now holds the Base IO Address (clear the low 2 bits)
 	mov word [os_NetIOAddress], ax
 
-	; Grab the MAC address
+	; Set PCI Status/Command values
+	mov dl, 0x01			; Read Status/Command
+	call os_bus_read
+	bts eax, 10			; Set Interrupt Disable
+	bts eax, 2			; Enable Bus Master
+	bts eax, 0			; Enable I/O port Space
+	call os_bus_write		; Write updated Status/Command
+
+	; Get the MAC address
 	mov dx, word [os_NetIOAddress]
 	in al, dx
 	mov [os_NetMAC], al

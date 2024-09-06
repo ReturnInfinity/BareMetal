@@ -16,6 +16,7 @@ net_virtio_init:
 	push rbx
 	push rax
 
+	; Get the Base Memory Address of the device
 	mov al, 4			; Read BAR4
 	call os_bus_read_bar
 	mov [os_NetIOBaseMem], rax	; Save it as the base
@@ -28,7 +29,7 @@ net_virtio_init:
 	bts eax, 1			; Enable Memory Space
 	call os_bus_write
 
-	; Gather required values from PCI Capabilities
+	; Get required values from PCI Capabilities
 	mov dl, 1
 	call os_bus_read		; Read register 1 for Status/Command
 	bt eax, 20			; Check bit 4 of the Status word (31:16)
@@ -157,7 +158,7 @@ virtio_net_init_cap_next_offset:
 
 virtio_net_init_cap_end:
 
-	; Grab the MAC address
+	; Get the MAC address
 	mov rsi, [os_NetIOBaseMem]
 	add rsi, [virtio_net_device_offset]
 	lodsb
