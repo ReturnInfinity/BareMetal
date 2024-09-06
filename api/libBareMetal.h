@@ -56,8 +56,8 @@ void b_system(unsigned long function, void *var1, void *var2);
 #define SMP_NUMCORES		9
 #define SMP_SET			10
 #define SMP_BUSY		11
-#define RESET			256
-#define SHUTDOWN		257
+#define SYS_RESET		256
+#define SYS_SHUTDOWN		257
 
 #endif
 
