@@ -7,7 +7,6 @@
 
 
 %include "syscalls/bus.asm"
-%include "syscalls/config.asm"
 %include "syscalls/debug.asm"
 %include "syscalls/storage.asm"
 %include "syscalls/io.asm"
