@@ -5,7 +5,7 @@
 ; Version 1.0
 ; =============================================================================
 
-
+; Kernel functions
 b_input			equ 0x0000000000100010	; Scans keyboard for input. OUT: AL = 0 if no key pressed, otherwise ASCII code
 b_output		equ 0x0000000000100018	; Displays a number of characters. IN: RSI = message location, RCX = number of characters
 
@@ -15,46 +15,39 @@ b_net_rx		equ 0x0000000000100028	; Polls the network interface for received pack
 b_storage_read		equ 0x0000000000100030	; Read data from a drive. IN: RAX = Starting sector, RCX = Number of sectors to read, RDX = Drive, RDI = Memory location to store data
 b_storage_write		equ 0x0000000000100038	; Write data to a drive. IN: RAX = Starting sector, RCX = Number of sectors to write, RDX = Drive, RSI = Memory location of data to store
 
-b_config		equ 0x0000000000100040	; View/modify configuration. IN: RCX = Function, RAX = Variable 1, RDX = Variable 2. OUT: RAX = Result
-b_system		equ 0x0000000000100048	; Call a system function. IN: RCX = Function, RAX = Variable 1, RDX = Variable 2. Out: RAX = Result 1, RDX = Result 2
-
-
-; Index for b_config calls
-timecounter		equ 0x00
-smp_get_id		equ 0x01
-free_memory		equ 0x02
-networkcallback_get	equ 0x03
-networkcallback_set	equ 0x04
-clockcallback_get	equ 0x05
-clockcallback_set	equ 0x06
-screen_lfb_get		equ 0x20
-screen_x_get		equ 0x21
-screen_y_get		equ 0x22
-screen_ppsl_get		equ 0x23
-screen_bpp_get		equ 0x24
-mac_get			equ 0x30
-bus_read		equ 0x40
-bus_write		equ 0x41
-stdout_set		equ 0x42
-stdout_get		equ 0x43
-drive_id		equ 0x50
+b_system		equ 0x0000000000100040	; Configure system. IN: RCX = Function, RAX = Variable 1, RDX = Variable 2. OUT: RAX = Result
 
 
 ; Index for b_system calls
-smp_lock		equ 2
-smp_unlock		equ 3
-debug_dump_mem		equ 4
-debug_dump_rax		equ 5
-get_argc		equ 6
-get_argv		equ 7
-delay			equ 6
-net_status		equ 7
-mem_get_free		equ 8
-smp_numcores		equ 9
-smp_set			equ 10
-smp_busy		equ 11
-sys_reset		equ 256
-sys_shutdown		equ 257
+TIMECOUNTER		equ 0x00
+FREE_MEMORY		equ 0x02
+NETWORKCALLBACK_GET	equ 0x03
+NETWORKCALLBACK_SET	equ 0x04
+CLOCKCALLBACK_GET	equ 0x05
+CLOCKCALLBACK_SET	equ 0x06
+SMP_ID			equ 0x10
+SMP_NUMCORES		equ 0x11
+SMP_SET			equ 0x12
+SMP_GET			equ 0x13
+SMP_LOCK		equ 0x14
+SMP_UNLOCK		equ 0x15
+SMP_BUSY		equ 0x16
+SCREEN_LFB_GET		equ 0x20
+SCREEN_X_GET		equ 0x21
+SCREEN_Y_GET		equ 0x22
+SCREEN_PPSL_GET		equ 0x23
+SCREEN_BPP_GET		equ 0x24
+MAC_GET			equ 0x30
+BUS_READ		equ 0x40
+BUS_WRITE		equ 0x41
+STDOUT_SET		equ 0x42
+STDOUT_GET		equ 0x43
+DUMP_MEM		equ 0x80
+DUMP_RAX		equ 0x81
+DELAY			equ 0x82
+RESET			equ 0x8D
+REBOOT			equ 0x8E
+SHUTDOWN		equ 0x8F
 
 
 ; =============================================================================

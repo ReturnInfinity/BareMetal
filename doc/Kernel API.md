@@ -20,7 +20,6 @@ This document details the API calls built into the BareMetal exokernel.
 	- b\_storage\_read
 	- b\_storage\_write
 4. Misc
-	- b\_config
 	- b\_system
 
 
@@ -181,65 +180,9 @@ Assembly Example:
 ## Misc
 
 
-### b\_config
-
-View or modify configuration options
-
-Assembly Registers:
-
-	 IN:	RCX = Function
-		RAX = Variable 1
-		RDX = Variable 2
-	OUT:	RAX = Result
-
-Function numbers come in pairs (one for reading a parameter, and one for writing a parameter). `b_config` should be called with a function alias and not a direct function number.
-
-Currently the following functions are supported:
-
- - 0: timecounter
-
-   get the timecounter, the timecounter increments 8 times a second
- - 1: smp_get_id
-
-   Get the local ID of the processor
- - 2: free_memory
-
-   Return the amount of free memory in MiB
- - 3: networkcallback_get
-
-   get the current networkcallback entrypoint
- - 4: networkcallback_set
-
-   set the current networkcallback entrypoint
- - 5: clockcallback_get
-
-   get the current clockcallback entrypoint
- - 6: clockcallback_set
-
-   set the current clockcallback entrypoint
- - 30: mac
-
-   get the current mac address (or 0 if ethernet is down)
-
- - 50: drive info
-
-   Queries a drive and returns a 512-byte or 4096byte block of data from the device.
-   
-   Useful segments:
-   	- 20-39    Serial number (20 ASCII characters)
-	- 46-52    Firmware revision (8 ASCII characters)
-	- 54-93    Model number (40 ASCII characters)
-	- 200-207    Total Number of User Addressable Sectors
-	- 234-235    Words per Logical Sector
-
-every function that gets something sets RAX with the result
-
-every function that sets something gets the value from RAX
-
-
 ### b\_system
 
-Call miscellaneous system sub-functions
+Call system functions
 
 Assembly Registers:
 
@@ -247,42 +190,50 @@ Assembly Registers:
 		RAX = Variable 1
 		RDX = Variable 2
 	OUT:	RAX = Result 1
-		RDX = Result 2
 
 Currently the following functions are supported:
 
-1. smp_get_id
+#### TIMECOUNTER		equ 0x00
+#### FREE_MEMORY		equ 0x02
+#### NETWORKCALLBACK_GET	equ 0x03
+#### NETWORKCALLBACK_SET	equ 0x04
+#### CLOCKCALLBACK_GET	equ 0x05
+#### CLOCKCALLBACK_SET	equ 0x06
+#### SMP_ID			equ 0x10
 	- Returns the APIC ID of the CPU that ran this function
-	- out rax: The ID
-2. smp_lock
+	- out RAX: The ID
+#### SMP_NUMCORES		equ 0x11
+	- Returns the total number of CPU cores
+#### SMP_SET			equ 0x12
+#### SMP_GET			equ 0x13
+#### SMP_LOCK		equ 0x14
 	- Attempt to lock a mutex, this is a simple spinlock
-	- in rax: The address of the mutex (one word)
-3. smp_unlock
+	- in RAX: The address of the mutex (one word)
+#### SMP_UNLOCK		equ 0x15
 	- Unlock a mutex
-	- in rax: The address of the mutex (one word)
-4. debug_dump_mem
-	- os_debug_dump_mem
-	- in rax: The start of the memory to dump
-	- in rdx: Number of bytes to dump
-5. debug_dump_rax
-	- Dump rax in Hex
-	- in rax: The Content that gets printed to memory
-6. delay
-	- Delay by X microseconds
-	- in rax: number of microseconds
-7. net_status
-	- Get the current mac address (or 0 if ethernet is down)
-	- Same as system_config 30 (mac)
-	- out rax: The mac address
-8. mem_get_free
-	- Returns the number of 2 MiB pages that are available
-	- out rax: Number of pages
-9. smp_numcores
-	- Returns the number of cores in this computer
-	- out rax: The number of cores
-10. smp_queuelen
-	- Returns the number of items in the processing queue
-	- out rax: Number of items in processing queue
+	- in RAX: The address of the mutex (one word)
+#### SMP_BUSY		equ 0x16
+#### SCREEN_LFB_GET		equ 0x20
+#### SCREEN_X_GET		equ 0x21
+#### SCREEN_Y_GET		equ 0x22
+#### SCREEN_PPSL_GET		equ 0x23
+#### SCREEN_BPP_GET		equ 0x24
+#### MAC_GET			equ 0x30
+#### BUS_READ		equ 0x40
+#### BUS_WRITE		equ 0x41
+#### STDOUT_SET		equ 0x42
+#### STDOUT_GET		equ 0x43
+#### DUMP_MEM		equ 0x80
+	- Dump contents of memory
+	- in RAX: The start of the memory to dump
+	- in RDX: Number of bytes to dump
+#### DUMP_RAX		equ 0x81
+	- Dump RAX register in Hex
+	- in RAX: The Content that gets dump
+#### DELAY			equ 0x82
+#### RESET			equ 0x8D
+#### REBOOT			equ 0x8E
+#### SHUTDOWN		equ 0x8F
 
 
 // EOF

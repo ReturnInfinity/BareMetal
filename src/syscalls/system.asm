@@ -7,39 +7,115 @@
 
 
 ; -----------------------------------------------------------------------------
-; b_system - Call misc OS sub-functions
+; b_system - Call system functions
 ; IN:	RCX = Function
 ;	RAX = Variable 1
 ;	RDX = Variable 2
-; OUT:	RAX = Result 1, dependant on system call
-;	RDX = Result 2, dependant on system call
+; OUT:	RAX = Result
+;	All other registers preserved
 b_system:
-;	cmp rcx, X
-;	je b_system_
-	cmp rcx, 2
-	je b_system_smp_lock
-	cmp rcx, 3
-	je b_system_smp_unlock
-	cmp rcx, 4
-	je b_system_debug_dump_mem
-	cmp rcx, 5
-	je b_system_debug_dump_rax
-	cmp rcx, 6
-	je b_system_delay
-	cmp rcx, 7
-	je b_system_net_status
-	cmp rcx, 8
-	je b_system_mem_get_free
-	cmp rcx, 9
+	cmp rcx, 0xFF
+	jg b_system_end
+
+; Basic
+	cmp cl, 0x00
+	je b_system_timecounter
+
+; CPU
+	cmp cl, 0x10
+	je b_system_smp_get_id
+	cmp cl, 0x11
 	je b_system_smp_numcores
-	cmp rcx, 10
+	cmp cl, 0x12
 	je b_system_smp_set
-	cmp rcx, 11
+	cmp cl, 0x13
+	je b_system_smp_get
+	cmp cl, 0x14
+	je b_system_smp_lock
+	cmp cl, 0x15
+	je b_system_smp_unlock
+	cmp cl, 0x16
 	je b_system_smp_busy
-	cmp rcx, 256
+
+; Video
+	cmp cl, 0x20
+	je b_system_screen_lfb_get
+	cmp cl, 0x21
+	je b_system_screen_x_get
+	cmp cl, 0x22
+	je b_system_screen_y_get
+	cmp cl, 0x23
+	je b_system_screen_ppsl_get
+	cmp cl, 0x24
+	je b_system_screen_bpp_get
+
+; Network
+	cmp cl, 0x30
+	je b_system_mac_get
+
+; PCI
+	cmp cl, 0x40
+	je b_system_pci_read
+	cmp cl, 0x41
+	je b_system_pci_write
+
+; Standard Output
+	cmp cl, 0x42
+	je b_system_stdout_set
+	cmp cl, 0x43
+	je b_system_stdout_get
+
+; Misc
+	cmp al, 0x80
+	je b_system_debug_dump_mem
+	cmp al, 0x81
+	je b_system_debug_dump_rax
+	cmp al, 0x82
+	je b_system_delay
+	cmp al, 0x8D
 	je b_system_reset
-	cmp rcx, 257
+	cmp al, 0x8E
+	je b_system_reboot
+	cmp al, 0x8F
 	je b_system_shutdown
+
+; End of options
+b_system_end:
+	ret
+
+; Basic
+
+b_system_timecounter:
+	push rcx
+	mov ecx, 0xF0
+	call os_hpet_read
+	pop rcx
+	ret
+
+b_system_free_memory:
+	mov eax, [os_MemAmount]
+	ret
+
+; CPU
+
+b_system_smp_get_id:
+	call b_smp_get_id
+	ret
+
+b_system_smp_numcores:
+	xor eax, eax
+	mov ax, [os_NumCores]
+	ret
+
+b_system_smp_set:
+	push rcx
+	mov rcx, rdx
+	call b_smp_set
+	pop rcx
+	ret
+
+b_system_smp_get:
+	call b_smp_get
 	ret
 
 b_system_smp_lock:
@@ -49,6 +125,63 @@ b_system_smp_lock:
 b_system_smp_unlock:
 	call b_smp_unlock
 	ret
+
+b_system_smp_busy:
+	call b_smp_busy
+	ret
+
+; Video
+
+b_system_screen_lfb_get:
+	mov rax, [os_screen_lfb]
+	ret
+
+b_system_screen_x_get:
+	xor eax, eax
+	mov ax, [os_screen_x]
+	ret
+
+b_system_screen_y_get:
+	xor eax, eax
+	mov ax, [os_screen_y]
+	ret
+
+b_system_screen_ppsl_get:
+	mov eax, [os_screen_ppsl]
+	ret
+
+b_system_screen_bpp_get:
+	xor eax, eax
+	mov al, [os_screen_bpp]
+	ret
+
+; Network
+
+b_system_mac_get:
+	call b_net_status
+	ret
+
+; Bus
+
+b_system_pci_read:
+	call os_bus_read
+	ret
+
+b_system_pci_write:
+	call os_bus_write
+	ret
+
+; Standard Output
+
+b_system_stdout_get:
+	mov rax, qword [0x100018]
+	ret
+
+b_system_stdout_set:
+	mov qword [0x100018], rax
+	ret
+
+; Misc
 
 b_system_debug_dump_mem:
 	push rsi
@@ -68,31 +201,6 @@ b_system_delay:
 	call b_delay
 	ret
 
-b_system_net_status:
-	call b_net_status
-	ret
-
-b_system_mem_get_free:
-	xor eax, eax
-	mov eax, [os_MemAmount]
-	ret
-
-b_system_smp_numcores:
-	xor eax, eax
-	mov ax, [os_NumCores]
-	ret
-
-b_system_smp_set:
-	push rcx
-	mov rcx, rdx
-	call b_smp_set
-	pop rcx
-	ret
-
-b_system_smp_busy:
-	call b_smp_busy
-	ret
-
 b_system_reset:
 	xor eax, eax
 	call b_smp_get_id		; Reset all other cpu cores
@@ -110,6 +218,9 @@ b_system_reset_skip_ap:
 	jmp b_system_reset_next_ap
 b_system_reset_no_more_aps:
 	int 0x81			; Reset this core
+
+b_system_reboot:
+	call reboot
 
 b_system_shutdown:
 	mov ax, 0x2000
@@ -245,6 +356,7 @@ os_virt_to_phys_done:
 
 ; -----------------------------------------------------------------------------
 ; os_stub -- A function that just returns
+b_user:
 os_stub:
 	ret
 ; -----------------------------------------------------------------------------
