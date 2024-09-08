@@ -66,17 +66,17 @@ b_system:
 	je b_system_stdout_get
 
 ; Misc
-	cmp al, 0x80
+	cmp cl, 0x80
 	je b_system_debug_dump_mem
-	cmp al, 0x81
+	cmp cl, 0x81
 	je b_system_debug_dump_rax
-	cmp al, 0x82
+	cmp cl, 0x82
 	je b_system_delay
-	cmp al, 0x8D
+	cmp cl, 0x8D
 	je b_system_reset
-	cmp al, 0x8E
+	cmp cl, 0x8E
 	je b_system_reboot
-	cmp al, 0x8F
+	cmp cl, 0x8F
 	je b_system_shutdown
 
 ; End of options
