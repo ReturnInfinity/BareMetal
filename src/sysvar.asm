@@ -110,8 +110,7 @@ os_MemAmount:		equ os_SystemVariables + 0x0104	; in MiB
 os_AHCI_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
-os_screen_ppsl:		equ os_SystemVariables + 0x0114
-os_HPET_Frequency:	equ os_SystemVariables + 0x0118
+os_HPET_Frequency:	equ os_SystemVariables + 0x0114
 
 
 ; DW - Starting at offset 512, increments by 2
@@ -122,8 +121,10 @@ os_NetLock:		equ os_SystemVariables + 0x0206
 os_StorageVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
-os_pcie_count:		equ os_SystemVariables + 0x020E
-os_HPET_CounterMin:	equ os_SystemVariables + 0x0210
+os_screen_ppsl:		equ os_SystemVariables + 0x020E
+os_screen_bpp:		equ os_SystemVariables + 0x0210
+os_pcie_count:		equ os_SystemVariables + 0x0212
+os_HPET_CounterMin:	equ os_SystemVariables + 0x0214
 
 
 ; DB - Starting at offset 768, increments by 1
@@ -149,11 +150,10 @@ os_NVMe_iotail:		equ os_SystemVariables + 0x0312
 os_AHCI_MJR:		equ os_SystemVariables + 0x0313
 os_AHCI_MNR:		equ os_SystemVariables + 0x0314
 os_AHCI_IRQ:		equ os_SystemVariables + 0x0315
-os_screen_bpp:		equ os_SystemVariables + 0x0316
-os_ioapic_ver:		equ os_SystemVariables + 0x0317
-os_ioapic_mde:		equ os_SystemVariables + 0x0318
-key_control:		equ os_SystemVariables + 0x0319
-os_BSP:			equ os_SystemVariables + 0x0320
+os_ioapic_ver:		equ os_SystemVariables + 0x0316
+os_ioapic_mde:		equ os_SystemVariables + 0x0317
+key_control:		equ os_SystemVariables + 0x0318
+os_BSP:			equ os_SystemVariables + 0x0319
 
 
 ; Misc

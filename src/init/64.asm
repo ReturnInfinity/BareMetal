@@ -19,7 +19,7 @@ init_64:
 	xor eax, eax
 	rep stosq
 
-	; Grab data from Pure64's InfoMap
+	; Gather data from Pure64's InfoMap
 	mov esi, 0x00005060		; LAPIC
 	lodsq
 	mov [os_LocalAPICAddress], rax
@@ -48,8 +48,10 @@ init_64:
 	mov [os_screen_x], ax
 	lodsw
 	mov [os_screen_y], ax
-	lodsd
-	mov [os_screen_ppsl], eax
+	lodsw
+	mov [os_screen_ppsl], ax
+	lodsw
+	mov [os_screen_bpp], ax
 	mov esi, 0x00005090		; PCIe bus count
 	lodsw
 	mov [os_pcie_count], ax
