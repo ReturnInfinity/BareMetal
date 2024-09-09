@@ -1,6 +1,6 @@
 # BareMetal x86-64 API
 
-Version 1 - November 16, 2022
+Version 1.1 - September 8, 2024
 
 
 ### Notes
@@ -82,7 +82,7 @@ C Example:
 
 ### b\_net\_tx
 
-Transmit data via a network interface
+Transmit data via a network interface.
 
 Assembly Registers:
 
@@ -109,7 +109,7 @@ The packet must contain a proper 14-byte header.
 
 ### b\_net\_rx
 
-Receive data via a network interface
+Receive data via a network interface.
 
 Assembly Registers:
 
@@ -135,7 +135,7 @@ BareMetal uses 4096 byte sectors for all drive access. Drive sectors start at 0.
 
 ### b\_storage\_read
 
-Read a number of sectors from a drive to memory
+Read a number of sectors from a drive to memory.
 
 Assembly Registers:
 
@@ -157,7 +157,7 @@ Assembly Example:
 
 ### b\_storage\_write
 
-Write a number of sectors from memory to a drive
+Write a number of sectors from memory to a drive.
 
 Assembly Registers:
 
@@ -193,47 +193,183 @@ Assembly Registers:
 
 Currently the following functions are supported:
 
-#### TIMECOUNTER		equ 0x00
-#### FREE_MEMORY		equ 0x02
-#### NETWORKCALLBACK_GET	equ 0x03
-#### NETWORKCALLBACK_SET	equ 0x04
-#### CLOCKCALLBACK_GET	equ 0x05
-#### CLOCKCALLBACK_SET	equ 0x06
-#### SMP_ID			equ 0x10
-	- Returns the APIC ID of the CPU that ran this function
-	- out RAX: The ID
-#### SMP_NUMCORES		equ 0x11
-	- Returns the total number of CPU cores
-#### SMP_SET			equ 0x12
-#### SMP_GET			equ 0x13
-#### SMP_LOCK		equ 0x14
-	- Attempt to lock a mutex, this is a simple spinlock
-	- in RAX: The address of the mutex (one word)
-#### SMP_UNLOCK		equ 0x15
-	- Unlock a mutex
-	- in RAX: The address of the mutex (one word)
-#### SMP_BUSY		equ 0x16
-#### SCREEN_LFB_GET		equ 0x20
-#### SCREEN_X_GET		equ 0x21
-#### SCREEN_Y_GET		equ 0x22
-#### SCREEN_PPSL_GET		equ 0x23
-#### SCREEN_BPP_GET		equ 0x24
-#### MAC_GET			equ 0x30
-#### BUS_READ		equ 0x40
-#### BUS_WRITE		equ 0x41
-#### STDOUT_SET		equ 0x42
-#### STDOUT_GET		equ 0x43
-#### DUMP_MEM		equ 0x80
-	- Dump contents of memory
-	- in RAX: The start of the memory to dump
-	- in RDX: Number of bytes to dump
-#### DUMP_RAX		equ 0x81
-	- Dump RAX register in Hex
-	- in RAX: The Content that gets dump
-#### DELAY			equ 0x82
-#### RESET			equ 0x8D
-#### REBOOT			equ 0x8E
-#### SHUTDOWN		equ 0x8F
+#### TIMECOUNTER
+
+Read the HPET Main Timer.
+
+	 IN:	Nothing
+	OUT:	RAX = Number of HPET ticks since kernel start
+		All other registers preserved
+
+#### FREE_MEMORY
+
+Return the amount of free memory.
+
+	 IN:	Nothing
+	OUT:	RAX = Free memory in Mebibytes (MiB)
+		All other registers preserved
+
+#### NETWORKCALLBACK_GET
+
+#### NETWORKCALLBACK_SET
+
+#### CLOCKCALLBACK_GET
+
+#### CLOCKCALLBACK_SET
+
+#### SMP_ID
+
+Returns the APIC ID of the CPU that ran this function.
+
+	 IN:	Nothing
+	OUT:	RAX = CPU's APIC ID number
+		All other registers preserved
+
+#### SMP_NUMCORES
+
+Returns the total number of CPU cores.
+
+	 IN:	Nothing
+	OUT:	RAX = Number of CPU cores
+		All other registers preserved
+
+#### SMP_SET
+
+Set a specific CPU to run code.
+
+	 IN:	RAX = Code address
+		RDX = CPU APIC ID
+	OUT:	RAX = 0 on error
+	Note:	Code address must be 16-byte aligned
+
+#### SMP_GET
+
+Returns a CPU code address and flags.
+
+	 IN:	Nothing
+	OUT:	RAX = Code address (bits 63:4) and flags (bits 3:0)
+
+#### SMP_LOCK
+
+Attempt to lock a mutex.
+
+	 IN:	RAX = Address of lock variable
+	OUT:	Nothing. All registers preserved
+
+#### SMP_UNLOCK
+
+Unlock a mutex.
+
+	 IN:	RAX = Address of lock variable
+	OUT:	Nothing. All registers preserved
+
+#### SMP_BUSY
+
+Check if CPU cores are busy.
+
+	 IN:	Nothing
+	OUT:	RAX = 1 if CPU cores are busy, 0 if not
+		All other registers preserved
+	Note:	This ignores the core it is running on
+
+#### SCREEN_LFB_GET
+
+Return the address of the linear frame buffer.
+
+	 IN:	Nothing
+	OUT:	RAX = Address of linear frame buffer
+		All other registers preserved
+
+#### SCREEN_X_GET
+
+Return the amount of pixels along the horizontal.
+
+	 IN:	Nothing
+	OUT:	RAX = Number of pixels
+		All other registers preserved
+
+#### SCREEN_Y_GET
+
+Return the amount of pixels along the vertical.
+
+	 IN:	Nothing
+	OUT:	RAX = Number of pixels
+		All other registers preserved
+
+#### SCREEN_PPSL_GET
+
+Return the number of pixels per scan line. This may be more than `SCREEN_X` due to memory alignment requirements.
+
+	 IN:	Nothing
+	OUT:	RAX = Number of pixels per scan line
+		All other registers preserved
+
+#### SCREEN_BPP_GET
+
+Return the number of bits per pixel. This should return 32.
+
+	 IN:	Nothing
+	OUT:	RAX = Bits per pixel
+		All other registers preserved
+
+#### MAC_GET
+
+Return the MAC address of the network device.
+
+	 IN:	Nothing
+	OUT:	RAX = MAC address (bits 0-47)
+		All other registers preserved
+
+#### BUS_READ
+
+#### BUS_WRITE
+
+#### STDOUT_SET
+
+#### STDOUT_GET
+
+#### DUMP_MEM
+
+Dump contents of memory
+
+	 IN:	RAX: The start of the memory to dump
+		RDX: Number of bytes to dump
+	OUT:	All registers preserved
+
+#### DUMP_RAX
+
+Dump RAX register in Hex
+
+	 IN:	RAX: The content that gets dump
+	OUT:	All registers preserved
+
+#### DELAY
+
+Delay by X microseconds
+
+	 IN:	RAX = Time microseconds
+	OUT:	All registers preserved
+
+#### RESET
+
+Reset all other CPU cores
+
+	 IN:	Nothing
+	OUT:	All registers preserved (on the caller CPU)
+
+#### REBOOT
+
+Reboot the system
+
+	 IN:	Nothing
+	OUT:	All registers lost
+
+#### SHUTDOWN
+
+Shut down the system
+
+	 IN:	Nothing
+	OUT:	All registers lost
 
 
 // EOF

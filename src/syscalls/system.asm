@@ -147,12 +147,13 @@ b_system_screen_y_get:
 	ret
 
 b_system_screen_ppsl_get:
-	mov eax, [os_screen_ppsl]
+	xor eax, eax
+	mov ax, [os_screen_ppsl]
 	ret
 
 b_system_screen_bpp_get:
 	xor eax, eax
-	mov al, [os_screen_bpp]
+	mov ax, [os_screen_bpp]
 	ret
 
 ; Network
