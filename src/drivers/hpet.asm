@@ -25,7 +25,7 @@ os_hpet_init:
 	bsr eax, eax			; Find the highest set bit in EAX, store bit number in EAX
 	mov [os_HPET_IRQ], al		; Save IRQ number
 	mov edi, eax			; Copy IRQ number for setting the IDT
-	mov ecx, eax			; Copy IRQ number for unmasking thew I/O APIC
+	mov ecx, eax			; Copy IRQ number for unmasking the I/O APIC
 
 	; Create a gate in the IDT
 	add edi, 0x20			; Convert to interrupt gate number (Exceptions use 0-31)
