@@ -114,7 +114,7 @@ keyboard_done:
 
 
 ; -----------------------------------------------------------------------------
-; HPET Timer 0 interrupt. IRQ 0x02, INT 0x22
+; HPET Timer 0 interrupt
 ; This IRQ runs whenever HPET Timer 0 expires
 align 8
 hpet:

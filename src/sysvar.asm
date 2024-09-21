@@ -154,6 +154,7 @@ os_ioapic_ver:		equ os_SystemVariables + 0x0316
 os_ioapic_mde:		equ os_SystemVariables + 0x0317
 key_control:		equ os_SystemVariables + 0x0318
 os_BSP:			equ os_SystemVariables + 0x0319
+os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 
 
 ; Misc

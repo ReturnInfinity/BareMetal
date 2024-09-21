@@ -13,18 +13,27 @@
 ;	All other registers preserved
 os_hpet_init:
 	; Pure64 has already initialized the HPET (if it existed)
-	; Pure64 enables legacy replacement mode. IRQ2 maps to HPET timer 0 and IRQ8 maps to HPET timer 1
 
 	; Verify there is a valid HPET address
 	mov rax, [os_HPET_Address]
 	jz os_hpet_init_error
 
-	; Configure interrupt vector and unmask the IO-APIC
-	mov edi, 0x22
+	; Calculate which IRQ to use on the I/O APIC
+	mov ecx, HPET_TIMER_0_CONF
+	call os_hpet_read		; Supported IRQ lines to the I/O APIC are in bits 55:32 (translated to 23:0)
+	shr rax, 32			; Shift upper bits to lower
+	bsr eax, eax			; Find the highest set bit in EAX, store bit number in EAX
+	mov [os_HPET_IRQ], al		; Save IRQ number
+	mov edi, eax			; Copy IRQ number for setting the IDT
+	mov ecx, eax			; Copy IRQ number for unmasking thew I/O APIC
+
+	; Create a gate in the IDT
+	add edi, 0x20			; Convert to interrupt gate number (Exceptions use 0-31)
 	mov rax, hpet
 	call create_gate
-	mov ecx, 2			; HPET IRQ
-	mov eax, 0x22			; HPET Interrupt Vector
+
+	; Allow HPET interrupts via the I/O APIC. ECX should still contain the IRQ number HPET IRQ
+	mov eax, edi			; HPET Interrupt Vector
 	call os_ioapic_mask_clear
 
 	; Set flag that HPET was enabled

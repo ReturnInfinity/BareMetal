@@ -263,9 +263,10 @@ b_delay:
 	add rbx, rax			; RBX += RAX Until when to wait
 ; Setup a one shot HPET interrupt when main counter=RBX
 	mov ecx, HPET_TIMER_0_CONF
-	call os_hpet_read
-	mov rax, (2 << 9) | (1 << 2)	; IRQ 2, interrupts enabled
-	call os_hpet_write
+	movzx eax, byte [os_HPET_IRQ]
+	shl rax, 9
+	or rax, (1 << 2)
+	call os_hpet_write		; Value to write is (os_HPET_IRQ<<9 | 1<<2)
 	mov rax, rbx
 	mov ecx, HPET_TIMER_0_COMP
 	call os_hpet_write
