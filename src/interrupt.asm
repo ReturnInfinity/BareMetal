@@ -356,9 +356,7 @@ exception_gate_main:
 	push rsi
 	push rcx			; Char counter for b_output
 	push rax			; Save RAX since b_smp_get_id clobbers it
-	mov rsi, newline
-	mov rcx, 1
-	call [0x00100018]		; b_output
+	call os_debug_newline
 	mov rsi, int_string00
 	mov rcx, 6
 	call [0x00100018]		; b_output
