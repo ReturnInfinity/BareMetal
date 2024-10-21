@@ -71,10 +71,10 @@ Assembly Example:
 
 C Example:
 
-	b_output_chars("This is a test", 4);	// Output 'This'
+	b_output("This is a test", 4);	// Output 'This'
 
 	char Message[] = "Hello, world!";
-	b_output_chars(Message, 5);				// Output 'Hello'
+	b_output(Message, 5);				// Output 'Hello'
 
 
 ## Network
