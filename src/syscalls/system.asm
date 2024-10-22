@@ -17,67 +17,11 @@ b_system:
 	cmp rcx, 0xFF
 	jg b_system_end
 
-; Basic
-	cmp cl, 0x00
-	je b_system_timecounter
-
-; CPU
-	cmp cl, 0x10
-	je b_system_smp_get_id
-	cmp cl, 0x11
-	je b_system_smp_numcores
-	cmp cl, 0x12
-	je b_system_smp_set
-	cmp cl, 0x13
-	je b_system_smp_get
-	cmp cl, 0x14
-	je b_system_smp_lock
-	cmp cl, 0x15
-	je b_system_smp_unlock
-	cmp cl, 0x16
-	je b_system_smp_busy
-
-; Video
-	cmp cl, 0x20
-	je b_system_screen_lfb_get
-	cmp cl, 0x21
-	je b_system_screen_x_get
-	cmp cl, 0x22
-	je b_system_screen_y_get
-	cmp cl, 0x23
-	je b_system_screen_ppsl_get
-	cmp cl, 0x24
-	je b_system_screen_bpp_get
-
-; Network
-	cmp cl, 0x30
-	je b_system_mac_get
-
-; PCI
-	cmp cl, 0x40
-	je b_system_pci_read
-	cmp cl, 0x41
-	je b_system_pci_write
-
-; Standard Output
-	cmp cl, 0x42
-	je b_system_stdout_set
-	cmp cl, 0x43
-	je b_system_stdout_get
-
-; Misc
-	cmp cl, 0x80
-	je b_system_debug_dump_mem
-	cmp cl, 0x81
-	je b_system_debug_dump_rax
-	cmp cl, 0x82
-	je b_system_delay
-	cmp cl, 0x8D
-	je b_system_reset
-	cmp cl, 0x8E
-	je b_system_reboot
-	cmp cl, 0x8F
-	je b_system_shutdown
+; Use CL register as an index to the function table
+; To save memory, the functions are placed in 16-bit frames
+	lea ecx, [b_system_table+ecx*2]	; extract function from table by index
+	mov cx, [ecx]			; limit jump to 16-bit
+	jmp rcx				; jump to function
 
 ; End of options
 b_system_end:
@@ -360,7 +304,171 @@ os_virt_to_phys_done:
 ; os_stub -- A function that just returns
 b_user:
 os_stub:
+none:
 	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; System function index table
+b_system_table:
+; Basic
+	dw b_system_timecounter		; 0x00
+	dw none				; 0x01
+	dw none				; 0x02
+	dw none				; 0x03
+	dw none				; 0x04
+	dw none				; 0x05
+	dw none				; 0x06
+	dw none				; 0x07
+	dw none				; 0x08
+	dw none				; 0x09
+	dw none				; 0x0A
+	dw none				; 0x0B
+	dw none				; 0x0C
+	dw none				; 0x0D
+	dw none				; 0x0E
+	dw none				; 0x0F
+
+; CPU
+	dw b_system_smp_get_id		; 0x10
+	dw b_system_smp_numcores	; 0x11
+	dw b_system_smp_set		; 0x12
+	dw b_system_smp_get		; 0x13
+	dw b_system_smp_lock		; 0x14
+	dw b_system_smp_unlock		; 0x15
+	dw b_system_smp_busy		; 0x16
+	dw none				; 0x17
+	dw none				; 0x18
+	dw none				; 0x19
+	dw none				; 0x1A
+	dw none				; 0x1B
+	dw none				; 0x1C
+	dw none				; 0x1D
+	dw none				; 0x1E
+	dw none				; 0x1F
+
+; Video
+	dw b_system_screen_lfb_get	; 0x20
+	dw b_system_screen_x_get	; 0x21
+	dw b_system_screen_y_get	; 0x22
+	dw b_system_screen_ppsl_get	; 0x23
+	dw b_system_screen_bpp_get	; 0x24
+	dw none				; 0x25
+	dw none				; 0x26
+	dw none				; 0x27
+	dw none				; 0x28
+	dw none				; 0x29
+	dw none				; 0x2A
+	dw none				; 0x2B
+	dw none				; 0x2C
+	dw none				; 0x2D
+	dw none				; 0x2E
+	dw none				; 0x2F
+
+; Network
+	dw b_system_mac_get		; 0x30
+	dw none				; 0x31
+	dw none				; 0x32
+	dw none				; 0x33
+	dw none				; 0x34
+	dw none				; 0x35
+	dw none				; 0x36
+	dw none				; 0x37
+	dw none				; 0x38
+	dw none				; 0x39
+	dw none				; 0x3A
+	dw none				; 0x3B
+	dw none				; 0x3C
+	dw none				; 0x3D
+	dw none				; 0x3E
+	dw none				; 0x3F
+
+; PCI
+	dw b_system_pci_read		; 0x40
+	dw b_system_pci_write		; 0x41
+
+; Standard Output
+	dw b_system_stdout_set		; 0x42
+	dw b_system_stdout_get		; 0x43
+	dw none				; 0x44
+	dw none				; 0x45
+	dw none				; 0x46
+	dw none				; 0x47
+	dw none				; 0x48
+	dw none				; 0x49
+	dw none				; 0x4A
+	dw none				; 0x4B
+	dw none				; 0x4C
+	dw none				; 0x4D
+	dw none				; 0x4E
+	dw none				; 0x4F
+	dw none				; 0x50
+	dw none				; 0x51
+	dw none				; 0x52
+	dw none				; 0x53
+	dw none				; 0x54
+	dw none				; 0x55
+	dw none				; 0x56
+	dw none				; 0x57
+	dw none				; 0x58
+	dw none				; 0x59
+	dw none				; 0x5A
+	dw none				; 0x5B
+	dw none				; 0x5C
+	dw none				; 0x5D
+	dw none				; 0x5E
+	dw none				; 0x5F
+	dw none				; 0x60
+	dw none				; 0x61
+	dw none				; 0x62
+	dw none				; 0x63
+	dw none				; 0x64
+	dw none				; 0x65
+	dw none				; 0x66
+	dw none				; 0x67
+	dw none				; 0x68
+	dw none				; 0x69
+	dw none				; 0x6A
+	dw none				; 0x6B
+	dw none				; 0x6C
+	dw none				; 0x6D
+	dw none				; 0x6E
+	dw none				; 0x6F
+	dw none				; 0x70
+	dw none				; 0x71
+	dw none				; 0x72
+	dw none				; 0x73
+	dw none				; 0x74
+	dw none				; 0x75
+	dw none				; 0x76
+	dw none				; 0x77
+	dw none				; 0x78
+	dw none				; 0x79
+	dw none				; 0x7A
+	dw none				; 0x7B
+	dw none				; 0x7C
+	dw none				; 0x7D
+	dw none				; 0x7E
+	dw none				; 0x7F
+
+; Misc
+	dw b_system_debug_dump_mem	; 0x80
+	dw b_system_debug_dump_rax	; 0x81
+	dw b_system_delay		; 0x82
+	dw none				; 0x83
+	dw none				; 0x84
+	dw none				; 0x85
+	dw none				; 0x86
+	dw none				; 0x87
+	dw none				; 0x88
+	dw none				; 0x89
+	dw none				; 0x8A
+	dw none				; 0x8B
+	dw none				; 0x9C
+	dw b_system_reset		; 0x8D
+	dw b_system_reboot		; 0x8E
+	dw b_system_shutdown		; 0x8F
 ; -----------------------------------------------------------------------------
 
 
