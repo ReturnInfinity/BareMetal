@@ -14,26 +14,28 @@
 ; OUT:	RAX = Result
 ;	All other registers preserved
 b_system:
-	push rcx		; save system function
 	cmp rcx, 0xFF
 	jg b_system_end
 
 ; Use CL register as an index to the function table
 ; To save memory, the functions are placed in 16-bit frames
-	lea ecx, [b_system_table+ecx*2]	; extract function from table by index
-	mov cx, [ecx]			; extract just 16-bit content
-	call rcx				; call function
+	push qword b_system_table
+	push word [b_system_table+ecx*2]	; extract function from table by index
+	pop word [rsp]		; extract just 16-bit content
+	call [rsp]		;call function from the stack
+	pop qword [empty_stack]		;empy stack
 
 ; End of options
 b_system_end:
-	pop rcx
 	ret
 
 ; Basic
 
 b_system_timecounter:
+	push rcx
 	mov ecx, 0xF0
 	call os_hpet_read
+	pop rcx
 	ret
 
 b_system_free_memory:
@@ -52,8 +54,10 @@ b_system_smp_numcores:
 	ret
 
 b_system_smp_set:
+	push rcx
 	mov rcx, rdx
 	call b_smp_set
+	pop rcx
 	ret
 
 b_system_smp_get:
@@ -128,9 +132,11 @@ b_system_stdout_set:
 
 b_system_debug_dump_mem:
 	push rsi
+	push rcx
 	mov rsi, rax
 	mov rcx, rdx
 	call os_debug_dump_mem
+	pop rcx
 	pop rsi
 	ret
 
@@ -302,6 +308,14 @@ b_user:
 os_stub:
 none:
 	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+
+;Dummy empty stack
+empty_stack:
+	dq 0
 ; -----------------------------------------------------------------------------
 
 
