@@ -42,12 +42,12 @@ BUS_READ		equ 0x40
 BUS_WRITE		equ 0x41
 STDOUT_SET		equ 0x42
 STDOUT_GET		equ 0x43
-DUMP_MEM		equ 0x80
-DUMP_RAX		equ 0x81
-DELAY			equ 0x82
-RESET			equ 0x8D
-REBOOT			equ 0x8E
-SHUTDOWN		equ 0x8F
+DUMP_MEM		equ 0x70
+DUMP_RAX		equ 0x71
+DELAY			equ 0x72
+RESET			equ 0x7D
+REBOOT			equ 0x7E
+SHUTDOWN		equ 0x7F
 
 
 ; =============================================================================
