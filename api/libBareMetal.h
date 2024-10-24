@@ -55,12 +55,12 @@ u64 b_system(u64 function, u64 var1, u64 var2);
 #define BUS_WRITE		0x41
 #define STDOUT_SET		0x42
 #define STDOUT_GET		0x43
-#define DUMP_MEM		0x80
-#define DUMP_RAX		0x81
-#define DELAY			0x82
-#define RESET			0x8D
-#define REBOOT			0x8E
-#define SHUTDOWN		0x8F
+#define DUMP_MEM		0x70
+#define DUMP_RAX		0x71
+#define DELAY			0x72
+#define RESET			0x7D
+#define REBOOT			0x7E
+#define SHUTDOWN		0x7F
 
 #endif
 

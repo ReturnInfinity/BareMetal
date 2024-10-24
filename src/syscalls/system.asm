@@ -14,8 +14,8 @@
 ; OUT:	RAX = Result
 ;	All other registers preserved
 b_system:
-	cmp rcx, 0xFF
-	jg b_system_end
+	cmp rcx, 0x80
+	jge b_system_end
 
 ; Use CX register as an index to the function table
 ; To save memory, the functions are placed in 16-bit frames
@@ -430,9 +430,11 @@ b_system_table:
 	dw none				; 0x6D
 	dw none				; 0x6E
 	dw none				; 0x6F
-	dw none				; 0x70
-	dw none				; 0x71
-	dw none				; 0x72
+
+; Misc
+	dw b_system_debug_dump_mem	; 0x70
+	dw b_system_debug_dump_rax	; 0x71
+	dw b_system_delay		; 0x72
 	dw none				; 0x73
 	dw none				; 0x74
 	dw none				; 0x75
@@ -443,27 +445,9 @@ b_system_table:
 	dw none				; 0x7A
 	dw none				; 0x7B
 	dw none				; 0x7C
-	dw none				; 0x7D
-	dw none				; 0x7E
-	dw none				; 0x7F
-
-; Misc
-	dw b_system_debug_dump_mem	; 0x80
-	dw b_system_debug_dump_rax	; 0x81
-	dw b_system_delay		; 0x82
-	dw none				; 0x83
-	dw none				; 0x84
-	dw none				; 0x85
-	dw none				; 0x86
-	dw none				; 0x87
-	dw none				; 0x88
-	dw none				; 0x89
-	dw none				; 0x8A
-	dw none				; 0x8B
-	dw none				; 0x9C
-	dw b_system_reset		; 0x8D
-	dw b_system_reboot		; 0x8E
-	dw b_system_shutdown		; 0x8F
+	dw b_system_reset		; 0x7D
+	dw b_system_reboot		; 0x7E
+	dw b_system_shutdown		; 0x7F
 ; -----------------------------------------------------------------------------
 
 
