@@ -19,6 +19,7 @@ b_system:
 
 ; Use CL register as an index to the function table
 ; To save memory, the functions are placed in 16-bit frames
+	mov [b_system_function], rcx	; save system function
 	lea ecx, [b_system_table+ecx*2]	; extract function from table by index
 	mov cx, [ecx]			; limit jump to 16-bit
 	jmp rcx				; jump to function
@@ -30,10 +31,9 @@ b_system_end:
 ; Basic
 
 b_system_timecounter:
-	push rcx
 	mov ecx, 0xF0
 	call os_hpet_read
-	pop rcx
+	mov rcx, [b_system_function]
 	ret
 
 b_system_free_memory:
@@ -52,10 +52,9 @@ b_system_smp_numcores:
 	ret
 
 b_system_smp_set:
-	push rcx
 	mov rcx, rdx
 	call b_smp_set
-	pop rcx
+	mov rcx, [b_system_function]
 	ret
 
 b_system_smp_get:
@@ -130,11 +129,10 @@ b_system_stdout_set:
 
 b_system_debug_dump_mem:
 	push rsi
-	push rcx
 	mov rsi, rax
 	mov rcx, rdx
 	call os_debug_dump_mem
-	pop rcx
+	mov rcx, [b_system_function]
 	pop rsi
 	ret
 
@@ -306,6 +304,13 @@ b_user:
 os_stub:
 none:
 	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; System function variable to save rcx
+b_system_function:
+	dq 0
 ; -----------------------------------------------------------------------------
 
 
