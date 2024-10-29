@@ -51,10 +51,10 @@ u64 b_system(u64 function, u64 var1, u64 var2);
 #define SCREEN_PPSL_GET		0x23
 #define SCREEN_BPP_GET		0x24
 #define MAC_GET			0x30
-#define BUS_READ		0x40
-#define BUS_WRITE		0x41
-#define STDOUT_SET		0x42
-#define STDOUT_GET		0x43
+#define BUS_READ		0x50
+#define BUS_WRITE		0x51
+#define STDOUT_SET		0x52
+#define STDOUT_GET		0x53
 #define DUMP_MEM		0x70
 #define DUMP_RAX		0x71
 #define DELAY			0x72

@@ -379,13 +379,11 @@ b_system_table:
 	dw none				; 0x3E
 	dw none				; 0x3F
 
-; PCI
-	dw b_system_pci_read		; 0x40
-	dw b_system_pci_write		; 0x41
-
-; Standard Output
-	dw b_system_stdout_set		; 0x42
-	dw b_system_stdout_get		; 0x43
+; Storage
+	dw none				; 0x40
+	dw none				; 0x41
+	dw none				; 0x42
+	dw none				; 0x43
 	dw none				; 0x44
 	dw none				; 0x45
 	dw none				; 0x46
@@ -398,10 +396,12 @@ b_system_table:
 	dw none				; 0x4D
 	dw none				; 0x4E
 	dw none				; 0x4F
-	dw none				; 0x50
-	dw none				; 0x51
-	dw none				; 0x52
-	dw none				; 0x53
+
+; Misc
+	dw b_system_pci_read		; 0x50
+	dw b_system_pci_write		; 0x51
+	dw b_system_stdout_set		; 0x52
+	dw b_system_stdout_get		; 0x53
 	dw none				; 0x54
 	dw none				; 0x55
 	dw none				; 0x56
