@@ -15,7 +15,7 @@ msg_init_64:		db 13, 10, '64      '
 msg_init_bus:		db 13, 10, 'bus     '
 msg_init_sto:		db 13, 10, 'storage '
 msg_init_net:		db 13, 10, 'network '
-msg_ready:		db 13, 10, 'system ready'
+msg_ready:		db 13, 10, 'system ready', 13, 10, 13, 10
 
 ; Memory addresses
 

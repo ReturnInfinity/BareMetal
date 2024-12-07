@@ -46,7 +46,7 @@ start:
 
 	; Output system ready message
 	mov rsi, msg_ready
-	mov rcx, 14
+	mov rcx, 18
 	call b_output
 
 	; Copy the payload after the kernel to the proper address

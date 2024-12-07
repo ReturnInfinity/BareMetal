@@ -113,6 +113,7 @@ ata_io_dataready:
 
 	pop rcx
 	pop rax
+	inc rax
 	pop rbx
 	pop rcx
 	pop rdx
