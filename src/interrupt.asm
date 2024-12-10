@@ -114,6 +114,16 @@ keyboard_done:
 
 
 ; -----------------------------------------------------------------------------
+; Mouse interrupt. IRQ 0x01, INT 0x21
+; This IRQ runs whenever there is input on the mouse
+align 8
+mouse:
+	int3
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; HPET Timer 0 interrupt
 ; This IRQ runs whenever HPET Timer 0 expires
 align 8
