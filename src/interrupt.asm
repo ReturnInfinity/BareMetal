@@ -118,7 +118,76 @@ keyboard_done:
 ; This IRQ runs whenever there is input on the mouse
 align 8
 mouse:
-	int3
+	push rcx
+	push rbx
+	push rax
+
+	mov ecx, 1000
+	xor eax, eax
+mouse_wait:
+	in al, PS2_STATUS
+	dec cl
+	jnz mouse_process
+	pop rax
+	pop rbx
+	pop rcx
+	iretq
+
+mouse_process:
+	and al, 20h
+	jz mouse_wait
+	in al, PS2_DATA
+	mov cl, al
+	in al, 61h
+	out 61h, al
+	xor ebx, ebx
+	mov bl, byte [cnt]
+	add ebx, packet
+	mov byte [ebx], cl
+	inc byte [cnt]
+	mov bl, byte [cnt]
+	cmp bl, byte [packetsize]
+	jb mouse_processend
+	mov byte [cnt], 0
+
+	;get buttons state
+mouse_processend:
+	mov al, byte [packet]
+	and al, 7
+	mov cl, byte [packet+3]
+	and cl, 0F0h
+	cmp cl, 0F0h
+	je .no45btn
+	shr cl, 1
+	or al, cl
+.no45btn:
+	mov byte [buttons], al
+	;get delta X
+	movsx eax, byte [packet+1]
+	add word [x], ax
+	;get delta Y
+	movsx eax, byte [packet+2]
+	add word [y], ax
+	;get delta Z
+	mov cl, byte [packet+3]
+	and cl, 0Fh
+	cmp cl, 8
+	jb derp1
+	or cl, 0F0h
+derp1:
+	movsx eax, cl
+	add word [z], ax
+
+	; Acknowledge the interrupt
+	mov rcx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+;buttons,x,y,z variables contains valid values now.
+
+	pop rax
+	pop rbx
+	pop rcx
 	iretq
 ; -----------------------------------------------------------------------------
 
