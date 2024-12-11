@@ -174,53 +174,51 @@ resolution: db 3
 samplerate: db 200
 
 mouse_init:
-;initialize legacy ps2 user input
-	xor rax, rax
+	; initialize legacy ps2 user input
+	xor eax, eax
 	mov dl, 2
 	call ps2wait
-	mov al, PS2_COMMAND_AUX_EN
+	mov al, PS2_COMMAND_AUX_EN	; Enable mouse
 	out PS2_CMD, al
-	;get ack
+	; get acknowledgement
 	call ps2rd
-	;some compaq voodoo magic to enable irq12
 	mov dl, 2
 	call ps2wait
-	mov al, PS2_COMMAND_RD_CCB
+	mov al, PS2_COMMAND_RD_CCB	; Command to Read "byte 0" from internal RAM
 	out PS2_CMD, al
 	mov dl, 1
 	call ps2wait
 	in al, PS2_DATA
-	bts ax, 1
-	btr ax, 5
-	mov bl, al
+	bts ax, 1			; Set bit 1 to enable second PS/2 port interrupts
+	btr ax, 5			; Clear bit 5 to enable second PS/2 port clock
+	mov bl, al			; Save new CCB value to BL
 	mov dl, 2
 	call ps2wait
-	mov al, PS2_COMMAND_WR_CCB
+	mov al, PS2_COMMAND_WR_CCB	; Write next byte to "byte 0" of internal RAM
 	out PS2_CMD, al
 	call ps2wait
-	mov al, bl
+	mov al, bl			; Restore new CCB value from BL
 	out PS2_DATA, al
-	;get optional ack
 	mov dl, 1
-	call ps2wait
+	call ps2wait			; Get optional acknowledgement
 
 	;restore to defaults
-	mov al, 0F6h
+	mov al, 0xF6			; Set Defaults
 	call ps2wr
 	;enable Z axis
-	mov al, 0F3h
+	mov al, 0xF3			; Set Sample Rate
 	call ps2wr
 	mov al, 200
 	call ps2wr
-	mov al, 0F3h
+	mov al, 0xF3			; Set Sample Rate
 	call ps2wr
 	mov al, 100
 	call ps2wr
-	mov al, 0F3h
+	mov al, 0xF3			; Set Sample Rate
 	call ps2wr
 	mov al, 80
 	call ps2wr
-	mov al, 0F2h
+	mov al, 0xF2			; Get MouseID
 	call ps2wr
 	call ps2rd
 	mov byte [packetsize], 3
@@ -228,37 +226,33 @@ mouse_init:
 	jz .noZaxis
 	mov byte [packetsize], 4
 .noZaxis:	;enable 4th and 5th buttons
-	mov al, 0F3h
+	mov al, 0xF3			; Set Sample Rate
 	call ps2wr
 	mov al, 200
 	call ps2wr
-	mov al, 0F3h
+	mov al, 0xF3			; Set Sample Rate
 	call ps2wr
 	mov al, 200
 	call ps2wr
-	mov al, 0F3h
+	mov al, 0xF3			; Set Sample Rate
 	call ps2wr
 	mov al, 80
 	call ps2wr
-	mov al, 0F2h
+	mov al, 0xF2			; Get MouseID
 	call ps2wr
 	call ps2rd
 
-	;set sample rate
-	mov al, 0F3h
+	mov al, 0xF3			; Set Sample Rate
 	call ps2wr
 	mov al, byte [samplerate]
 	call ps2wr
-	;set resolution
-	mov al, 0E8h
+	mov al, 0xE8			; Set Resolution
 	call ps2wr
 	mov al, byte [resolution]
 	call ps2wr
-	;set scaling 1:1
-	mov al, 0E6h
+	mov al, 0xE6			; Set Scaling 1:1
 	call ps2wr
-	;enable
-	mov al, 0F4h
+	mov al, 0xF4			; Enable Packet Streaming
 	call ps2wr
 
 	;reset variables
