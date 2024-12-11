@@ -156,6 +156,13 @@ key_control:		equ os_SystemVariables + 0x0318
 os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 
+; Mouse packet
+packet: 		equ os_SystemVariables + 0x0400 ; dd 0	; raw packet
+cnt:			equ os_SystemVariables + 0x0404 ; db 0	; byte counter
+buttons:		equ os_SystemVariables + 0x0405 ; db 0	; buttons, each bit represents one button from bits 1-5, 0-released, 1-pressed
+x:			equ os_SystemVariables + 0x0406 ; dw 0	; position on x,y,z axis
+y:			equ os_SystemVariables + 0x0408 ; dw 0
+z:			equ os_SystemVariables + 0x040A ; dw 0
 
 ; Misc
 keylayoutlower:
