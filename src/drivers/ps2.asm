@@ -2,7 +2,7 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
-; PS/2 Keyboard Functions
+; PS/2 Functions
 ; =============================================================================
 
 
@@ -59,9 +59,9 @@ ps2_init:
 	; Init keyboard
 
 	; Test keyboard
-	mov al, PS2_COMMAND_KBD_TEST
-	call ps2_send_cmd
-	call ps2_read_data
+;	mov al, PS2_COMMAND_KBD_TEST
+;	call ps2_send_cmd
+;	call ps2_read_data
 
 	; Init mouse
 
@@ -69,6 +69,8 @@ ps2_init:
 ;	mov al, PS2_COMMAND_AUX_TEST
 ;	call ps2_send_cmd
 ;	call ps2_read_data
+
+	call mouse_init
 
 	; Set flag that the PS/2 keyboard was enabled
 	or qword [os_SysConfEn], 1 << 0
@@ -133,6 +135,138 @@ ps2_flush:
 	in al, dx			; Read Status Register
 	bt ax, PS2_STATUS_OUTPUT
 	jc ps2_flush
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+;dl=1 read, dl=2 write
+ps2wait:
+	mov ecx, 1000
+ps2wait_loop:
+	in al, PS2_STATUS
+	and al, dl
+	jnz ps2wait_done
+	dec ecx
+	jnz ps2wait_loop
+ps2wait_done:
+	ret
+
+ps2wr:
+	mov dh, al
+	mov dl, 2
+	call ps2wait
+	mov al, PS2_COMMAND_AUX_WRITE
+	out PS2_CMD, al
+	call ps2wait
+	mov al, dh
+	out PS2_DATA, al
+	;no ret, fall into read code to read ack
+ps2rd:
+	mov dl, 1
+	call ps2wait
+	in al, PS2_DATA
+	ret
+
+;variables
+packetsize: db 0
+resolution: db 3
+samplerate: db 200
+
+mouse_init:
+;initialize legacy ps2 user input
+	xor rax, rax
+	mov dl, 2
+	call ps2wait
+	mov al, PS2_COMMAND_AUX_EN
+	out PS2_CMD, al
+	;get ack
+	call ps2rd
+	;some compaq voodoo magic to enable irq12
+	mov dl, 2
+	call ps2wait
+	mov al, PS2_COMMAND_RD_CCB
+	out PS2_CMD, al
+	mov dl, 1
+	call ps2wait
+	in al, PS2_DATA
+	bts ax, 1
+	btr ax, 5
+	mov bl, al
+	mov dl, 2
+	call ps2wait
+	mov al, PS2_COMMAND_WR_CCB
+	out PS2_CMD, al
+	call ps2wait
+	mov al, bl
+	out PS2_DATA, al
+	;get optional ack
+	mov dl, 1
+	call ps2wait
+
+	;restore to defaults
+	mov al, 0F6h
+	call ps2wr
+	;enable Z axis
+	mov al, 0F3h
+	call ps2wr
+	mov al, 200
+	call ps2wr
+	mov al, 0F3h
+	call ps2wr
+	mov al, 100
+	call ps2wr
+	mov al, 0F3h
+	call ps2wr
+	mov al, 80
+	call ps2wr
+	mov al, 0F2h
+	call ps2wr
+	call ps2rd
+	mov byte [packetsize], 3
+	or al, al
+	jz .noZaxis
+	mov byte [packetsize], 4
+.noZaxis:	;enable 4th and 5th buttons
+	mov al, 0F3h
+	call ps2wr
+	mov al, 200
+	call ps2wr
+	mov al, 0F3h
+	call ps2wr
+	mov al, 200
+	call ps2wr
+	mov al, 0F3h
+	call ps2wr
+	mov al, 80
+	call ps2wr
+	mov al, 0F2h
+	call ps2wr
+	call ps2rd
+
+	;set sample rate
+	mov al, 0F3h
+	call ps2wr
+	mov al, byte [samplerate]
+	call ps2wr
+	;set resolution
+	mov al, 0E8h
+	call ps2wr
+	mov al, byte [resolution]
+	call ps2wr
+	;set scaling 1:1
+	mov al, 0E6h
+	call ps2wr
+	;enable
+	mov al, 0F4h
+	call ps2wr
+
+	;reset variables
+	xor eax, eax
+	mov dword [cnt], eax
+	mov dword [x], eax
+	mov dword [y], eax
+	mov dword [z], eax
 	ret
 ; -----------------------------------------------------------------------------
 
