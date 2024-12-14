@@ -11,23 +11,23 @@ ps2_init:
 	call ps2_flush			; Read any pending data
 
 	; Disable keyboard
-	mov al, PS2_COMMAND_DI_KBD
+	mov al, PS2_KBD_DIS
 	call ps2_send_cmd
 	
 	; Disable AUX (if it exists)
-	mov al, PS2_COMMAND_DI_AUX
+	mov al, PS2_AUX_DIS
 	call ps2_send_cmd
 
 	; Execute a self-test on the PS/2 Controller
 	call ps2_flush
-	mov al, PS2_COMMAND_TEST
+	mov al, PS2_CTRL_TEST
 	call ps2_send_cmd
 	call ps2_read_data
 	cmp al, 0x55			; 0x55 means test passed
 	jne ps2_init_error		; Bail out otherwise
 
 	; Read Controller Configuration Byte
-	mov al, PS2_COMMAND_RD_CCB	; Command to Read "byte 0" from internal RAM
+	mov al, PS2_RD_CCB		; Command to Read "byte 0" from internal RAM
 	call ps2_send_cmd
 	call ps2_read_data
 
@@ -42,14 +42,13 @@ ps2_init:
 	or bl, 0b01100001		; Set bits 0, 5, and 6
 
 	; Write Controller Configuration Byte
-	mov al, PS2_COMMAND_WR_CCB	; Write next byte to "byte 0" of internal RAM
+	mov al, PS2_WR_CCB		; Write next byte to "byte 0" of internal RAM
 	call ps2_send_cmd
-	mov dx, PS2_DATA
 	mov al, bl			; Moved the updated CCB to AL
-	out dx, al
+	out PS2_DATA, al
 
 	; Enable keyboard
-	mov al, PS2_COMMAND_EN_KBD
+	mov al, PS2_KBD_EN
 	call ps2_send_cmd
 
 	; Set flag that the PS/2 keyboard was enabled
@@ -63,15 +62,10 @@ ps2_init_error:
 ; -----------------------------------------------------------------------------
 ; ps2_read_data - Read data from PS/2 port when it is ready
 ps2_read_data:
-	push rdx
-ps2_read_data_read:
-	mov dx, PS2_CS
-	in al, dx			; Read Status Register
+	in al, PS2_STATUS		; Read Status Register
 	bt ax, 0			; Check if Output buffer is full
-	jnc ps2_read_data_read
-	mov dx, PS2_DATA
-	in al, dx			; Read the data
-	pop rdx
+	jnc ps2_read_data
+	in al, PS2_DATA			; Read the data
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -81,47 +75,47 @@ ps2_read_data_read:
 ;  IN:	AL = Command to send
 ; OUT:	Nothing
 ps2_send_cmd:
-	push rdx
 	call ps2_wait			; Wait if a command is still in process
-	mov dx, PS2_CS
-	out dx, al			; Send the command
+	out PS2_CMD, al			; Send the command
 	call ps2_wait			; Wait for the command to be completed
-	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
 ; ps2_wait - Wait for the PS/2 Controller input buffer to be empty
+;  IN:	Nothing
+; OUT:	Nothing
 ps2_wait:
-	push rdx
 	push rax
 ps2_wait_read:
-	mov dx, PS2_CS
-	in al, dx			; Read Status Register
+	in al, PS2_STATUS		; Read Status Register
 	bt ax, 1			; Check if Input buffer is full
 	jc ps2_wait_read
 	pop rax
-	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
+; ps2_flush - Flush pending data from PS/2 Controller
+;  IN:	Nothing
+; OUT:	Nothing
 ps2_flush:
-	mov dx, PS2_DATA
-	in al, dx			; Read a byte of data from output
-	mov dx, PS2_CS
-	in al, dx			; Read Status Register
-	bt ax, PS2_STATUS_OUTPUT
-	jc ps2_flush
+	in al, PS2_DATA			; Read a byte of data from controller
+	in al, PS2_STATUS		; Read Status Register
+	bt ax, PS2_STATUS_OUTPUT	; Check if Output buffer status is full
+	jc ps2_flush			; If so, read a byte of data again
 	ret
 ; -----------------------------------------------------------------------------
 
 
-PS2_DATA		equ 0x60 ; Read/Write Data Port
-PS2_CS			equ 0x64 ; Read Status Register / Write Command Register
+; PS/2 Ports
+PS2_DATA		equ 0x60 ; Data Port - Read/Write
+PS2_STATUS		equ 0x64 ; Status Register - Read
+PS2_CMD			equ 0x64 ; Command Register - Write
 
+; PS/2 Status Codes
 PS2_STATUS_ACK		equ 0xFA
 PS2_STATUS_RESEND	equ 0xFE
 PS2_STATUS_ERROR	equ 0xFC
@@ -147,21 +141,30 @@ PS2_CCB_KBD_TRANS	equ 6 ; First PS/2 port translation (1 = enabled, 0 = disabled
 PS2_CCB_BIT7		equ 7 ; ???
 
 ; PS/2 Controller Commands
-PS2_COMMAND_RD_CCB	equ 0x20 ; Read byte 0 of the PS/2 Controller Configuration Byte
-PS2_COMMAND_WR_CCB	equ 0x60 ; Write byte 0 of the PS/2 Controller Configuration Byte
-PS2_COMMAND_DI_AUX	equ 0xA7 ; Disable Auxiliary Device
-PS2_COMMAND_EN_AUX	equ 0xA8 ; Enable Auxiliary Device
-PS2_COMMAND_TEST	equ 0xAA ; Test PS/2 Controller
-PS2_COMMAND_TEST_KBD	equ 0xAB ; Test first PS/2 port
-PS2_COMMAND_DI_KBD	equ 0xAD ; Disable first PS/2 port
-PS2_COMMAND_EN_KBD	equ 0xAE ; Enable first PS/2 port
+PS2_RD_CCB		equ 0x20 ; Read byte 0 of the PS/2 Controller Configuration Byte
+PS2_WR_CCB		equ 0x60 ; Write byte 0 of the PS/2 Controller Configuration Byte
+PS2_AUX_DIS		equ 0xA7 ; Disable Auxiliary Device
+PS2_AUX_EN		equ 0xA8 ; Enable Auxiliary Device
+PS2_CTRL_TEST		equ 0xAA ; Test PS/2 Controller
+PS2_KBD_TEST		equ 0xAB ; Test first PS/2 port
+PS2_KBD_DIS		equ 0xAD ; Disable first PS/2 port
+PS2_KBD_EN		equ 0xAE ; Enable first PS/2 port
 PS2_COMMAND_RESET_CPU	equ 0xFE ; Reset the CPU
 
 ; PS/2 Keyboard Commands
-PS2_COMMAND_SET_LEDS	equ 0xED
-PS2_COMMAND_SCANSET	equ 0xF0
-PS2_COMMAND_RATE	equ 0xF3
-PS2_COMMAND_ENABLE	equ 0xF4
+PS2_KBD_SET_LEDS	equ 0xED
+PS2_KBD_SCANSET		equ 0xF0
+PS2_KBD_RATE		equ 0xF3
+PS2_KBD_ENABLE		equ 0xF4
+
+; PS/2 Mouse Commands
+PS2_SETSCALING1TO1	equ 0xE6
+PS2_SETSCALING2TO1	equ 0xE7
+PS2_SETRESOLUTION	equ 0xE8
+PS2_SETSAMPLERATE	equ 0xF3
+PS2_ENABLEPACKETSTREAM	equ 0xF4
+PS2_DISABLEPACKETSTREAM	equ 0xF5
+PS2_SETDEFAULTS		equ 0xF6 ; Disables streaming, sets the packet rate to 100 per second, and resolution to 4 pixels per mm.
 
 
 ; =============================================================================
