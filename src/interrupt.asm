@@ -31,84 +31,19 @@ interrupt_gate:				; handler for all other interrupts
 ; This IRQ runs whenever there is input on the keyboard
 align 8
 keyboard:
-	push rdi
-	push rbx
-	push rax
-	cld				; Clear direction flag
+	call ps2_keyboard_interrupt	; Call keyboard interrupt code in PS/2 driver
 
-	xor eax, eax
-
-	in al, 0x60			; Get the scan code from the keyboard
-	cmp al, 0x01
-	je keyboard_escape
-	cmp al, 0x1D
-	je keyboard_control
-	cmp al, 0x2A			; Left Shift Make
-	je keyboard_shift
-	cmp al, 0x36			; Right Shift Make
-	je keyboard_shift
-	cmp al, 0x9D
-	je keyboard_nocontrol
-	cmp al, 0xAA			; Left Shift Break
-	je keyboard_noshift
-	cmp al, 0xB6			; Right Shift Break
-	je keyboard_noshift
-	test al, 0x80
-	jz keydown
-	jmp keyup
-
-keydown:
-	cmp byte [key_shift], 0x00
-	je keyboard_lowercase
-
-keyboard_uppercase:
-	mov rbx, keylayoutupper
-	jmp keyboard_processkey
-
-keyboard_lowercase:
-	mov rbx, keylayoutlower
-
-keyboard_processkey:			; Convert the scan code
-	add rbx, rax
-	mov bl, [rbx]
-	mov [key], bl
-	jmp keyboard_done
-
-keyboard_escape:
-	jmp reboot
-
-keyup:
-	jmp keyboard_done
-
-keyboard_control:
-	mov byte [key_control], 0x01
-	jmp keyboard_done
-
-keyboard_nocontrol:
-	mov byte [key_control], 0x00
-	jmp keyboard_done
-
-keyboard_shift:
-	mov byte [key_shift], 0x01
-	jmp keyboard_done
-
-keyboard_noshift:
-	mov byte [key_shift], 0x00
-	jmp keyboard_done
-
-keyboard_done:
 	; Acknowledge the IRQ
 	push rcx
+	push rax
 	mov rcx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
+	pop rax
 	pop rcx
 
 	call b_smp_wakeup_all		; A terrible hack
 
-	pop rax
-	pop rbx
-	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
 
@@ -118,15 +53,15 @@ keyboard_done:
 ; This IRQ runs whenever HPET Timer 0 expires
 align 8
 hpet:
-	push rax
 	push rcx
+	push rax
 
 	mov rcx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
-	pop rcx
 	pop rax
+	pop rcx
 	iretq
 ; -----------------------------------------------------------------------------
 

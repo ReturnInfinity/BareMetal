@@ -13,7 +13,7 @@ ps2_init:
 	; Disable keyboard
 	mov al, PS2_KBD_DIS
 	call ps2_send_cmd
-	
+
 	; Disable AUX (if it exists)
 	mov al, PS2_AUX_DIS
 	call ps2_send_cmd
@@ -55,6 +55,79 @@ ps2_init:
 	or qword [os_SysConfEn], 1 << 0
 
 ps2_init_error:
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; ps2_keyboard_interrupt - Converts scan code from keyboard to character
+ps2_keyboard_interrupt:
+	push rbx
+	push rax
+
+	xor eax, eax
+
+	in al, PS2_DATA			; Get the scan code from the keyboard
+	cmp al, 0x01
+	je keyboard_escape
+	cmp al, 0x1D
+	je keyboard_control
+	cmp al, 0x2A			; Left Shift Make
+	je keyboard_shift
+	cmp al, 0x36			; Right Shift Make
+	je keyboard_shift
+	cmp al, 0x9D
+	je keyboard_nocontrol
+	cmp al, 0xAA			; Left Shift Break
+	je keyboard_noshift
+	cmp al, 0xB6			; Right Shift Break
+	je keyboard_noshift
+	test al, 0x80
+	jz keydown
+	jmp keyup
+
+keydown:
+	cmp byte [key_shift], 0x00
+	je keyboard_lowercase
+
+keyboard_uppercase:
+	mov rbx, keylayoutupper
+	jmp keyboard_processkey
+
+keyboard_lowercase:
+	mov rbx, keylayoutlower
+
+keyboard_processkey:			; Convert the scan code
+	add rbx, rax
+	mov bl, [rbx]
+	mov [key], bl
+	jmp keyboard_done
+
+keyboard_escape:
+	jmp reboot
+
+keyup:
+	jmp keyboard_done
+
+keyboard_control:
+	mov byte [key_control], 0x01
+	jmp keyboard_done
+
+keyboard_nocontrol:
+	mov byte [key_control], 0x00
+	jmp keyboard_done
+
+keyboard_shift:
+	mov byte [key_shift], 0x01
+	jmp keyboard_done
+
+keyboard_noshift:
+	mov byte [key_shift], 0x00
+	jmp keyboard_done
+
+keyboard_done:
+	pop rax
+	pop rbx
 	ret
 ; -----------------------------------------------------------------------------
 
