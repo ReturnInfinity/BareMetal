@@ -255,7 +255,7 @@ os_delay_loop:				; Stay in this loop until the HPET timer reaches the expected 
 ; -----------------------------------------------------------------------------
 ; reboot -- Reboot the computer
 reboot:
-	mov al, PS2_COMMAND_RESET_CPU
+	mov al, PS2_RESET_CPU
 	call ps2_send_cmd
 	jmp reboot
 ; -----------------------------------------------------------------------------
