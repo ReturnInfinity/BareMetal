@@ -36,7 +36,7 @@ keyboard:
 	; Acknowledge the IRQ
 	push rcx
 	push rax
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 	pop rax
@@ -60,7 +60,7 @@ mouse:
 	call ps2_mouse_interrupt	; Call mouse interrupt code in PS/2 driver
 
 	; Acknowledge the interrupt
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
@@ -78,7 +78,7 @@ hpet:
 	push rcx
 	push rax
 
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
@@ -96,13 +96,13 @@ ap_wakeup:
 	push rax
 
 	; Acknowledge the IPI
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
 	pop rax
 	pop rcx
-	iretq				; Return from the IPI.
+	iretq				; Return from the IPI
 ; -----------------------------------------------------------------------------
 
 

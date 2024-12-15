@@ -338,20 +338,25 @@ ps2_mouse_init:
 	xor eax, eax
 	mov dl, 2			; Wait for write to be empty
 	call ps2wait
-	mov al, PS2_AUX_EN		; Enable mouse
+	mov al, PS2_AUX_EN		; Enable mouse. Bit 5 of CCB should be clear
 	out PS2_CMD, al			; Send command to PS2 controller
 	call ps2_mouse_read		; Read acknowledgement
 	mov dl, 2			; Wait for write to be empty
 	call ps2wait
+
 	mov al, PS2_RD_CCB		; Command to Read "byte 0" from internal RAM
 	out PS2_CMD, al			; Send command to PS2 controller
 	mov dl, 1			; Wait for read to be empty
 	call ps2wait
 	in al, PS2_DATA			; Read data byte from PS2 controller
+	bt ax, 5			; Check if bit 5 is clear
+	jc ps2_mouse_init_fail		; If not, jump to end - no AUX
+
 	bts ax, 1			; Set bit 1 to enable second PS/2 port interrupts
 	btr ax, 5			; Clear bit 5 to enable second PS/2 port clock
 	mov bl, al			; Save new CCB value to BL
 	mov dl, 2
+
 	call ps2wait
 	mov al, PS2_WR_CCB		; Write next byte to "byte 0" of internal RAM
 	out PS2_CMD, al
@@ -383,6 +388,11 @@ ps2_mouse_init:
 	mov dword [cnt], eax
 	mov dword [x], eax
 	mov dword [y], eax
+
+	; Set flag that the PS/2 mouse was enabled
+	or qword [os_SysConfEn], 1 << 1
+
+ps2_mouse_init_fail:
 	ret
 ; -----------------------------------------------------------------------------
 
