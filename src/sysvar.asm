@@ -77,7 +77,7 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
-os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS2, 1=Serial, 4=HPET
+os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET
 os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
 os_net_transmit:	equ os_SystemVariables + 0x0028
@@ -156,6 +156,12 @@ key_control:		equ os_SystemVariables + 0x0318
 os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 
+; Mouse packet
+mouse_packet: 		equ os_SystemVariables + 0x0400 ; dd 0	; raw packet
+cnt:			equ os_SystemVariables + 0x0404 ; db 0	; byte counter
+buttons:		equ os_SystemVariables + 0x0405 ; db 0	; Button state, bit 0 - left, bit 1 - right, bit 3 - middle. 0-released, 1-pressed
+x:			equ os_SystemVariables + 0x0406 ; dw 0	; Cursor screen position on X axis
+y:			equ os_SystemVariables + 0x0408 ; dw 0	; Cursor screen position on Y axis
 
 ; Misc
 keylayoutlower:

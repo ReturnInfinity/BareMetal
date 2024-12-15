@@ -36,7 +36,7 @@ keyboard:
 	; Acknowledge the IRQ
 	push rcx
 	push rax
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 	pop rax
@@ -49,6 +49,28 @@ keyboard:
 
 
 ; -----------------------------------------------------------------------------
+; Mouse interrupt. IRQ 0x0C, INT 0x2C
+; This IRQ runs whenever there is input on the mouse
+; Note: A PS/2 mouse sends one byte per interrupt. So this is triggered 3 or 4 times per mouse action.
+align 8
+mouse:
+	push rcx
+	push rax
+
+	call ps2_mouse_interrupt	; Call mouse interrupt code in PS/2 driver
+
+	; Acknowledge the interrupt
+	mov ecx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+	pop rax
+	pop rcx
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; HPET Timer 0 interrupt
 ; This IRQ runs whenever HPET Timer 0 expires
 align 8
@@ -56,7 +78,7 @@ hpet:
 	push rcx
 	push rax
 
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
@@ -74,13 +96,13 @@ ap_wakeup:
 	push rax
 
 	; Acknowledge the IPI
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
 	pop rax
 	pop rcx
-	iretq				; Return from the IPI.
+	iretq				; Return from the IPI
 ; -----------------------------------------------------------------------------
 
 
