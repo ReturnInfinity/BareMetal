@@ -111,6 +111,7 @@ os_AHCI_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
+os_ps2_mouse_packet:	equ os_SystemVariables + 0x0118
 
 
 ; DW - Starting at offset 512, increments by 2
@@ -125,6 +126,11 @@ os_screen_ppsl:		equ os_SystemVariables + 0x020E
 os_screen_bpp:		equ os_SystemVariables + 0x0210
 os_pcie_count:		equ os_SystemVariables + 0x0212
 os_HPET_CounterMin:	equ os_SystemVariables + 0x0214
+os_ps2_mouse:		equ os_SystemVariables + 0x0218
+os_ps2_mouse_count:	equ os_SystemVariables + 0x0218 ; Byte counter
+os_ps2_mouse_buttons:	equ os_SystemVariables + 0x021A ; Button state, bit 0 - left, bit 1 - right, bit 3 - middle. 0-released, 1-pressed
+os_ps2_mouse_x:		equ os_SystemVariables + 0x021C ; Cursor screen position on X axis
+os_ps2_mouse_y:		equ os_SystemVariables + 0x021E ; Cursor screen position on Y axis
 
 
 ; DB - Starting at offset 768, increments by 1
@@ -156,12 +162,6 @@ key_control:		equ os_SystemVariables + 0x0318
 os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 
-; Mouse packet
-mouse_packet: 		equ os_SystemVariables + 0x0400 ; dd 0	; raw packet
-cnt:			equ os_SystemVariables + 0x0404 ; db 0	; byte counter
-buttons:		equ os_SystemVariables + 0x0405 ; db 0	; Button state, bit 0 - left, bit 1 - right, bit 3 - middle. 0-released, 1-pressed
-x:			equ os_SystemVariables + 0x0406 ; dw 0	; Cursor screen position on X axis
-y:			equ os_SystemVariables + 0x0408 ; dw 0	; Cursor screen position on Y axis
 
 ; Misc
 keylayoutlower:

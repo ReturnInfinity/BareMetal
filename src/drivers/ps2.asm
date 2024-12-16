@@ -167,71 +167,72 @@ mouse_getbyte:
 ;	in al, 0x61			; Read byte from keyboard controller unused port
 ;	out 0x61, al			; Write same byte back to keyboard controller unused port
 	xor ebx, ebx
-	mov bl, [cnt]			; Get the byte counter
-	add ebx, mouse_packet		; Add the address of the mouse packet
+	mov bl, [os_ps2_mouse_count]	; Get the byte counter
+	add ebx, os_ps2_mouse_packet	; Add the address of the mouse packet
 	mov [ebx], cl			; Store the byte in CL to the correct index into the mouse packet
-	inc byte [cnt]			; Increment the byte counter
-	mov bl, [cnt]			; Copy the byte counter value to BL 
+	inc byte [os_ps2_mouse_count]	; Increment the byte counter
+	mov bl, [os_ps2_mouse_count]	; Copy the byte counter value to BL 
 	cmp bl, [packetsize]		; Compare byte counter to excepted packet size
 	jb mouse_end			; If below then bail out, wait for rest of packet
-	mov byte [cnt], 0		; At this point we have a full packet. Clear the byte counter
+	mov word [os_ps2_mouse_count], 0	; At this point we have a full packet. Clear the byte counter
 
 	; Process the mouse packet
 
 	; Get state of buttons as well as X/Y sign
-	mov al, [mouse_packet]		; State of the buttons
+	xor eax, eax
+	mov al, [os_ps2_mouse_packet]	; State of the buttons
 	; TODO - Check X/Y overflow. If either are set then no movement, bail out
 	and al, 7			; Keep the low 3 bits for the buttons
-	mov byte [buttons], al
+	mov [os_ps2_mouse_buttons], ax
 
 	; Process byte for Delta X - Left is negative (128-255), Right is positive (1-127)
-	mov bl, [mouse_packet+1]	; Load Delta X from mouse packet
+	mov bl, [os_ps2_mouse_packet+1]	; Load Delta X from mouse packet
 	cmp bl, 0			; Check if it was 0
 	je mouse_skip_x_movement
 	movsx eax, bl			; Sign extend the Delta for X movement
-	add word [x], ax
+	add [os_ps2_mouse_x], ax
 mouse_skip_x_movement:
 
 	; Process byte for Delta Y - Up is positive (1-127), Down is negative (128-255)
-	mov bl, [mouse_packet+2]	; Load Delta Y from mouse packet
+	mov bl, [os_ps2_mouse_packet+2]	; Load Delta Y from mouse packet
 	cmp bl, 0			; Check if it was 0
 	je mouse_skip_y_movement	; If so, jump past setting cursor Y location
 	not bl				; Flip value since Y direction is, in my opinion, backwards - 0xFF becomes 0x00
 	inc bl				; Add 1
 	movsx eax, bl			; Sign extend the Delta for Y movement
-	add word [y], ax
+	add [os_ps2_mouse_y], ax
 mouse_skip_y_movement:
 
 	; Keep cursor on the screen
 	; X
 	mov bx, [os_screen_x]		; Screen X dimension in number of pixels
 	dec bx				; Decrement by one since valid pixels are 0 thru X-1
-	mov ax, [x]			; Get the current X value for the mouse location
+	mov ax, [os_ps2_mouse_x]	; Get the current X value for the mouse location
 	cmp ax, 0xF000			; Check if it wrapped around below 0
 	ja checkx_min			; If so jump to min
 	cmp ax, bx			; Check X value against valid max pixel location
 	jle checkx_end			; If less or equal then mouse cursor is on screen
 checkx_max:				; If greater then mouse cursor has moved off the right edge
-	mov [x], bx			; Set the mouse X location to Screen X-1
+	mov [os_ps2_mouse_x], bx	; Set the mouse X location to Screen X-1
 	jmp checkx_end
 checkx_min:
 	xor ax, ax			; Clear AX
-	mov [x], ax			; Set the mouse X location to 0
+	mov [os_ps2_mouse_x], ax	; Set the mouse X location to 0
 checkx_end:
 	; Y
 	mov bx, [os_screen_y]		; Screen Y dimension in number of pixels
 	dec bx				; Decrement by one since valid pixels are 0 thru Y-1
-	mov ax, [y]			; Get the current Y value for the mouse location
+	mov ax, [os_ps2_mouse_y]	; Get the current Y value for the mouse location
 	cmp ax, 0xF000			; Check if it wrapped around below 0
 	ja checky_min			; If so jump to min
 	cmp ax, bx			; Check Y value against valid max pixel location
 	jle checky_end			; If less or equal then mouse cursor is on screen
 checky_max:				; If greater then mouse cursor has moved off the bottom edge
-	mov [y], bx			; Set the mouse Y location to Screen Y-1
+	mov [os_ps2_mouse_y], bx	; Set the mouse Y location to Screen Y-1
 	jmp checky_end
 checky_min:
 	xor ax, ax			; Clear AX
-	mov [y], ax			; Set the mouse Y location to 0
+	mov [os_ps2_mouse_y], ax	; Set the mouse Y location to 0
 checky_end:
 
 mouse_end:
@@ -385,9 +386,10 @@ ps2_mouse_init:
 
 	; Reset mouse variables
 	xor eax, eax
-	mov dword [cnt], eax
-	mov dword [x], eax
-	mov dword [y], eax
+	mov [os_ps2_mouse_count], ax
+	mov [os_ps2_mouse_buttons], ax
+	mov [os_ps2_mouse_x], ax
+	mov [os_ps2_mouse_y], ax
 
 	; Set flag that the PS/2 mouse was enabled
 	or qword [os_SysConfEn], 1 << 1

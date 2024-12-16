@@ -20,7 +20,7 @@ b_system		equ 0x0000000000100040	; Configure system. IN: RCX = Function, RAX = V
 
 ; Index for b_system calls
 TIMECOUNTER		equ 0x00
-FREE_MEMORY		equ 0x02
+GET_MOUSE		equ 0x02
 NETWORKCALLBACK_GET	equ 0x03
 NETWORKCALLBACK_SET	equ 0x04
 CLOCKCALLBACK_GET	equ 0x05

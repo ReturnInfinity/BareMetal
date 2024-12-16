@@ -39,6 +39,10 @@ b_system_free_memory:
 	mov eax, [os_MemAmount]
 	ret
 
+b_system_getmouse:
+	mov rax, [os_ps2_mouse]
+	ret
+
 ; CPU
 
 b_system_smp_get_id:
@@ -310,7 +314,7 @@ b_system_table:
 ; Basic
 	dw b_system_timecounter		; 0x00
 	dw none				; 0x01
-	dw none				; 0x02
+	dw b_system_getmouse		; 0x02
 	dw none				; 0x03
 	dw none				; 0x04
 	dw none				; 0x05

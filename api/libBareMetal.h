@@ -33,7 +33,7 @@ u64 b_system(u64 function, u64 var1, u64 var2);
 
 // Index for b_config calls
 #define TIMECOUNTER		0x00
-#define FREE_MEMORY		0x02
+#define GET_MOUSE		0x02
 #define NETWORKCALLBACK_GET	0x03
 #define NETWORKCALLBACK_SET	0x04
 #define CLOCKCALLBACK_GET	0x05
