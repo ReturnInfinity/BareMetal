@@ -127,10 +127,10 @@ os_screen_bpp:		equ os_SystemVariables + 0x0210
 os_pcie_count:		equ os_SystemVariables + 0x0212
 os_HPET_CounterMin:	equ os_SystemVariables + 0x0214
 os_ps2_mouse:		equ os_SystemVariables + 0x0218
-os_ps2_mouse_count:	equ os_SystemVariables + 0x0218 ; Byte counter
-os_ps2_mouse_buttons:	equ os_SystemVariables + 0x021A ; Button state, bit 0 - left, bit 1 - right, bit 3 - middle. 0-released, 1-pressed
-os_ps2_mouse_x:		equ os_SystemVariables + 0x021C ; Cursor screen position on X axis
-os_ps2_mouse_y:		equ os_SystemVariables + 0x021E ; Cursor screen position on Y axis
+os_ps2_mouse_buttons:	equ os_SystemVariables + 0x0218 ; Button state, bit 0 - left, bit 1 - right, bit 3 - middle. 0-released, 1-pressed
+os_ps2_mouse_x:		equ os_SystemVariables + 0x021A ; Cursor screen position on X axis
+os_ps2_mouse_y:		equ os_SystemVariables + 0x021C ; Cursor screen position on Y axis
+os_ps2_mouse_count:	equ os_SystemVariables + 0x021E ; Byte counter
 
 
 ; DB - Starting at offset 768, increments by 1
