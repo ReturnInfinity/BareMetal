@@ -103,10 +103,10 @@ make_interrupt_gate_stubs:
 
 	; Set up the IRQ handlers (Network IRQ handler is configured in init_net)
 	mov edi, 0x21
-	mov rax, keyboard
+	mov rax, int_keyboard
 	call create_gate
 	mov edi, 0x2C
-	mov rax, mouse
+	mov rax, int_mouse
 	call create_gate
 	mov edi, 0x80
 	mov rax, ap_wakeup

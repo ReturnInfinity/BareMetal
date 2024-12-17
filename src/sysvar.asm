@@ -102,6 +102,7 @@ os_storage_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
 os_NetIOLength:		equ os_SystemVariables + 0x00D0
+os_MouseCallback:	equ os_SystemVariables + 0x00D8
 
 
 ; DD - Starting at offset 256, increments by 4

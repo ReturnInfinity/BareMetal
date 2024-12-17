@@ -129,6 +129,19 @@ b_system_stdout_set:
 
 ; Misc
 
+b_system_callback_timer:
+	ret
+
+b_system_callback_network:
+	ret
+
+b_system_callback_keyboard:
+	ret
+
+b_system_callback_mouse:
+	mov [os_MouseCallback], rax
+	ret
+
 b_system_debug_dump_mem:
 	push rsi
 	mov rsi, rax
@@ -418,10 +431,10 @@ b_system_table:
 	dw none				; 0x5D
 	dw none				; 0x5E
 	dw none				; 0x5F
-	dw none				; 0x60
-	dw none				; 0x61
-	dw none				; 0x62
-	dw none				; 0x63
+	dw b_system_callback_timer	; 0x60
+	dw b_system_callback_network	; 0x61
+	dw b_system_callback_keyboard	; 0x62
+	dw b_system_callback_mouse	; 0x63
 	dw none				; 0x64
 	dw none				; 0x65
 	dw none				; 0x66
