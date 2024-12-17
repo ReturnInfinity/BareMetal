@@ -60,6 +60,11 @@ int_mouse:
 
 	call ps2_mouse_interrupt	; Call mouse interrupt code in PS/2 driver
 
+	; Check if the mouse driver has received a full packet
+	cmp word [os_ps2_mouse_count], 0
+	jne int_mouse_end		; Bail out if count isn't 0
+
+	; Check if the mouse interrupt has a callback to execute
 	cmp qword [os_MouseCallback], 0	; Is it valid?
 	je int_mouse_end		; If not then bail out
 
