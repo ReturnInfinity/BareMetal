@@ -340,11 +340,11 @@ Return the MAC address of the network device.
 
 #### CALLBACK_MOUSE
 
-Set a callback for mouse activity
+Set a callback for mouse activity.
 
 	 IN:	Nothing
-	 OUT:	RAX = Address of callback
-	All other registers preserved
+	OUT:	RAX = Address of callback
+		All other registers preserved
 
 Set a callback of 0x0 to disable it.
 
