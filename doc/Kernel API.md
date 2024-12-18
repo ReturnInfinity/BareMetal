@@ -209,13 +209,17 @@ Return the amount of free memory.
 	OUT:	RAX = Free memory in Mebibytes (MiB)
 		All other registers preserved
 
-#### NETWORKCALLBACK_GET
+#### MOUSE
 
-#### NETWORKCALLBACK_SET
+Return details of the mouse
 
-#### CLOCKCALLBACK_GET
-
-#### CLOCKCALLBACK_SET
+	 IN:	Nothing
+	OUT:	RAX = Mouse details
+		All other registers preserved
+	Bits 63:48 - Padding
+	Bits 47:32 - Y position
+	Bits 31:16 - X position
+	Bits 15:0  - Buttons pressed
 
 #### SMP_ID
 
@@ -327,6 +331,14 @@ Return the MAC address of the network device.
 #### STDOUT_SET
 
 #### STDOUT_GET
+
+#### CALLBACK_TIMER
+
+#### CALLBACK_NETWORK
+
+#### CALLBACK_KEYBOARD
+
+#### CALLBACK_MOUSE
 
 #### DUMP_MEM
 
