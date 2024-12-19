@@ -326,7 +326,7 @@ none:
 b_system_table:
 ; Basic
 	dw b_system_timecounter		; 0x00
-	dw none				; 0x01
+	dw b_system_free_memory		; 0x01
 	dw b_system_getmouse		; 0x02
 	dw none				; 0x03
 	dw none				; 0x04
