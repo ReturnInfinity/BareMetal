@@ -30,85 +30,83 @@ interrupt_gate:				; handler for all other interrupts
 ; Keyboard interrupt. IRQ 0x01, INT 0x21
 ; This IRQ runs whenever there is input on the keyboard
 align 8
-keyboard:
-	push rdi
-	push rbx
-	push rax
-	cld				; Clear direction flag
-
-	xor eax, eax
-
-	in al, 0x60			; Get the scan code from the keyboard
-	cmp al, 0x01
-	je keyboard_escape
-	cmp al, 0x1D
-	je keyboard_control
-	cmp al, 0x2A			; Left Shift Make
-	je keyboard_shift
-	cmp al, 0x36			; Right Shift Make
-	je keyboard_shift
-	cmp al, 0x9D
-	je keyboard_nocontrol
-	cmp al, 0xAA			; Left Shift Break
-	je keyboard_noshift
-	cmp al, 0xB6			; Right Shift Break
-	je keyboard_noshift
-	test al, 0x80
-	jz keydown
-	jmp keyup
-
-keydown:
-	cmp byte [key_shift], 0x00
-	je keyboard_lowercase
-
-keyboard_uppercase:
-	mov rbx, keylayoutupper
-	jmp keyboard_processkey
-
-keyboard_lowercase:
-	mov rbx, keylayoutlower
-
-keyboard_processkey:			; Convert the scan code
-	add rbx, rax
-	mov bl, [rbx]
-	mov [key], bl
-	jmp keyboard_done
-
-keyboard_escape:
-	jmp reboot
-
-keyup:
-	jmp keyboard_done
-
-keyboard_control:
-	mov byte [key_control], 0x01
-	jmp keyboard_done
-
-keyboard_nocontrol:
-	mov byte [key_control], 0x00
-	jmp keyboard_done
-
-keyboard_shift:
-	mov byte [key_shift], 0x01
-	jmp keyboard_done
-
-keyboard_noshift:
-	mov byte [key_shift], 0x00
-	jmp keyboard_done
-
-keyboard_done:
-	; Acknowledge the IRQ
+int_keyboard:
 	push rcx
-	mov rcx, APIC_EOI
+	push rax
+
+	call ps2_keyboard_interrupt	; Call keyboard interrupt code in PS/2 driver
+
+	; Acknowledge the IRQ
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
-	pop rcx
 
 	call b_smp_wakeup_all		; A terrible hack
 
 	pop rax
-	pop rbx
+	pop rcx
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; Mouse interrupt. IRQ 0x0C, INT 0x2C
+; This IRQ runs whenever there is input on the mouse
+; Note: A PS/2 mouse sends one byte per interrupt. So this is triggered 3 or 4 times per mouse action.
+align 8
+int_mouse:
+	push rcx
+	push rax
+
+	call ps2_mouse_interrupt	; Call mouse interrupt code in PS/2 driver
+
+	; Check if the mouse driver has received a full packet
+	cmp word [os_ps2_mouse_count], 0
+	jne int_mouse_end		; Bail out if count isn't 0
+
+	; Check if the mouse interrupt has a callback to execute
+	cmp qword [os_MouseCallback], 0	; Is it valid?
+	je int_mouse_end		; If not then bail out
+
+	; We could do a 'call [os_MouseCallback]' here but that would not be ideal.
+	; A defective callback would hang the system if it never returned back to the
+	; interrupt handler. Instead, we modify the stack so that the callback is
+	; executed after the interrupt handler has finished. Once the callback has
+	; finished, the execution flow will pick up back in the program.
+	push rdi
+	push rsi
+	push rcx
+	mov rcx, [os_MouseCallback]	; RCX stores the callback function address
+	mov rsi, rsp			; Copy the current stack pointer to RSI
+	sub rsp, 8			; Subtract 8 since we add a 64-bit value to the stack
+	mov rdi, rsp			; Copy the 'new' stack pointer to RDI
+	movsq				; RCX
+	movsq				; RSI
+	movsq				; RDI
+	movsq				; Flags
+	movsq				; RAX
+	lodsq				; RIP
+	xchg rax, rcx
+	stosq				; Callback address
+	movsq				; CS
+	movsq				; Flags
+	lodsq				; RSP
+	sub rax, 8
+	stosq
+	movsq				; SS
+	mov [rax], rcx			; Original RIP
+	pop rcx
+	pop rsi
 	pop rdi
+
+int_mouse_end:
+	; Acknowledge the interrupt
+	mov ecx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+	pop rax
+	pop rcx
 	iretq
 ; -----------------------------------------------------------------------------
 
@@ -118,15 +116,15 @@ keyboard_done:
 ; This IRQ runs whenever HPET Timer 0 expires
 align 8
 hpet:
-	push rax
 	push rcx
+	push rax
 
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
-	pop rcx
 	pop rax
+	pop rcx
 	iretq
 ; -----------------------------------------------------------------------------
 
@@ -139,13 +137,13 @@ ap_wakeup:
 	push rax
 
 	; Acknowledge the IPI
-	mov rcx, APIC_EOI
+	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
 	pop rax
 	pop rcx
-	iretq				; Return from the IPI.
+	iretq				; Return from the IPI
 ; -----------------------------------------------------------------------------
 
 

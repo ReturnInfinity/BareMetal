@@ -15,7 +15,7 @@ msg_init_64:		db 13, 10, '64      '
 msg_init_bus:		db 13, 10, 'bus     '
 msg_init_sto:		db 13, 10, 'storage '
 msg_init_net:		db 13, 10, 'network '
-msg_ready:		db 13, 10, 'system ready'
+msg_ready:		db 13, 10, 'system ready', 13, 10, 13, 10
 
 ; Memory addresses
 
@@ -77,7 +77,7 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
-os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS2, 1=Serial, 4=HPET
+os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET
 os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
 os_net_transmit:	equ os_SystemVariables + 0x0028
@@ -102,6 +102,7 @@ os_storage_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
 os_NetIOLength:		equ os_SystemVariables + 0x00D0
+os_MouseCallback:	equ os_SystemVariables + 0x00D8
 
 
 ; DD - Starting at offset 256, increments by 4
@@ -111,6 +112,7 @@ os_AHCI_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
+os_ps2_mouse_packet:	equ os_SystemVariables + 0x0118
 
 
 ; DW - Starting at offset 512, increments by 2
@@ -125,6 +127,11 @@ os_screen_ppsl:		equ os_SystemVariables + 0x020E
 os_screen_bpp:		equ os_SystemVariables + 0x0210
 os_pcie_count:		equ os_SystemVariables + 0x0212
 os_HPET_CounterMin:	equ os_SystemVariables + 0x0214
+os_ps2_mouse:		equ os_SystemVariables + 0x0218
+os_ps2_mouse_buttons:	equ os_SystemVariables + 0x0218 ; Button state, bit 0 - left, bit 1 - right, bit 3 - middle. 0-released, 1-pressed
+os_ps2_mouse_x:		equ os_SystemVariables + 0x021A ; Cursor screen position on X axis
+os_ps2_mouse_y:		equ os_SystemVariables + 0x021C ; Cursor screen position on Y axis
+os_ps2_mouse_count:	equ os_SystemVariables + 0x021E ; Byte counter
 
 
 ; DB - Starting at offset 768, increments by 1

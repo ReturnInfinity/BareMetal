@@ -13,7 +13,7 @@ serial_init:
 	; TODO - Enable interrupts if needed
 
 	; Set flag that Serial was enabled
-	or qword [os_SysConfEn], 1 << 1
+	or qword [os_SysConfEn], 1 << 2
 
 	ret
 ; -----------------------------------------------------------------------------

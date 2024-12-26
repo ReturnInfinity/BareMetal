@@ -60,7 +60,7 @@ init_64:
 	lodsd
 	mov [os_IOAPICAddress], rax
 
-	; Configure the PS/2 keyboard
+	; Configure the PS/2 keyboard and mouse
 	call ps2_init
 
 	; Configure the serial port
@@ -103,7 +103,10 @@ make_interrupt_gate_stubs:
 
 	; Set up the IRQ handlers (Network IRQ handler is configured in init_net)
 	mov edi, 0x21
-	mov rax, keyboard
+	mov rax, int_keyboard
+	call create_gate
+	mov edi, 0x2C
+	mov rax, int_mouse
 	call create_gate
 	mov edi, 0x80
 	mov rax, ap_wakeup
@@ -156,6 +159,9 @@ no_more_aps:
 	; Enable specific interrupts
 	mov ecx, 1			; Keyboard IRQ
 	mov eax, 0x21			; Keyboard Interrupt Vector
+	call os_ioapic_mask_clear
+	mov ecx, 12			; Mouse IRQ
+	mov eax, 0x2C			; Mouse Interrupt Vector
 	call os_ioapic_mask_clear
 
 	; Output block to screen (1/4)
