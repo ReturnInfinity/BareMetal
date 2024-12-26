@@ -123,6 +123,44 @@ b_system_stdout_set:
 	mov qword [0x100018], rax
 	ret
 
+;Storage
+
+; -----------------------------------------------------------------------------
+; b_system_ahci_id -- System call to retrieve SATA IDENTIFY data
+; IN:  RDX = Port number to query
+;      RAX = Memory location to store details (512 bytes)
+; OUT: RAX = 0 on success, non-zero on failure
+; -----------------------------------------------------------------------------
+b_system_ahci_id:
+	push rdi
+	push rax
+	push rdx
+
+    mov rdi, rax
+
+	xchg rax, rdi
+	call os_virt_to_phys
+	xchg rax, rdi
+        
+    call ahci_id
+
+    pop rdi
+	pop rax
+	pop rdx
+    ret
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; b_system_ahci_base_get -- Retrieve AHCI_BASE_ADDRESS
+; IN:  None
+; OUT: RAX = AHCI_BASE_ADDRESS
+; -----------------------------------------------------------------------------
+b_system_ahci_base_get:
+    mov rax, [os_AHCI_Base] ; Load the address from the system variable
+    ret
+
+; -----------------------------------------------------------------------------
+
 ; Misc
 
 b_system_debug_dump_mem:
@@ -177,52 +215,56 @@ b_system_shutdown:
 
 ; -----------------------------------------------------------------------------
 ; b_delay -- Delay by X microseconds
-; IN:	RAX = Time microseconds
-; OUT:	All registers preserved
-; Note:	There are 1,000,000 microseconds in a second
-;	There are 1,000 milliseconds in a second
+; IN:    RAX = Time microseconds
+; OUT:   All registers preserved
+; Note:  There are 1,000,000 microseconds in a second
+;        There are 1,000 milliseconds in a second
 b_delay:
-	push rdx
-	push rcx
-	push rbx
-	push rax
+    ; Initialize the desired delay in microseconds (e.g., 10 seconds = 10,000,000 microseconds)
+    push rdx
+    push rcx
+    push rbx
+    push rax
 
-	mov rbx, rax			; Save delay to RBX
-	xor edx, edx
-	mov ecx, HPET_GEN_CAP
-	call os_hpet_read		; Get HPET General Capabilities and ID Register
-	shr rax, 32
-	mov rcx, rax			; RCX = RAX >> 32 (timer period in femtoseconds)
-	mov rax, 1000000000
-	div rcx				; Divide 10E9 (RDX:RAX) / RCX (converting from period in femtoseconds to frequency in MHz)
-	mul rbx				; RAX *= RBX, should get number of HPET cycles to wait, save result in RBX
-	mov rbx, rax
-	mov ecx, HPET_MAIN_COUNTER
-	call os_hpet_read		; Get HPET counter in RAX
-	add rbx, rax			; RBX += RAX Until when to wait
-; Setup a one shot HPET interrupt when main counter=RBX
-	mov ecx, HPET_TIMER_0_CONF
-	movzx eax, byte [os_HPET_IRQ]
-	shl rax, 9
-	or rax, (1 << 2)
-	call os_hpet_write		; Value to write is (os_HPET_IRQ<<9 | 1<<2)
-	mov rax, rbx
-	mov ecx, HPET_TIMER_0_COMP
-	call os_hpet_write
-b_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
-	mov ecx, HPET_MAIN_COUNTER
-	call os_hpet_read		; Get HPET counter in RAX
-	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
-	jae b_delay_end
-	hlt				; Otherwise halt and the CPU will wait for an interrupt
-	jmp b_delay_loop
+    mov rbx, rax         ; Save delay to RBX
+    xor edx, edx
+    mov ecx, HPET_GEN_CAP
+    call os_hpet_read    ; Get HPET General Capabilities and ID Register
+    shr rax, 32
+    mov rcx, rax         ; RCX = RAX >> 32 (timer period in femtoseconds)
+    mov rax, 1000000000  ; 10^9 for conversion to MHz
+    div rcx              ; Divide 10E9 (RDX:RAX) / RCX (converting from period in femtoseconds to frequency in MHz)
+    mul rbx              ; RAX *= RBX, should get number of HPET cycles to wait, save result in RBX
+    mov rbx, rax
+    mov ecx, HPET_MAIN_COUNTER
+    call os_hpet_read    ; Get HPET counter in RAX
+    add rbx, rax         ; RBX += RAX (Until when to wait)
+
+    ; Setup a one-shot HPET interrupt when the main counter = RBX
+    mov ecx, HPET_TIMER_0_CONF
+    movzx eax, byte [os_HPET_IRQ]
+    shl rax, 9
+    or rax, (1 << 2)
+    call os_hpet_write   ; Set timer configuration
+
+    mov rax, rbx
+    mov ecx, HPET_TIMER_0_COMP
+    call os_hpet_write   ; Set the compare value for the interrupt
+
+b_delay_loop:               ; Stay in this loop until the HPET timer reaches the expected value
+    mov ecx, HPET_MAIN_COUNTER
+    call os_hpet_read     ; Get HPET counter in RAX
+    cmp rax, rbx          ; If RAX >= RBX, jump to end, otherwise continue loop
+    jae b_delay_end
+	hlt 				;Otherwise halt and the CPU will wait for an interrupt
+    jmp b_delay_loop
+
 b_delay_end:
-
-	pop rax
-	pop rbx
-	pop rcx
-	pop rdx
-	ret
+    pop rax
+    pop rbx
+    pop rcx
+    pop rdx
+    ret
 ; -----------------------------------------------------------------------------
 
 
@@ -380,8 +422,8 @@ b_system_table:
 	dw none				; 0x3F
 
 ; Storage
-	dw none				; 0x40
-	dw none				; 0x41
+	dw b_system_ahci_id			; 0x40
+	dw b_system_ahci_base_get	; 0x41
 	dw none				; 0x42
 	dw none				; 0x43
 	dw none				; 0x44
