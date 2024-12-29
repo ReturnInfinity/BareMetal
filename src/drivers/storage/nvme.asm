@@ -85,7 +85,7 @@ nvme_init_enable_wait:
 	jc nvme_init_error
 	bt eax, 0			; Wait for CSTS.RDY (0) to become '1'
 	jnc nvme_init_enable_wait
-	
+
 	; Create I/O Completion Queue
 	mov eax, 0x00010005		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Completion Queue (0x05)
 	xor ebx, ebx			; CDW1 Ignored
@@ -210,7 +210,7 @@ nvme_admin:
 	push rcx
 	push rbx
 	push rax
-	
+
 	mov r9, rdi			; Save the memory location
 
 	; Build the command at the expected location in the Submission ring
