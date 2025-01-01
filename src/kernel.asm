@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2025 Return Infinity -- see LICENSE.TXT
 ;
 ; The BareMetal exokernel
 ; =============================================================================
@@ -9,7 +9,7 @@
 BITS 64					; Specify 64-bit
 ORG 0x0000000000100000			; The kernel needs to be loaded at this address
 
-%DEFINE BAREMETAL_VER 'v1.0.0 (January 21, 2020)', 13, 'Copyright (C) 2008-2024 Return Infinity', 13, 0
+%DEFINE BAREMETAL_VER 'v1.0.0 (January 21, 2020)', 13, 'Copyright (C) 2008-2025 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
 KERNELSIZE equ 16384			; Pad the kernel to this length
 
