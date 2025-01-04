@@ -244,6 +244,21 @@ b_delay_end:
 
 
 ; -----------------------------------------------------------------------------
+; b_tsc -- Read the Time-Stamp Counter and store in RAX
+; IN:	Nothing
+; OUT:	RAX = Current Time-Stamp Counter value
+;	All other registers preserved
+b_tsc:
+	push rdx
+	rdtsc				; Reads the TSC into EDX:EAX
+	shl rdx, 32			; Shift the low 32-bits to the high 32-bits
+	or rax, rdx			; Combine RAX and RDX
+	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; os_delay -- Delay by X HPET ticks
 ; IN:	RAX = HPET ticks
 ; OUT:	All registers preserved
