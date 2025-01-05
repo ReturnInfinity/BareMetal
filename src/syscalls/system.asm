@@ -75,6 +75,10 @@ b_system_smp_busy:
 	call b_smp_busy
 	ret
 
+b_system_tsc:
+	call b_tsc
+	ret
+
 ; Video
 
 b_system_screen_lfb_get:
@@ -373,7 +377,7 @@ b_system_table:
 	dw none				; 0x1C
 	dw none				; 0x1D
 	dw none				; 0x1E
-	dw none				; 0x1F
+	dw b_system_tsc			; 0x1F
 
 ; Video
 	dw b_system_screen_lfb_get	; 0x20
