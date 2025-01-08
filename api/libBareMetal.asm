@@ -1,6 +1,6 @@
 ; =============================================================================
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
-; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
+; Copyright (C) 2008-2025 Return Infinity -- see LICENSE.TXT
 ;
 ; Version 1.0
 ; =============================================================================
@@ -29,6 +29,7 @@ SMP_GET			equ 0x13
 SMP_LOCK		equ 0x14
 SMP_UNLOCK		equ 0x15
 SMP_BUSY		equ 0x16
+TSC			equ 0x1F
 SCREEN_LFB_GET		equ 0x20
 SCREEN_X_GET		equ 0x21
 SCREEN_Y_GET		equ 0x22
