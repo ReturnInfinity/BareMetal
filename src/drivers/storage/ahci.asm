@@ -51,43 +51,46 @@ ahci_init:
 
 	; Enable AHCI
 	xor eax, eax
-	bts eax, 31
+	bts eax, 31			; AHCI Enable (GHC.AE)
 	mov [rsi+AHCI_GHC], eax
 
-	; Search the implemented ports for connected devices
+	; Complete BIOS handoff (if supported by controller)
+	mov eax, [rsi+AHCI_CAP2]
+	bt eax, 0			; Check bit 0 (CAP2.BOH). It will be set to 1 if BIOS/OS handoff is supported
+	jnc ahci_handoff_skip		; If bit was 0 then skip the handoff
+	mov eax, [rsi+AHCI_BOHC]
+	bts eax, 1			; Set bit 1 (BOHC.OOS)
+	mov [rsi+AHCI_BOHC], eax
+ahci_handoff_wait:
+	mov eax, [rsi+AHCI_BOHC]
+	bt eax, 1
+	jnc ahci_handoff_wait
+ahci_handoff_skip:
+
+	; Verify ports are idle
+	; TODO
+
+	; Reset ACHI Controller
+	mov eax, 0x1			; Set bit 0 (GHC.HR) for HBA Reset
+	mov [rsi+AHCI_GHC], eax
+ahci_reset_wait:
+	mov eax, [rsi+AHCI_GHC]
+	bt eax, 0			; Bit 0 (GHC.HR) will be 0 when reset is complete
+	jc ahci_reset_wait
+
+	; Enable ACHI
+	xor eax, eax
+	bts eax, 31			; AHCI Enable (GHC.AE)
+	mov [rsi+AHCI_GHC], eax
+
+	; Configure the implemented ports
 	mov edx, [rsi+AHCI_PI]		; PI – Ports Implemented
 	xor ecx, ecx
-ahci_init_search_ports:
+ahci_init_config_implemented:
 	cmp ecx, 32			; Maximum number of AHCI ports
-	je ahci_init_search_ports_done
-	bt edx, ecx			; Is this port marked as implemented?
-	jnc ahci_init_skip_port		; If not, skip it
-
-	mov ebx, ecx			; Copy current port
-	shl ebx, 7			; Multiply by 128 (0x80) for start of port registers
-	add ebx, 0x128			; Add 0x100 port registers and 0x28 for PxSSTS
-
-	mov eax, [rsi+rbx]
-	and al, 0x0F			; Keep bits 3-0
-	cmp al, 0x03			; Check if device is present and comm enabled
-	jne ahci_init_skip_port		; If not skip the port
-
-	bts dword [os_AHCI_PA], ecx	; Set the port # as active
-
-ahci_init_skip_port:
-	inc rcx
-	jmp ahci_init_search_ports
-
-ahci_init_search_ports_done:
-
-	; Configure the active ports
-	mov edx, [os_AHCI_PA]
-	xor ecx, ecx
-ahci_init_config_active:
-	cmp ecx, 32			; Maximum number of AHCI ports
-	je ahci_init_done
+	je ahci_init_config_implemented_done
 	bt edx, ecx			; Is this port marked as active?
-	jnc ahci_init_config_active_skip
+	jnc ahci_init_config_implemented_skip
 
 	mov rdi, rsi			; RSI holds the AHCI Base address
 	add rdi, 0x100			; Offset to port 0
@@ -95,13 +98,7 @@ ahci_init_config_active:
 	add rdi, rcx
 	shr rcx, 7
 
-	mov eax, [rdi+AHCI_PxCMD]	; Stop the port
-	btr eax, 4			; FRE
-	btr eax, 0			; ST
-	mov [rdi+AHCI_PxCMD], eax
-
-	xor eax, eax
-	mov [rdi+AHCI_PxCI], eax	; Clear all command slots
+	push rdi
 
 	mov rax, ahci_CLB		; Command List (1K with 32 entries, 32 bytes each)
 	shl rcx, 10
@@ -123,9 +120,46 @@ ahci_init_config_active:
 	stosd				; Offset 10h: PxIS – Port x Interrupt Status
 	stosd				; Offset 14h: PxIE – Port x Interrupt Enable
 
-ahci_init_config_active_skip:
+	pop rdi
+
+	mov eax, 0x17			; ST (0), SUD (1), POD (2), FRE (4)
+	mov [rdi+AHCI_PxCMD], eax
+
+ahci_init_config_implemented_skip:
 	inc rcx
-	jmp ahci_init_config_active
+	jmp ahci_init_config_implemented
+
+ahci_init_config_implemented_done:
+
+	; Wait 1ms (1000µs)
+	mov rax, 1000
+	call b_delay
+
+	; Search the implemented ports for connected devices
+	mov edx, [rsi+AHCI_PI]		; PI – Ports Implemented
+	xor ecx, ecx
+ahci_init_search_ports:
+	cmp ecx, 32			; Maximum number of AHCI ports
+	je ahci_init_search_ports_done
+	bt edx, ecx			; Is this port marked as implemented?
+	jnc ahci_init_skip_port		; If not, skip it
+
+	mov ebx, ecx			; Copy current port
+	shl ebx, 7			; Multiply by 128 (0x80) for start of port registers
+	add ebx, 0x128			; Add 0x100 port registers and 0x28 for PxSSTS
+
+	mov eax, [rsi+rbx]
+	and al, 0x0F			; Keep bits 3-0
+	cmp al, 0x03			; Device detected and Phy comms established
+	jne ahci_init_skip_port		; If not skip the port
+
+	bts dword [os_AHCI_PA], ecx	; Set the port # as active
+
+ahci_init_skip_port:
+	inc rcx
+	jmp ahci_init_search_ports
+
+ahci_init_search_ports_done:
 
 ahci_init_done:
 	bts word [os_StorageVar], 1	; Set the bit flag that AHCI has been initialized
@@ -273,20 +307,10 @@ ahci_io_skip_writebit:
 	mov eax, 0x00000001		; Execute Command Slot 0
 	mov [rsi+AHCI_PxCI], eax
 
-	xor eax, eax
-	bts eax, 4			; FIS Receive Enable (FRE)
-	bts eax, 0			; Start (ST)
-	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
-
 ahci_io_poll:
 	mov eax, [rsi+AHCI_PxCI]
 	test eax, eax
 	jnz ahci_io_poll
-
-	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
-	btr eax, 4			; FIS Receive Enable (FRE)
-	btr eax, 0			; Start (ST)
-	mov [rsi+AHCI_PxCMD], eax
 
 	pop rax				; rax = start
 	pop rcx				; rcx = number of sectors read
@@ -375,20 +399,10 @@ ahci_id:
 	mov eax, 0x00000001		; Execute Command Slot 0
 	mov [rsi+AHCI_PxCI], eax
 
-	xor eax, eax
-	bts eax, 4			; FIS Receive Enable (FRE)
-	bts eax, 0			; Start (ST)
-	mov [rsi+AHCI_PxCMD], eax	; Offset to port 0 Command and Status
-
 ahci_id_poll:
 	mov eax, [rsi+AHCI_PxCI]	; Read Command Slot 0 status
 	test eax, eax
 	jnz ahci_id_poll
-
-	mov eax, [rsi+AHCI_PxCMD]	; Offset to port 0
-	btr eax, 4			; FIS Receive Enable (FRE)
-	btr eax, 0			; Start (ST)
-	mov [rsi+AHCI_PxCMD], eax
 
 	pop rax
 	pop rdx
