@@ -68,7 +68,7 @@ ahci_handoff_wait:
 	; TODO - wait up to 25 ms
 	mov eax, [rsi+AHCI_BOHC]
 	bt eax, 4			; Check bit 4 (BOHC.BB)
-	; TODO if 1 wait 2 seconds
+	; TODO - if BB is 1 then wait 2 seconds
 ahci_handoff_skip:
 
 	; Verify ports are idle
@@ -99,35 +99,31 @@ ahci_init_config_implemented:
 	mov rdi, rsi			; RSI holds the AHCI Base address
 	add rdi, 0x100			; Offset to port 0
 	shl rcx, 7			; Quick multiply by 0x80
-	add rdi, rcx
+	add rdi, rcx			; RDI points to the base of the port registers
 	shr rcx, 7
 
-	push rdi
-
 	; Set port Command List and FIS Base Addresses (10.1.2.5)
-	mov rax, ahci_CLB		; Command List (1K with 32 entries, 32 bytes each)
+	mov rax, ahci_CLB		; Command List (1024 bytes per port with 32 entries, 32 bytes each)
 	shl rcx, 10
 	add rax, rcx			; Add offset to base
 	shr rcx, 10
-	stosd				; Offset 00h: PxCLB – Port x Command List Base Address
+	mov [rdi+AHCI_PxCLB], eax	; Offset 00h: PxCLB – Port x Command List Base Address
 	shr rax, 32			; 63..32 bits of address
-	stosd				; Offset 04h: PxCLBU – Port x Command List Base Address Upper 32-bits
+	mov [rdi+AHCI_PxCLBU], eax	; Offset 04h: PxCLBU – Port x Command List Base Address Upper 32-bits
 	mov rax, ahci_FB		; Received FIS (4096 bytes per port)
 	shl rcx, 12
 	add rax, rcx			; Add offset to base
 	shr rcx, 12
-	stosd				; Offset 08h: PxFB – Port x FIS Base Address
+	mov [rdi+AHCI_PxFB], eax	; Offset 08h: PxFB – Port x FIS Base Address
 	shr rax, 32			; 63..32 bits of address
-	stosd				; Offset 0Ch: PxFBU – Port x FIS Base Address Upper 32-bits
+	mov [rdi+AHCI_PxFBU], eax	; Offset 0Ch: PxFBU – Port x FIS Base Address Upper 32-bits
 
-	xor eax, eax
-	stosd				; Offset 10h: PxIS – Port x Interrupt Status
-	stosd				; Offset 14h: PxIE – Port x Interrupt Enable
-
-	pop rdi
-
+	; Disable port interrupts and start the port
+	xor eax, eax			; Disable port interrupts
+	mov [rdi+AHCI_PxIS], eax	; Offset 10h: PxIS – Port x Interrupt Status
+	mov [rdi+AHCI_PxIE], eax	; Offset 14h: PxIE – Port x Interrupt Enable
 	mov eax, 0x17			; Set ST (0), SUD (1), POD (2), FRE (4)
-	mov [rdi+AHCI_PxCMD], eax
+	mov [rdi+AHCI_PxCMD], eax	; Start port
 
 ahci_init_config_implemented_skip:
 	inc rcx
@@ -148,23 +144,23 @@ ahci_init_search_ports:
 	bt edx, ecx			; Is this port marked as implemented?
 	jnc ahci_init_skip_port		; If not, skip it
 
-	mov ebx, ecx			; Copy current port
-	shl ebx, 7			; Multiply by 128 (0x80) for start of port registers
-	add ebx, 0x128			; Add 0x100 port registers and 0x28 for PxSSTS
+	mov rdi, rsi			; RSI holds the AHCI Base address
+	add rdi, 0x100			; Offset to port 0
+	shl rcx, 7			; Quick multiply by 0x80
+	add rdi, rcx			; RDI points to the base of the port registers
+	shr rcx, 7
 
-	mov eax, [rsi+rbx]
+	mov eax, [rdi+AHCI_PxSSTS]	; Offset 28h: PxSSTS – Port x Serial ATA Status
 	and al, 0x0F			; Keep bits 3-0
 	cmp al, 0x03			; Device detected and Phy comms established
 	jne ahci_init_skip_port		; If not skip the port
 
 	; Clear errors (10.1.2.6)
-	add ebx, 0x8			; Offset to PxSERR
-	mov eax, 0xFFFFFFFF		; Clear PxSERR
-	mov [rsi+rbx], eax
+	mov eax, 0xFFFFFFFF		; Clear all PxSERR bits
+	mov [rdi+AHCI_PxSERR], eax	; Offset 30h: PxSERR – Port x Serial ATA Error
 
-	sub ebx, 0x10			; Offset to PxTFD
 ahci_init_search_ports_poll:
-	mov eax, [rsi+rbx]
+	mov eax, [rdi+AHCI_PxTFD]	; Offset 20h: PxTFD – Port x Task File Data
 	and eax, 0x00000089		; Keep bits BSY (7), DRQ (3), ERR (0)
 	cmp eax, 0
 	jne ahci_init_search_ports_poll
