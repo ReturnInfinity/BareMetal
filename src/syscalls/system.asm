@@ -137,24 +137,23 @@ b_system_stdout_set:
 ; b_system_ahci_id -- System call to retrieve SATA IDENTIFY data
 ; IN:  RDX = Port number to query
 ;      RAX = Memory location to store details (512 bytes)
-; OUT: RAX = 0 on success, non-zero on failure
+; OUT: RAX = 0 on success, 1 on failure
 ; -----------------------------------------------------------------------------
 b_system_ahci_id:
-	push rdi
-	push rax
-	push rdx
+    push rdi                ; Preserve caller's registers
+    push rax
+    push rdx
 
-    mov rdi, rax
+    mov rdi, rax            ; Store memory address for details into RDI
+    xchg rax, rdi           ; Exchange RAX and RDI (RAX now has the memory address)
+    call os_virt_to_phys    ; Convert virtual to physical address
+    xchg rax, rdi           ; Restore RAX and RDI
 
-	xchg rax, rdi
-	call os_virt_to_phys
-	xchg rax, rdi
-        
-    call ahci_id
+    call ahci_id            ; Call the SATA IDENTIFY function
 
+    pop rdx                 ; Restore registers
+    pop rax
     pop rdi
-	pop rax
-	pop rdx
     ret
 ; -----------------------------------------------------------------------------
 
@@ -168,6 +167,41 @@ b_system_ahci_base_get:
     ret
 
 ; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; b_system_ahci_base_get -- Retrieve Active Ports Bit
+; IN:  None
+; OUT: RAX = AHCI_PA
+; -----------------------------------------------------------------------------
+b_system_ahci_pa_get:
+    mov rax, [os_AHCI_PA] ; Load the address from the system variable
+    ret
+
+; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+; b_system_ahci_pxssts_get -- System call to retrieve PxSSTS value for a given port
+; IN:  RDX = Port number to query (0-31)
+; OUT: RAX = PxSSTS value for the specified port on success, 1 on failure
+; -----------------------------------------------------------------------------
+b_system_ahci_pxssts_get:
+    ; Validate the port number
+    cmp rdx, 32                ; Check if port number is within valid range
+    jae b_system_ahci_pxssts_get_fail ; Jump to failure if out of range
+
+    ; Calculate the address of PxSSTS
+    mov rax, os_AHCI_PxSSTS    ; Load base address of PxSSTS storage
+    shl rdx, 2                 ; Multiply port number by 4 (size of dword)
+    add rax, rdx               ; Get the address for the specific port's PxSSTS
+
+    ; Load the PxSSTS value for the specified port
+    mov rax, [rax]             ; Load PxSSTS value into RAX
+    ret
+
+b_system_ahci_pxssts_get_fail:
+    mov rax, 1                 ; Return 1 on failure
+    ret
+; -----------------------------------------------------------------------------
+
 
 ; Misc
 
@@ -460,8 +494,8 @@ b_system_table:
 ; Storage
 	dw b_system_ahci_id			; 0x40
 	dw b_system_ahci_base_get	; 0x41
-	dw none				; 0x42
-	dw none				; 0x43
+	dw b_system_ahci_pa_get		; 0x42
+	dw b_system_ahci_pxssts_get		; 0x43
 	dw none				; 0x44
 	dw none				; 0x45
 	dw none				; 0x46

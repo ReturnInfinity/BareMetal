@@ -163,6 +163,14 @@ key_control:		equ os_SystemVariables + 0x0318
 os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 
+; =============================================================================
+; AHCI Port PxSSTS Storage
+; =============================================================================
+os_AHCI_PxSSTS:	equ os_SystemVariables + 0x0400	; Starting offset for PxSSTS storage
+
+; Define space for storing PxSSTS values for 32 ports (each value is 4 bytes)
+align 4
+PxSSTS: times 32 dd 0
 
 ; Misc
 keylayoutlower:
