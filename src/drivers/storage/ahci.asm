@@ -49,12 +49,12 @@ ahci_init:
 	call os_bus_read
 	mov [os_AHCI_IRQ], al		; AL holds the IRQ
 
-	; Enable AHCI
+	; Enable AHCI (10.1.2.1)
 	xor eax, eax
 	bts eax, 31			; AHCI Enable (GHC.AE)
 	mov [rsi+AHCI_GHC], eax
 
-	; Complete BIOS handoff (if supported by controller)
+	; Complete BIOS handoff (10.6.3)
 	mov eax, [rsi+AHCI_CAP2]
 	bt eax, 0			; Check bit 0 (CAP2.BOH). It will be set to 1 if BIOS/OS handoff is supported
 	jnc ahci_handoff_skip		; If bit was 0 then skip the handoff
@@ -63,14 +63,18 @@ ahci_init:
 	mov [rsi+AHCI_BOHC], eax
 ahci_handoff_wait:
 	mov eax, [rsi+AHCI_BOHC]
-	bt eax, 1
+	bt eax, 0			; Check bit 0 (BOHC.BOS)
 	jnc ahci_handoff_wait
+	; TODO - wait up to 25 ms
+	mov eax, [rsi+AHCI_BOHC]
+	bt eax, 4			; Check bit 4 (BOHC.BB)
+	; TODO if 1 wait 2 seconds
 ahci_handoff_skip:
 
 	; Verify ports are idle
 	; TODO
 
-	; Reset ACHI Controller
+	; Reset ACHI Controller (10.4.3)
 	mov eax, 0x1			; Set bit 0 (GHC.HR) for HBA Reset
 	mov [rsi+AHCI_GHC], eax
 ahci_reset_wait:
@@ -78,12 +82,12 @@ ahci_reset_wait:
 	bt eax, 0			; Bit 0 (GHC.HR) will be 0 when reset is complete
 	jc ahci_reset_wait
 
-	; Enable ACHI
+	; Enable ACHI (10.1.2.1)
 	xor eax, eax
 	bts eax, 31			; AHCI Enable (GHC.AE)
 	mov [rsi+AHCI_GHC], eax
 
-	; Configure the implemented ports
+	; Configure the implemented ports (10.1.2.2)
 	mov edx, [rsi+AHCI_PI]		; PI – Ports Implemented
 	xor ecx, ecx
 ahci_init_config_implemented:
@@ -100,6 +104,7 @@ ahci_init_config_implemented:
 
 	push rdi
 
+	; Set port Command List and FIS Base Addresses (10.1.2.5)
 	mov rax, ahci_CLB		; Command List (1K with 32 entries, 32 bytes each)
 	shl rcx, 10
 	add rax, rcx			; Add offset to base
@@ -107,7 +112,6 @@ ahci_init_config_implemented:
 	stosd				; Offset 00h: PxCLB – Port x Command List Base Address
 	shr rax, 32			; 63..32 bits of address
 	stosd				; Offset 04h: PxCLBU – Port x Command List Base Address Upper 32-bits
-
 	mov rax, ahci_FB		; Received FIS (4096 bytes per port)
 	shl rcx, 12
 	add rax, rcx			; Add offset to base
@@ -122,7 +126,7 @@ ahci_init_config_implemented:
 
 	pop rdi
 
-	mov eax, 0x17			; ST (0), SUD (1), POD (2), FRE (4)
+	mov eax, 0x17			; Set ST (0), SUD (1), POD (2), FRE (4)
 	mov [rdi+AHCI_PxCMD], eax
 
 ahci_init_config_implemented_skip:
@@ -152,6 +156,18 @@ ahci_init_search_ports:
 	and al, 0x0F			; Keep bits 3-0
 	cmp al, 0x03			; Device detected and Phy comms established
 	jne ahci_init_skip_port		; If not skip the port
+
+	; Clear errors (10.1.2.6)
+	add ebx, 0x8			; Offset to PxSERR
+	mov eax, 0xFFFFFFFF		; Clear PxSERR
+	mov [rsi+rbx], eax
+
+	sub ebx, 0x10			; Offset to PxTFD
+ahci_init_search_ports_poll:
+	mov eax, [rsi+rbx]
+	and eax, 0x00000089		; Keep bits BSY (7), DRQ (3), ERR (0)
+	cmp eax, 0
+	jne ahci_init_search_ports_poll
 
 	bts dword [os_AHCI_PA], ecx	; Set the port # as active
 
