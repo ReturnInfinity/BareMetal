@@ -311,7 +311,7 @@ b_delay_loop:               ; Stay in this loop until the HPET timer reaches the
     call os_hpet_read     ; Get HPET counter in RAX
     cmp rax, rbx          ; If RAX >= RBX, jump to end, otherwise continue loop
     jae b_delay_end
-	hlt 				;Otherwise halt and the CPU will wait for an interrupt
+	; hlt 				;Otherwise halt and the CPU will wait for an interrupt
     jmp b_delay_loop
 
 b_delay_end:
