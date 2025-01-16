@@ -43,6 +43,7 @@ start:
 	call init_bus			; Initialize system bus
 	call init_storage		; Initialize storage
 	call init_net			; Initialize network
+	call init_usb			; Initialize USB
 
 	; Output system ready message
 	mov rsi, msg_ready
