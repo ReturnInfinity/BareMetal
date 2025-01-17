@@ -15,8 +15,8 @@
 ; OUT:	RCX = Number of sectors read (0 on error)
 ;	All other registers preserved
 b_storage_read:
-	push rdi
 	push r8
+	push rdi
 	push rcx
 	push rbx
 	push rax
@@ -39,8 +39,8 @@ b_storage_read_sector:
 	pop rax
 	pop rbx
 	pop rcx
-	pop r8
 	pop rdi
+	pop r8
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -54,8 +54,8 @@ b_storage_read_sector:
 ; OUT:	RCX = Number of sectors written (0 on error)
 ;	All other registers preserved
 b_storage_write:
+	push r8
 	push rdi
-	push rsi
 	push rcx
 	push rbx
 	push rax
@@ -64,9 +64,9 @@ b_storage_write:
 	mov r8, rcx
 
 	; Calculate where in physical memory the data should be read from
-	xchg rax, rsi
+	xchg rax, rdi
 	call os_virt_to_phys
-	xchg rax, rsi
+	xchg rax, rdi
 
 b_storage_write_sector:
 	mov rcx, 1
@@ -79,8 +79,8 @@ b_storage_write_sector:
 	pop rax
 	pop rbx
 	pop rcx
-	pop rsi
 	pop rdi
+	pop r8
 	ret
 ; -----------------------------------------------------------------------------
 
