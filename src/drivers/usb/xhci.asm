@@ -24,8 +24,78 @@ xhci_init:
 	bts eax, 1			; Enable Memory Space
 	call os_bus_write		; Write updated Status/Command
 
+	; Mark controller memory as un-cacheable
+	mov rax, [os_XHCI_Base]
+	shr rax, 18
+	and al, 0b11111000		; Clear the last 3 bits
+	mov rdi, 0x10000		; Base of low PDE
+	add rdi, rax
+	mov rax, [rdi]
+	btc rax, 3			; Clear PWT to disable caching
+	bts rax, 4			; Set PCD to disable caching
+	mov [rdi], rax
+
+	; Gather CAPLENGTH and check for a valid version number
+	mov eax, [rsi+XHCI_CAPLENGTH]	; Read 4 bytes starting at CAPLENGTH
+	mov [xhci_caplen], al		; Save the CAPLENGTH offset
+	shr eax, 16			; 16-bit version is in bits 31:16, shift to 15:0
+	cmp ax, 0x0100			; Verify it is at least v1.0
+	jl xhci_init_error
+	mov rdi, rsi
+	xor eax, eax
+	mov al, [xhci_caplen]
+	add rdi, rax			; RDI points to base of Host Controller Operational Registers
+
+	; Reset the controller
+xhci_init_halt:
+	mov eax, [rdi+XHCI_USBCMD]	; Read current Command Register value
+	bt eax, 0			; Check RS (bit 0)
+	jnc xhci_init_reset		; If the bit was clear, proceed to reset
+	btc eax, 0			; Clear RS (bit 0)
+	mov [rdi+XHCI_USBCMD], eax	; Write updated Command Register value
+	mov rax, 20000			; Wait 20ms (20000µs)
+	call b_delay
+	mov eax, [rdi+XHCI_USBSTS]	; Read Status Register
+	bt eax, 0			; Check HCHalted (bit 0) - it should be 1
+	jnc xhci_init_error		; Bail out if HCHalted wasn't cleared after 20ms
+xhci_init_reset:
+	mov eax, [rdi+XHCI_USBCMD]	; Read current Command Register value
+	bts eax, 1			; Set HCRST (bit 1)
+	mov [rdi+XHCI_USBCMD], eax	; Write updated Command Register value
+	mov rax, 100000			; Wait 100ms (100000µs)
+	call b_delay
+	mov eax, [rdi+XHCI_USBSTS]	; Read Status Register
+	bt eax, 11			; Check CNR (bit 11)
+	jc xhci_init_error		; Bail out if CNR wasn't cleared after 100ms
+	mov eax, [rdi+XHCI_USBCMD]	; Read current Command Register value
+	bt eax, 1			; Check HCRST (bit 1)
+	jc xhci_init_error		; Bail out if HCRST wasn't cleared after 100ms
+
+	; Configure the controller
+	mov rax, os_usb_DCBAPP
+	mov [rdi+XHCI_DCBAPP], rax	; Set the Device Context Base Address Array Pointer Register
+	mov rax, os_usb_CRCR
+	bts rax, 0			; Set RCS (bit 0)
+	mov [rdi+XHCI_CRCR], rax	; Set the Command Ring Control Register
+	mov eax, [rsi+XHCI_HCSPARAMS1]	; Gather MaxSlots (bits 7:0)
+	and eax, 0x000000FF		; Keep bits 7:0
+	mov [rdi+XHCI_CONFIG], eax
+	mov eax, 1
+	mov [rdi+XHCI_DNCTRL], eax
+	mov eax, 0x0D			; Set bits 0 (RS), 2 (INTE), and 3 (HSEE)
+	mov [rdi+XHCI_USBCMD], eax
+	
+	jmp xhci_init_done
+
+xhci_init_error:
+	jmp $
+
+xhci_init_done:
+
 	pop rdx
 	ret
+
+xhci_caplen:	db 0
 ; -----------------------------------------------------------------------------
 
 
@@ -40,9 +110,10 @@ XHCI_HCSPARAMS3	equ 0x0C	; 4-byte Structural Parameters 3
 XHCI_HCCPARAMS1	equ 0x10	; 4-byte Capability Parameters 1
 XHCI_DBOFF	equ 0x14	; 4-byte Doorbell Offset
 XHCI_RTSOFF	equ 0x18	; 4-byte Runtime Registers Space Offset
-XHCI_HCCPARMS2	equ 0x1C	; 4-byte Capability Parameters 2
+XHCI_HCCPARMS2	equ 0x1C	; 4-byte Capability Parameters 2 (XHCI v1.1+)
+XHCI_VTIOSOFF	equ 0x20	; 4-byte VTIO Register Space Offset (XHCI v1.2+)
 
-; Host Controller Operational Registers
+; Host Controller Operational Registers (Starts at XHCI_Base + value in CAPLENGTH)
 XHCI_USBCMD	equ 0x00	; 4-byte USB Command Register
 XHCI_USBSTS	equ 0x04	; 4-byte USB Status Register
 XHCI_PAGESIZE	equ 0x08	; 4-byte Page Size Register (Read-Only)

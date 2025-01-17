@@ -60,8 +60,10 @@ os_nvme_CTRLID:		equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Ide
 os_nvme_ANS:		equ 0x0000000000175000	; 0x175000 -> 0x175FFF	4K Namespace Data
 os_nvme_NSID:		equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identify Data
 os_nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
-
-						; 0x180000 -> 0x19FFFF	128K Free
+os_usb:			equ 0x0000000000180000	; 0x180000 -> 0x19FFFF	128K USB Structures
+os_usb_DCBAPP:		equ 0x0000000000180000	; 0x180000 -> 0x18FFFF	64K USB Device Context
+os_usb_CRCR:		equ 0x0000000000190000	; 0x190000 -> 0x19FFFF	64K USB Command Ring Control
+						
 
 ; Network memory
 os_net_mem:		equ 0x00000000001A0000
