@@ -83,3 +83,12 @@
 
 * [UEFI GOP](https://wiki.osdev.org/GOP) - UEFI Graphics Output Protocol
 * [BIOS VBE](https://wiki.osdev.org/VESA_Video_Modes) - BIOS VESA VBE
+
+
+## USB
+
+
+### XHCI (USB 3)
+
+* [OSDev.org XHCI Article](https://wiki.osdev.org/EXtensible_Host_Controller_Interface)
+* [Requirements Specification](https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/extensible-host-controler-interface-usb-xhci.pdf) - Revision 1.2 - May 2019
