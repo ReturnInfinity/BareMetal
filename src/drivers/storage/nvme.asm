@@ -51,12 +51,6 @@ nvme_init:
 	call os_bus_read
 	mov [os_NVMeIRQ], al		; AL holds the IRQ
 
-	; Enable PCI Bus Mastering
-	mov dl, 0x01			; Get Status/Command
-	call os_bus_read
-	bts eax, 2
-	call os_bus_write
-
 	; Disable the controller if it's enabled
 	mov eax, [rsi+NVMe_CC]
 	btc eax, 0			; Clear CC.EN (0) bit to '0'
