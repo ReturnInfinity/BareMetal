@@ -60,7 +60,7 @@
 
 ### NVMe
 
-* [Base Specification](https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-2.0c-2022.10.04-Ratified.pdf) - Revision 2.0c - October 4th, 2022
+* [Base Specification](https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-Revision-2.1-2024.08.05-Ratified.pdf) - Revision 2.1 - August 5th, 2024
 
 
 ### AHCI (Serial ATA)
