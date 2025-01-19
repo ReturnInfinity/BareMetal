@@ -258,11 +258,11 @@ nvme_admin_savetail:
 	; Check completion queue
 	mov rdi, os_nvme_acqb
 	shl rcx, 4			; Each entry is 16 bytes
-	add rcx, 8			; Add 8 for DW3
+	add rcx, 8			; Add 8 for offset to DW2
 	add rdi, rcx
 nvme_admin_wait:
-	mov rax, [rdi]
-	cmp rax, 0x0
+	mov rax, [rdi]			; Load DW2 and DW3
+	cmp rax, 0x0			; DW2/DW3 are 0 on success
 	je nvme_admin_wait
 	xor eax, eax
 	stosq				; Overwrite the old entry
@@ -390,11 +390,11 @@ nvme_io_savetail:
 	; Check completion queue
 	mov rdi, os_nvme_iocqb
 	shl rcx, 4			; Each entry is 16 bytes
-	add rcx, 8			; Add 8 for DW3
+	add rcx, 8			; Add 8 for offset to DW2
 	add rdi, rcx
 nvme_io_wait:
-	mov rax, [rdi]
-	cmp rax, 0x0
+	mov rax, [rdi]			; Load DW2 and DW3
+	cmp rax, 0x0			; DW2/DW3 are 0 on success
 	je nvme_io_wait
 	xor eax, eax
 	stosq				; Overwrite the old entry
