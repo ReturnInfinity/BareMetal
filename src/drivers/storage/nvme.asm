@@ -258,12 +258,12 @@ nvme_admin_savetail:
 	; Check completion queue
 	mov rdi, os_nvme_acqb
 	shl rcx, 4			; Each entry is 16 bytes
-	add rcx, 8			; Add 8 for DW3
+	add rcx, 12			; Add 12 for DW3
 	add rdi, rcx
 nvme_admin_wait:
-	mov rax, [rdi]
-	cmp rax, 0x0
-	je nvme_admin_wait
+	mov eax, [rdi]			; DW3: STATUS (31:17), P (16), CID (15:0)
+	and eax, 0x01FE0000		; Keep STATUS.SC (24:17)- SC is 0 on success
+	jnz nvme_admin_wait		; If AND result not 0, check again
 	xor eax, eax
 	stosq				; Overwrite the old entry
 
@@ -390,12 +390,12 @@ nvme_io_savetail:
 	; Check completion queue
 	mov rdi, os_nvme_iocqb
 	shl rcx, 4			; Each entry is 16 bytes
-	add rcx, 8			; Add 8 for DW3
+	add rcx, 12			; Add 12 for DW3
 	add rdi, rcx
 nvme_io_wait:
-	mov rax, [rdi]
-	cmp rax, 0x0
-	je nvme_io_wait
+	mov eax, [rdi]			; DW3: STATUS (31:17), P (16), CID (15:0)
+	and eax, 0x01FE0000		; Keep STATUS.SC (24:17)- SC is 0 on success
+	jnz nvme_io_wait		; If AND result not 0, check again
 	xor eax, eax
 	stosq				; Overwrite the old entry
 
