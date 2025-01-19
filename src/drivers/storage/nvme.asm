@@ -56,6 +56,10 @@ nvme_init:
 	btc eax, 0			; Clear CC.EN (0) bit to '0'
 	jnc nvme_init_disabled		; Skip writing to CC if it's already disabled
 	mov [rsi+NVMe_CC], eax
+nvme_init_disable_wait:
+	mov eax, [rsi+NVMe_CSTS]
+	bt eax, 0			; Check CSTS.RDY
+	jc nvme_init_disable_wait	; CSTS.RDY (0) should be 0. If not then continue to wait
 nvme_init_disabled:
 
 	; Configure AQA, ASQ, and ACQ
