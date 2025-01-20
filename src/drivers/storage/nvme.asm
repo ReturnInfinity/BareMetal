@@ -51,17 +51,15 @@ nvme_init:
 	call os_bus_read
 	mov [os_NVMeIRQ], al		; AL holds the IRQ
 
-	; Enable PCI Bus Mastering
-	mov dl, 0x01			; Get Status/Command
-	call os_bus_read
-	bts eax, 2
-	call os_bus_write
-
 	; Disable the controller if it's enabled
 	mov eax, [rsi+NVMe_CC]
 	btc eax, 0			; Clear CC.EN (0) bit to '0'
 	jnc nvme_init_disabled		; Skip writing to CC if it's already disabled
 	mov [rsi+NVMe_CC], eax
+nvme_init_disable_wait:
+	mov eax, [rsi+NVMe_CSTS]
+	bt eax, 0			; Check CSTS.RDY
+	jc nvme_init_disable_wait	; CSTS.RDY (0) should be 0. If not then continue to wait
 nvme_init_disabled:
 
 	; Configure AQA, ASQ, and ACQ
@@ -260,11 +258,11 @@ nvme_admin_savetail:
 	; Check completion queue
 	mov rdi, os_nvme_acqb
 	shl rcx, 4			; Each entry is 16 bytes
-	add rcx, 8			; Add 8 for DW3
+	add rcx, 8			; Add 8 for offset to DW2
 	add rdi, rcx
 nvme_admin_wait:
-	mov rax, [rdi]
-	cmp rax, 0x0
+	mov rax, [rdi]			; Load DW2 and DW3
+	cmp rax, 0x0			; DW2/DW3 are 0 on success
 	je nvme_admin_wait
 	xor eax, eax
 	stosq				; Overwrite the old entry
@@ -392,11 +390,11 @@ nvme_io_savetail:
 	; Check completion queue
 	mov rdi, os_nvme_iocqb
 	shl rcx, 4			; Each entry is 16 bytes
-	add rcx, 8			; Add 8 for DW3
+	add rcx, 8			; Add 8 for offset to DW2
 	add rdi, rcx
 nvme_io_wait:
-	mov rax, [rdi]
-	cmp rax, 0x0
+	mov rax, [rdi]			; Load DW2 and DW3
+	cmp rax, 0x0			; DW2/DW3 are 0 on success
 	je nvme_io_wait
 	xor eax, eax
 	stosq				; Overwrite the old entry
