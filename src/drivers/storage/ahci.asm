@@ -221,6 +221,7 @@ ahci_io:
 	push rcx
 	push rax
 
+	; Check the I/O opcode that was provided
 	cmp bx, 1
 	je ahci_io_write
 	cmp bx, 2
@@ -262,6 +263,7 @@ ahci_io_prep_good_drive_id:
 	push rax			; Save the block number
 	push rax
 
+	; Set RSI to the base memory address of the port
 	mov rsi, [os_AHCI_Base]
 	push rdx
 	shl rdx, 7			; Quick multiply by 0x80
@@ -322,16 +324,16 @@ ahci_io_skip_writebit:
 	dec rax				; subtract 1 (4.2.3.3, DBC is number of bytes - 1)
 	stosd				; Description Information (DBC is 21:00)
 
-	xor eax, eax
-	mov [rsi+AHCI_PxIS], eax	; Port x Interrupt Status
-
 	mov eax, 0x00000001		; Execute Command Slot 0
 	mov [rsi+AHCI_PxCI], eax
 
 ahci_io_poll:
-	mov eax, [rsi+AHCI_PxCI]
-	test eax, eax
-	jnz ahci_io_poll
+	mov eax, [rsi+AHCI_PxCI]	; Check Command Slot 0 status
+	cmp eax, 0
+	jne ahci_io_poll
+	mov eax, [rsi+AHCI_PxTFD]	; Offset 20h: PxTFD – Port x Task File Data
+	and eax, 0x00000089		; Keep bits BSY (7), DRQ (3), ERR (0)
+	jnz ahci_io_poll		; If AND result not zero then poll again
 
 	pop rax				; rax = start
 	pop rcx				; rcx = number of sectors read
@@ -371,6 +373,7 @@ ahci_id:
 	bt dword [os_AHCI_PA], edx	; Is the requested drive marked as active?
 	jnc ahci_id_error		; If not, bail out
 
+	; Set RSI to the base memory address of the port
 	mov rsi, [os_AHCI_Base]
 	push rdx
 	shl rdx, 7			; Quick multiply by 0x80
@@ -414,16 +417,16 @@ ahci_id:
 	mov eax, 0x000001FF		; 512 - 1
 	stosd				; Description Information
 
-	xor eax, eax
-	mov [rsi+AHCI_PxIS], eax	; Port x Interrupt Status
-
 	mov eax, 0x00000001		; Execute Command Slot 0
 	mov [rsi+AHCI_PxCI], eax
 
 ahci_id_poll:
-	mov eax, [rsi+AHCI_PxCI]	; Read Command Slot 0 status
-	test eax, eax
-	jnz ahci_id_poll
+	mov eax, [rsi+AHCI_PxCI]	; Check Command Slot 0 status
+	cmp eax, 0
+	jne ahci_id_poll
+	mov eax, [rsi+AHCI_PxTFD]	; Offset 20h: PxTFD – Port x Task File Data
+	and eax, 0x00000089		; Keep bits BSY (7), DRQ (3), ERR (0)
+	jnz ahci_id_poll		; If AND result not zero then poll again
 
 	pop rax
 	pop rdx
