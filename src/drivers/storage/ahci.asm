@@ -180,6 +180,15 @@ ahci_init_done:
 	stosq
 	mov rax, ahci_id
 	stosq
+
+	push rdi
+	push rdx
+	xor edx, edx
+	mov rdi, 0x600000
+    call ahci_id
+	pop rdx
+	pop rdi
+
 	pop rdx
 	pop rsi
 	add rsi, 15

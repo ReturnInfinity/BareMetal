@@ -38,6 +38,9 @@ init_storage_nvme:
 	jmp init_storage_done
 
 init_storage_ahci:
+	; mov ax , [rsi-2]			;To Enable NVMe On Hardware
+	; cmp ax, 0x7901				;To Enable NVMe On Hardware
+	; jne init_storage_check_bus	;To Enable NVMe On Hardware
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call ahci_init

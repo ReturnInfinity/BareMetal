@@ -201,6 +201,18 @@ b_system_ahci_pxssts_get_fail:
     mov rax, 1                 ; Return 1 on failure
     ret
 ; -----------------------------------------------------------------------------
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; b_system_nvme_lba_get -- Retrieve Active Ports Bit
+; IN:  None
+; OUT: RAX = NVME_LBA
+; -----------------------------------------------------------------------------
+b_system_nvme_lba_get:
+    mov rax, [os_NVMeLBA] ; Load the address from the system variable
+    ret
+
+; -----------------------------------------------------------------------------
 
 
 ; Misc
@@ -496,7 +508,7 @@ b_system_table:
 	dw b_system_ahci_base_get	; 0x41
 	dw b_system_ahci_pa_get		; 0x42
 	dw b_system_ahci_pxssts_get		; 0x43
-	dw none				; 0x44
+	dw b_system_nvme_lba_get		; 0x44
 	dw none				; 0x45
 	dw none				; 0x46
 	dw none				; 0x47
