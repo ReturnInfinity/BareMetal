@@ -120,7 +120,7 @@ xhci_init_reset:
 	mov [rdi+XHCI_CONFIG], eax
 	mov eax, 1
 	mov [rdi+XHCI_DNCTRL], eax
-	mov eax, 0x01			; Set bits 0 (RS), 2 (INTE), and 3 (HSEE)
+	mov eax, 0x01			; Set bits 0 (RS)
 	mov [rdi+XHCI_USBCMD], eax
 
 	; Check the available ports and reset them
