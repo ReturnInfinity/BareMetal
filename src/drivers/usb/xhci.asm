@@ -76,8 +76,8 @@ xhci_xecp_read_supported_protocol:
 xhci_xecp_read_next:
 	mov eax, [rsi+rbx]		; Load first 4 bytes of entry again
 	shr eax, 8			; Shift Next to AL
-	cmp al, 0x00			; Is Next 0?
-	je xhci_xecp_end		; If so, we are at the end
+	and eax, 0x000000FF		; Keep only AL
+	jz xhci_xecp_end		; If AL = 0 then we are at the end
 	shl eax, 2
 	add rbx, rax
 	jmp xhci_xecp_read
