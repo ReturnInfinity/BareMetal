@@ -129,9 +129,9 @@ xhci_init_reset:
 	mov dl, byte [xhci_maxslots]
 xhci_check_next:
 	mov ebx, 0x400			; Offset to start of Port Registers
-	shl ecx, 5			; Quick multiply by 16
+	shl ecx, 4			; Quick multiply by 16
 	add ebx, ecx			; Add offset to EBX
-	shr ecx, 5			; Quick divide by 16
+	shr ecx, 4			; Quick divide by 16
 	mov eax, [rdi+rbx]		; Load PORTSC
 	bt eax, 0			; Current Connect Status
 	jnc xhci_reset_skip
