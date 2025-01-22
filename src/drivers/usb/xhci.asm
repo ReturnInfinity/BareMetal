@@ -120,7 +120,7 @@ xhci_init_reset:
 	mov [rdi+XHCI_CONFIG], eax
 	mov eax, 1
 	mov [rdi+XHCI_DNCTRL], eax
-	mov eax, 0x0D			; Set bits 0 (RS), 2 (INTE), and 3 (HSEE)
+	mov eax, 0x01			; Set bits 0 (RS), 2 (INTE), and 3 (HSEE)
 	mov [rdi+XHCI_USBCMD], eax
 
 	; Check the available ports and reset them
@@ -140,7 +140,7 @@ xhci_check_next:
 xhci_reset_skip:
 	inc ecx
 	cmp ecx, edx
-	jne xhci_check_next	
+	jne xhci_check_next
 	jmp xhci_init_done
 
 xhci_init_error:
