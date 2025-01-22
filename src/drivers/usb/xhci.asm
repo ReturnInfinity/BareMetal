@@ -47,6 +47,42 @@ xhci_init:
 	mov al, [xhci_caplen]
 	add rdi, rax			; RDI points to base of Host Controller Operational Registers
 
+; QEMU xHCI Extended Capabilities Entries
+; 00000000febf0020: 0x02 0x04 0x00 0x02 0x55 0x53 0x42 0x20 <- USB 2
+; 00000000febf0028: 0x05 0x04 0x00 0x00 0x00 0x00 0x00 0x00 <- Offset 5, Count 4
+; 00000000febf0030: 0x02 0x00 0x00 0x03 0x55 0x53 0x42 0x20 <- USB 3
+; 00000000febf0038: 0x01 0x04 0x00 0x00 0x00 0x00 0x00 0x00 <- Offset 1, Count 4
+
+	; Process xHCI Extended Capabilities Entries (16 bytes each)
+	xor ebx, ebx
+	mov ebx, [rsi+XHCI_HCCPARAMS1]	; Gather xECP (bits 31:16)
+	and ebx, 0xFFFF0000		; Keep only bits 31:16
+	shr ebx, 14			; Shift right for xECP * 4
+xhci_xecp_read:
+	mov eax, [rsi+rbx]		; Load first 4 bytes
+	cmp al, 0x01			; Legacy Entry
+	je xhci_xecp_read_legacy
+	cmp al, 0x02			; Supported Protocols
+	je xhci_xecp_read_supported_protocol
+	jmp xhci_xecp_read_next
+xhci_xecp_read_legacy:
+	; Release BIOS ownership
+	; Set bit 24 to indicate to the BIOS to release ownership
+	; The BIOS should clear bit 16 indicating it has successfully done so
+	; Ownership is released when bit 24 is set *and* bit 16 is clear
+	jmp xhci_xecp_read_next
+xhci_xecp_read_supported_protocol:
+	; Parse the supported protocol if needed
+xhci_xecp_read_next:
+	mov eax, [rsi+rbx]		; Load first 4 bytes of entry again
+	shr eax, 8			; Shift Next to AL
+	cmp al, 0x00			; Is Next 0?
+	je xhci_xecp_end		; If so, we are at the end
+	shl eax, 2
+	add rbx, rax
+	jmp xhci_xecp_read
+xhci_xecp_end:
+
 	; Reset the controller
 xhci_init_halt:
 	mov eax, [rdi+XHCI_USBCMD]	; Read current Command Register value
