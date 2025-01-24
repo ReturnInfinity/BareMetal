@@ -92,3 +92,4 @@
 
 * [OSDev.org XHCI Article](https://wiki.osdev.org/EXtensible_Host_Controller_Interface)
 * [Requirements Specification](https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/extensible-host-controler-interface-usb-xhci.pdf) - Revision 1.2 - May 2019
+* [USB: The Universal Serial Bus](https://www.fysnet.net/the_universal_serial_bus.htm) - Book by Benjamin David Lunt
