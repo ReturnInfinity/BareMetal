@@ -197,6 +197,25 @@ XHCI_PORTPMSC	equ 0x04	; 4-byte Port PM Status and Control Register
 XHCI_PORTLI	equ 0x08	; 4-byte Port Link Info Register (Read-Only)
 XHCI_PORTHLPMC	equ 0x0C	; 4-byte Port Hardware LPM Control Register
 
+; Host Controller Doorbell Register Set (Starts at XHCI_Base + CAPLENGTH + DBOFF)
+XHCI_CDR	equ 0x00	; 4-byte Command Doorbell Register (Target bits 7:0)
+XHCI_DS1	equ 0x04	; 4-byte Device Slot #1 Doorbell
+XHCI_DS2	equ 0x04	; 4-byte Device Slot #2 Doorbell
+
+; Host Controller Runtime Register Set (Starts at XHCI_Base + CAPLENGTH + RTSOFF)
+XHCI_MICROFRAME	equ 0x00	; 4-byte Microframe Index Register
+; Microframe is incremented every 125 microseconds. Each frame (1ms) is 8 microframes
+; 28-bytes padding
+XHCI_IR_0	equ 0x20	; 32-byte Interrupter Register Set 0
+XHCI_IR_1	equ 0x20	; 32-byte Interrupter Register Set 1
+
+; Interrupter Register Set
+XHCI_IR_IMR	equ 0x00	; 4-byte Interrupter Management Register
+XHCI_IR_IM	equ 0x04	; 4-byte Interrupter Moderation
+XHCI_IR_ERSTS	equ 0x08	; 4-byte Event Ring Segment Table Size
+; 4-byte padding
+XHCI_IR_ERSTB	equ 0x10	; 8-byte Event Ring Segment Table Base Address
+XHCI_IR_ERDP	equ 0x18	; 8-byte Event Ring Dequeue Pointer
 
 ; =============================================================================
 ; EOF
