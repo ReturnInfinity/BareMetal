@@ -124,27 +124,21 @@ xhci_init_reset:
 	mov rsi, os_XHCI_ERST               ; Event Ring Segment Table base address
 	mov rdx, rcx                        ; Segment table size (number of entries)
 
+	mov r8, rsi
+
 	; Configure Event Ring Segment Table Entry
 	mov rax, rdi                        ; Set the base address of the Event Ring
 	mov [rsi], rax                      ; ERST Entry 0: Base Address
 	mov [rsi + 8], rdx                  ; ERST Entry 0: Segment Size (number of entries)
-
+	
 	; Configure the Runtime Registers for Event Ring
 	mov rdi, [xhci_rt]                  ; Get Runtime Register Base Address
 	add rdi, XHCI_IR_0                  ; Interrupt Register 0
-	mov rax, rsi                        ; ERST Base Address
+	mov rax, r8                        ; ERST Base Address
 	mov [rdi + XHCI_IR_ERSTB], rax      ; Write ERST Base Address to Interrupt Register
 	mov rax, rdi                        ; Event Ring Dequeue Pointer (ERDP)
 	mov [rdi + XHCI_IR_ERDP], rax       ; Write ERDP
 	mov [rdi + XHCI_IR_ERSTS], rcx      ; Write ERST Size
-
-	; Set up a simple CONTROL TRB for control transfers
-	mov rdi, os_XHCI_TRB_BASE          ; TRB base address
-	xor rax, rax                        ; Clear RAX for TRB initialization
-	mov byte [rdi], 0x01                ; TRB Type = CONTROL (0x01)
-	mov byte [rdi + 1], 0x00            ; Reserved (or set other necessary flags)
-	bts rax, 0                          ; Set Cycle Bit (bit 0)
-
 
 	; Configure the controller
 	mov rsi, [xhci_op]
@@ -219,7 +213,7 @@ xhci_enable_slots_loop:
     mov [rsi + XHCI_CRCR + 8], rbx    ; Write the TRB to the Command Ring
 
     ; Ring the Doorbell for the Command Ring
-    mov eax, 0x00                     ; Doorbell for Slot 0 (Command Ring, Enable Slot Command)
+    mov eax, 0x01                     ; Doorbell for Slot 0 (Command Ring, Enable Slot Command)
     mov [xhci_db + XHCI_CDR], eax     ; Write to the Doorbell Register
 
 xhci_enable_slots_next:
