@@ -147,9 +147,9 @@ xhci_init_reset:
 
 
 	; Configure the controller
-	mov rax, os_XHCI_DEVICE_CONTEXT
+	mov rax, os_usb_DCBAPP
 	mov [rsi+XHCI_DCBAPP], rax	; Set the Device Context Base Address Array Pointer Register
-	mov rax, os_XHCI_COMMAND_RING
+	mov rax, os_usb_CRCR
 	bts rax, 0			; Set RCS (bit 0)
 	mov [rsi+XHCI_CRCR], rax	; Set the Command Ring Control Register
 	xor eax, eax
@@ -201,11 +201,7 @@ xhci_enable_slots:
     ; Write a NOOP TRB to the Command Ring to indicate the slot is enabled
     mov rdi, os_XHCI_TRB_BASE         ; TRB base address (location where TRBs are stored)
     xor rax, rax                       ; Clear RAX to prepare for the TRB
-	
-	mov rax, 20000000			; Wait 20ms (20000µs)
-	call b_delay
 
-	xor rax, rax
     ; Prepare a NOOP TRB 
     mov byte [rdi], 0x00               ; TRB Type = NOOP (0x00)
     bts rax, 0                          ; Set Cycle Bit (bit 0)
