@@ -29,6 +29,9 @@
 %include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
 
+; USB
+%include "drivers/usb/xhci.asm"
+
 NIC_DeviceVendor_ID:	; The supported list of NICs
 
 ; Virtio

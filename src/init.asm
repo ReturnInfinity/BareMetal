@@ -10,6 +10,7 @@
 %include "init/bus.asm"
 %include "init/storage.asm"
 %include "init/net.asm"
+%include "init/usb.asm"
 
 
 ; =============================================================================
