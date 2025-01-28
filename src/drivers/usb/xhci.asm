@@ -147,9 +147,10 @@ xhci_init_reset:
 
 
 	; Configure the controller
-	mov rax, os_usb_DCBAPP
+	mov rsi, [xhci_op]
+	mov rax, os_XHCI_DEVICE_CONTEXT
 	mov [rsi+XHCI_DCBAPP], rax	; Set the Device Context Base Address Array Pointer Register
-	mov rax, os_usb_CRCR
+	mov rax, os_XHCI_COMMAND_RING
 	bts rax, 0			; Set RCS (bit 0)
 	mov [rsi+XHCI_CRCR], rax	; Set the Command Ring Control Register
 	xor eax, eax
@@ -180,46 +181,53 @@ xhci_reset_skip:
 	jne xhci_check_next
     ; jmp xhci_init_done                 ; If all slots are Reset, jump to init done
 
-    ; Enable slots for devices
-    xor ecx, ecx                      ; Clear the slot counter
-    mov dl, byte [xhci_maxslots]      ; Load the max slots value
-xhci_enable_slots:
-   	mov ebx, 0x400			; Offset to start of Port Registers
-	shl ecx, 4			; Quick multiply by 16
-	add ebx, ecx			; Add offset to EBX
-	shr ecx, 4			; Quick divide by 16
-	mov rbx, [rsi+rbx]		; Load PORTSC
-    bt rbx, 0                          ; Check if the device is connected (bit 0)
-    jnc xhci_enable_slots_next         ; If the device is not connected, skip to next port
-    
-    ; Enable the device by setting the Slot Enable in Command Ring
-    mov rdi, os_XHCI_COMMAND_RING             ; Get the Command Ring Register base address
-    mov rax, [rdi]                    ; Read the current Command Ring Control Register (CRCR)
-    bts rax, 0                        ; Set the Slot Enable bit (bit 0) for the slot to enable
+    xor ecx, ecx                      ; Reset Slot Counter
+    mov dl, byte [xhci_maxslots]      ; Load Max Slots into DL
+
+xhci_enable_slots_loop:
+    mov ebx, 0x400                    ; Base offset of Port Registers (Port 1 starts here)
+    shl ecx, 4                        ; Multiply ECX by 16 (each port has a 16-byte register set)
+    add ebx, ecx                      ; Add the offset to EBX
+    shr ecx, 4                        ; Divide ECX back to original value for slot tracking
+    mov rbx, [rsi + rbx]              ; Load the PORTSC register for the current port
+
+    bt rbx, 0                         ; Test bit 0 (Port Connect Status)
+    jnc xhci_enable_slots_next        ; If not connected, skip to the next port
+
+    ; Enable Slot for the connected device
+    mov rdi, os_XHCI_COMMAND_RING     ; Command Ring base address
+    mov rax, [rdi]                    ; Read the Command Ring Control Register (CRCR)
+    bts rax, 0                        ; Set the Slot Enable bit (bit 0)
     mov [rdi], rax                    ; Write the updated value back to CRCR
 
-    ; Write a NOOP TRB to the Command Ring to indicate the slot is enabled
-    mov rdi, os_XHCI_TRB_BASE         ; TRB base address (location where TRBs are stored)
-    xor rax, rax                       ; Clear RAX to prepare for the TRB
+    ; Prepare a Slot Enable Command TRB
+    mov rdi, os_XHCI_TRB_BASE         ; TRB base address (where TRBs are stored)
+    xor rax, rax                      ; Clear RAX for new TRB preparation
 
-    ; Prepare a NOOP TRB 
-    mov byte [rdi], 0x00               ; TRB Type = NOOP (0x00)
-    bts rax, 0                          ; Set Cycle Bit (bit 0)
-    mov byte [rdi + 1], 0x00            ; Reserved Byte 0
-    mov byte [rdi + 2], 0x00            ; Reserved Byte 1
-    mov byte [rdi + 3], 0x00            ; Reserved Byte 2 (for TRB)
+    ; Slot Enable Command TRB
+    mov dword [rdi], 0x00             ; Clear DWORD0
+    mov dword [rdi + 4], 0x00         ; Clear DWORD1
+    mov dword [rdi + 8], 0x00         ; Clear DWORD2
+
+    ; Set TRB Type and Cycle Bit in DWORD3
+    mov eax, 0x09                     ; TRB Type = Enable Slot Command (0x09)
+    bts eax, 0                        ; Set the Cycle Bit (bit 0)
+    mov [rdi + 12], eax               ; Write DWORD3 (TRB Type and Cycle Bit)
 
     ; Write the TRB to the Command Ring
-    mov rbx, [rdi]                     ; Load the TRB
-    mov [rsi + XHCI_CRCR + 8], rbx     ; Write the TRB to Command Ring (addressing the next TRB slot)
+    mov rbx, [rdi]                    ; Load the TRB
+    mov [rsi + XHCI_CRCR + 8], rbx    ; Write the TRB to the Command Ring
+
+    ; Ring the Doorbell for the Command Ring
+    mov eax, 0x00                     ; Doorbell for Slot 0 (Command Ring, Enable Slot Command)
+    mov [xhci_db + XHCI_CDR], eax     ; Write to the Doorbell Register
 
 xhci_enable_slots_next:
-    inc ecx                            ; Increment slot counter
-    cmp ecx, edx                        ; Compare with max slots
-    jne xhci_enable_slots              ; If there are more slots, repeat
-    
-    jmp xhci_init_done                 ; If all slots are enabled, jump to init done
+    inc ecx
+    cmp ecx, edx                      ; Compare current slot with max slots
+    jne xhci_enable_slots_loop        ; If more slots to enable, repeat the process
 
+    jmp xhci_init_done
 
 xhci_init_error:
 	jmp $

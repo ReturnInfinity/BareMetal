@@ -78,9 +78,11 @@ os_XHCI_COMMAND_RING:    equ 0x0000000000200000    ; 0x200000 -> 0x20FFFF 64K Co
 os_XHCI_EVENT_RING:      equ 0x0000000000210000    ; 0x210000 -> 0x21FFFF 64K Event Ring
 os_XHCI_ERST:            equ 0x0000000000220000    ; 0x220000 -> 0x227FFF 4K Event Ring Segment Table
 os_XHCI_DEVICE_CONTEXT:  equ 0x0000000000228000    ; Base address for Device Context
+os_XHCI_TRANSFER_BUFFERS: equ 0x0000000000240000    ; Additional buffer space for transfer data
+os_XHCI_DEVICE_INFO:     equ 0x0000000000250000    ; Device-specific information storage
 
 ; Misc memory
-os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
+os_SMP:			equ 0x00000000002FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
 app_start:		equ 0xFFFF800000000000	; Location of application memory
 
 
