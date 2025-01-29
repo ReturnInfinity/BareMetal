@@ -124,21 +124,25 @@ xhci_init_reset:
 	mov rsi, os_XHCI_ERST               ; Event Ring Segment Table base address
 	mov rdx, rcx                        ; Segment table size (number of entries)
 
-	mov r8, rsi
+	mov r8, rsi                         ; Copy the ERST base address to r8 for later use
 
 	; Configure Event Ring Segment Table Entry
 	mov rax, rdi                        ; Set the base address of the Event Ring
 	mov [rsi], rax                      ; ERST Entry 0: Base Address
 	mov [rsi + 8], rdx                  ; ERST Entry 0: Segment Size (number of entries)
-	
+
 	; Configure the Runtime Registers for Event Ring
 	mov rdi, [xhci_rt]                  ; Get Runtime Register Base Address
 	add rdi, XHCI_IR_0                  ; Interrupt Register 0
-	mov rax, r8                        ; ERST Base Address
+	mov rax, r8                         ; ERST Base Address (to be written to ERST Register)
 	mov [rdi + XHCI_IR_ERSTB], rax      ; Write ERST Base Address to Interrupt Register
-	mov rax, rdi                        ; Event Ring Dequeue Pointer (ERDP)
-	mov [rdi + XHCI_IR_ERDP], rax       ; Write ERDP
-	mov [rdi + XHCI_IR_ERSTS], rcx      ; Write ERST Size
+
+	; Configure Event Ring Dequeue Pointer (ERDP)
+	mov rax, rdi                        ; ERDP (Event Ring Dequeue Pointer)
+	mov [rdi + XHCI_IR_ERDP], rax       ; Write ERDP to the appropriate register
+
+	; Configure Event Ring Segment Table Size (ERST Size)
+	mov [rdi + XHCI_IR_ERSTS], rcx      ; Write ERST Size (number of segments) to ERST Size Register
 
 	; Configure the controller
 	mov rsi, [xhci_op]
@@ -152,7 +156,10 @@ xhci_init_reset:
 	mov [rsi+XHCI_CONFIG], eax
 	mov eax, 1
 	mov [rsi+XHCI_DNCTRL], eax
-	mov eax, 0x01			; Set bits 0 (RS)
+	mov eax, [rsi+XHCI_USBCMD]			
+	bts eax, 0			; Set bits 0 (RS)
+	bts eax, 2			; Set bits 2 (INTE)
+	bts eax, 3			; Set bits 3 (HSEE)
 	mov [rsi+XHCI_USBCMD], eax
     
 	; Check the available ports and reset them
@@ -175,7 +182,53 @@ xhci_reset_skip:
 	jne xhci_check_next
     ; jmp xhci_init_done                 ; If all slots are Reset, jump to init done
 
-    xor ecx, ecx                      ; Reset Slot Counter
+
+    ; Issue No Op Command to check the system state and wait for completion
+	
+	mov rdi, os_XHCI_COMMAND_RING         ; Command Ring base address
+	mov rax, [rdi]                        ; Read the Command Ring Control Register (CRCR)
+	bts rax, 0                            ; Set the Cycle Bit (bit 0) to indicate the command
+	mov [rdi], rax                        ; Write the updated value back to CRCR
+
+	; Prepare a No Op Command TRB
+	mov rdi, os_XHCI_TRB_BASE             ; TRB base address (where TRBs are stored)
+	xor rax, rax                          ; Clear RAX for new TRB preparation
+
+	; No Op Command TRB (Type 0x08, No Op command)
+	mov dword [rdi], 0x00                 ; Clear DWORD0
+	mov dword [rdi + 4], 0x00             ; Clear DWORD1
+	mov dword [rdi + 8], 0x00             ; Clear DWORD2
+
+	; Set TRB Type (bits 10-15 for No Op Command) and Cycle Bit (bit 0) in DWORD3
+	mov eax, 23                         ; No Op Command Type = 0x08
+	shl eax, 10                           ; Shift the value to bits 10-15 of DWORD3
+	bts eax, 0                            ; Set the Cycle Bit (bit 0)
+	mov [rdi + 12], eax                   ; Write DWORD3 (TRB Type and Cycle Bit)
+
+	; Write the No Op TRB to the Command Ring
+	mov rbx, [rdi]                        ; Load the TRB
+	mov [rsi + XHCI_CRCR + 8], rbx        ; Write the TRB to the Command Ring
+
+	; Ring the Doorbell for the Command Ring (No Op Command)
+	mov eax, 0x01                         ; Doorbell for Slot 0 (Command Ring, No Op Command)
+	mov [xhci_db + XHCI_CDR], eax         ; Write to the Doorbell Register
+
+	; Wait for Event TRB indicating No Op completion (Completion Code 1 for success)
+	mov rdi, os_XHCI_EVENT_RING           ; Event Ring base address
+	mov rsi, os_XHCI_ERST                 ; Event Ring Segment Table base address
+wait_no_op_event:
+	mov rbx, [rdi+12]                     ; Load the Event TRB
+	bt rbx, 0                             ; Check Cycle Bit (should be 1 for valid TRB)
+	jnz wait_no_op_event                  ; Wait for a valid event
+
+	mov eax, [rdi + 8]                    ; Completion Code is in DWORD1 of Event TRB
+	shr rax, 24
+	mov [os_XHCI_SLOT_ID], eax                             ; Compare with 1 (successful completion)	
+
+
+	; Enable Device connected slots
+
+	xor ecx, ecx                      ; Reset Slot Counter
     mov dl, byte [xhci_maxslots]      ; Load Max Slots into DL
 
 xhci_enable_slots_loop:
@@ -205,7 +258,8 @@ xhci_enable_slots_loop:
 
     ; Set TRB Type and Cycle Bit in DWORD3
     mov eax, 0x09                     ; TRB Type = Enable Slot Command (0x09)
-    bts eax, 0                        ; Set the Cycle Bit (bit 0)
+    shl eax, 10
+	bts eax, 0                        ; Set the Cycle Bit (bit 0)
     mov [rdi + 12], eax               ; Write DWORD3 (TRB Type and Cycle Bit)
 
     ; Write the TRB to the Command Ring
@@ -216,6 +270,27 @@ xhci_enable_slots_loop:
     mov eax, 0x01                     ; Doorbell for Slot 0 (Command Ring, Enable Slot Command)
     mov [xhci_db + XHCI_CDR], eax     ; Write to the Doorbell Register
 
+	; Wait for Event TRB indicating completion (Completion Code 1 for success)
+	mov rdi, os_XHCI_EVENT_RING       ; Event Ring base address
+	mov rsi, os_XHCI_ERST             ; Event Ring Segment Table base address
+wait_event:
+    mov rbx, [rdi+12]                ; Load the Event TRB
+    bt rbx, 0          				; Check Cycle Bit (should be 1 for valid TRB)
+    jnz wait_event                 ; Wait for a valid event
+
+    ; Check Completion Code (should be 1 for success)
+    mov eax, [rdi + 8]            ; Completion Code is in DWORD1 of Event TRB
+    shr eax, 24
+	cmp eax, 1                    ; Compare with 1 (successful completion)
+    jne wait_event                ; If not 1, wait for another Event TRB
+
+    ; If we reach here, the Slot Enable Command was successful
+    ; Extract the Slot ID from the Event TRB
+    mov eax, [rdi + 12]            ; Slot ID is in DWORD2 of Event TRB (for this example)
+    shr eax, 24
+	mov [os_XHCI_SLOT_ID], eax    ; Store the Slot ID
+
+    xor rax, rax                  ; Clear RAX for initialization
 xhci_enable_slots_next:
     inc ecx
     cmp ecx, edx                      ; Compare current slot with max slots
