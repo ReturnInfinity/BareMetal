@@ -223,8 +223,8 @@ wait_no_op_event:
 
 	mov eax, [rdi + 8]                    ; Completion Code is in DWORD1 of Event TRB
 	shr rax, 24
-	mov [os_XHCI_SLOT_ID], eax                             ; Compare with 1 (successful completion)	
-
+	cmp eax, 1                             ; Compare with 1 (successful completion)	
+	jne wait_no_op_event
 
 	; Enable Device connected slots
 
