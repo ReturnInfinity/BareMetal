@@ -187,7 +187,7 @@ xhci_reset_skip:
 	cmp ecx, edx
 	jne xhci_check_next
 
-	; Build a No Op Command TRB
+	; Build a No Op Command TRB (4.6.2)
 	mov rdi, os_usb_CR
 	xor eax, eax
 	stosd
@@ -195,13 +195,13 @@ xhci_reset_skip:
 	stosd
 	mov al, 0x08
 	shl eax, 10
-	bts eax, 9			; Block Event Interrupt
-	bts eax, 5			; Interrupt on Completion
+;	bts eax, 9			; Block Event Interrupt
+;	bts eax, 5			; Interrupt on Completion
 	bts eax, 0			; Cycle Bit
 	stosd
 
 	; Ring the Doorbell for the Command Ring (No Op Command)
-	mov eax, 0x01			; Doorbell for Slot 0
+	mov eax, 0x00			; Doorbell for Slot 0
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
