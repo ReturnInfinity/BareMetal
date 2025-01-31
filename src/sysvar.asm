@@ -62,9 +62,9 @@ os_nvme_NSID:		equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identi
 os_nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
 
 ; USB Memory
-os_usb:			equ 0x0000000000180000	; 0x180000 -> 0x19FFFF	128K USB Structures
-os_usb_DCBAPP:		equ 0x0000000000180000	; 0x180000 -> 0x18FFFF	64K USB Device Context
-os_usb_CRCR:		equ 0x0000000000190000	; 0x190000 -> 0x19FFFF	64K USB Command Ring Control
+; os_usb:			equ 0x0000000000180000	; 0x180000 -> 0x19FFFF	128K USB Structures
+; os_usb_DCBAPP:		equ 0x0000000000180000	; 0x180000 -> 0x18FFFF	64K USB Device Context
+; os_usb_CRCR:		equ 0x0000000000190000	; 0x190000 -> 0x19FFFF	64K USB Command Ring Control
 
 ; Network memory
 os_net_mem:		equ 0x00000000001A0000
@@ -72,17 +72,17 @@ os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive 
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
 os_PacketBuffers:	equ 0x00000000001B0000	;
 
-; xHCI Memory
-os_XHCI_TRB_BASE:        equ 0x00000000001C0000    ; 0x1C0000 -> 0x1FFFFF 256K TRB memory
-os_XHCI_COMMAND_RING:    equ 0x0000000000200000    ; 0x200000 -> 0x20FFFF 64K Command Ring
-os_XHCI_EVENT_RING:      equ 0x0000000000210000    ; 0x210000 -> 0x21FFFF 64K Event Ring
-os_XHCI_ERST:            equ 0x0000000000220000    ; 0x220000 -> 0x227FFF 4K Event Ring Segment Table
-os_XHCI_DEVICE_CONTEXT:  equ 0x0000000000228000    ; Base address for Device Context
-os_XHCI_TRANSFER_BUFFERS: equ 0x0000000000240000    ; Additional buffer space for transfer data
-os_XHCI_DEVICE_INFO:     equ 0x0000000000250000    ; Device-specific information storage
+; ; xHCI Memory
+; os_XHCI_TRB_BASE:        equ 0x00000000001C0000    ; 0x1C0000 -> 0x1FFFFF 256K TRB memory
+; os_XHCI_COMMAND_RING:    equ 0x0000000000200000    ; 0x200000 -> 0x20FFFF 64K Command Ring
+; os_XHCI_EVENT_RING:      equ 0x0000000000210000    ; 0x210000 -> 0x21FFFF 64K Event Ring
+; os_XHCI_ERST:            equ 0x0000000000220000    ; 0x220000 -> 0x227FFF 4K Event Ring Segment Table
+; os_XHCI_DEVICE_CONTEXT:  equ 0x0000000000228000    ; Base address for Device Context
+; os_XHCI_TRANSFER_BUFFERS: equ 0x0000000000240000    ; Additional buffer space for transfer data
+; os_XHCI_DEVICE_INFO:     equ 0x0000000000250000    ; Device-specific information storage
 
 ; Misc memory
-os_SMP:			equ 0x00000000002FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
+os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
 app_start:		equ 0xFFFF800000000000	; Location of application memory
 
 

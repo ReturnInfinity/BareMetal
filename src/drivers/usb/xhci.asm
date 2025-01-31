@@ -36,6 +36,8 @@ xhci_init:
 	mov [rdi], rax
 
 	; Gather CAPLENGTH, check HCIVERSION, get offsets
+	mov [xhci_db], rsi
+	mov [xhci_rt], rsi
 	mov eax, [rsi+XHCI_CAPLENGTH]	; Read 4 bytes starting at CAPLENGTH
 	mov [xhci_caplen], al		; Save the CAPLENGTH offset
 	; Check for a valid version number
@@ -51,10 +53,10 @@ xhci_init:
 	mov [xhci_op], rax
 	mov eax, [rsi+XHCI_DBOFF]	; Read the xHCI Doorbell Offset Register
 	and eax, 0xFFFFFFFC		; Clear bits 1:0
-	mov [xhci_db], rax
+	add [xhci_db], rax
 	mov eax, [rsi+XHCI_RTSOFF]	; Read the xHCI Runtime Register Base Offset Register
 	and eax, 0xFFFFFFE0		; Clear bits 4:0
-	mov [xhci_rt], rax
+	add [xhci_rt], rax
 
 ; QEMU xHCI Extended Capabilities Entries
 ; 00000000febf0020: 0x02 0x04 0x00 0x02 0x55 0x53 0x42 0x20 <- USB 2
@@ -118,37 +120,10 @@ xhci_init_reset:
 	bt eax, 1			; Check HCRST (bit 1)
 	jc xhci_init_error		; Bail out if HCRST wasn't cleared after 100ms
 
-	; Event Ring Setup
-	mov rcx, 8                         ; Event ring size (8 entries for simplicity)
-	mov rdi, os_XHCI_EVENT_RING         ; Event Ring base address
-	mov rsi, os_XHCI_ERST               ; Event Ring Segment Table base address
-	mov rdx, rcx                        ; Segment table size (number of entries)
-
-	mov r8, rsi                         ; Copy the ERST base address to r8 for later use
-
-	; Configure Event Ring Segment Table Entry
-	mov rax, rdi                        ; Set the base address of the Event Ring
-	mov [rsi], rax                      ; ERST Entry 0: Base Address
-	mov [rsi + 8], rdx                  ; ERST Entry 0: Segment Size (number of entries)
-
-	; Configure the Runtime Registers for Event Ring
-	mov rdi, [xhci_rt]                  ; Get Runtime Register Base Address
-	add rdi, XHCI_IR_0                  ; Interrupt Register 0
-	mov rax, r8                         ; ERST Base Address (to be written to ERST Register)
-	mov [rdi + XHCI_IR_ERSTB], rax      ; Write ERST Base Address to Interrupt Register
-
-	; Configure Event Ring Dequeue Pointer (ERDP)
-	mov rax, rdi                        ; ERDP (Event Ring Dequeue Pointer)
-	mov [rdi + XHCI_IR_ERDP], rax       ; Write ERDP to the appropriate register
-
-	; Configure Event Ring Segment Table Size (ERST Size)
-	mov [rdi + XHCI_IR_ERSTS], rcx      ; Write ERST Size (number of segments) to ERST Size Register
-
 	; Configure the controller
-	mov rsi, [xhci_op]
-	mov rax, os_XHCI_DEVICE_CONTEXT
+	mov rax, os_usb_DCI		; Load the address of the Device Context Index
 	mov [rsi+XHCI_DCBAPP], rax	; Set the Device Context Base Address Array Pointer Register
-	mov rax, os_XHCI_COMMAND_RING
+	mov rax, os_usb_CR		; Load the address of the Command Ring
 	bts rax, 0			; Set RCS (bit 0)
 	mov [rsi+XHCI_CRCR], rax	; Set the Command Ring Control Register
 	xor eax, eax
@@ -156,12 +131,43 @@ xhci_init_reset:
 	mov [rsi+XHCI_CONFIG], eax
 	mov eax, 1
 	mov [rsi+XHCI_DNCTRL], eax
-	mov eax, [rsi+XHCI_USBCMD]			
-	bts eax, 0			; Set bits 0 (RS)
-	bts eax, 2			; Set bits 2 (INTE)
-	bts eax, 3			; Set bits 3 (HSEE)
+	mov eax, 0x01			; Set bits 0 (RS)
 	mov [rsi+XHCI_USBCMD], eax
-    
+
+	; Build entries in the Device Controller Index
+	; TODO - Build what is needed. QEMU starts with 8
+	mov rdi, os_usb_DCI
+	mov rax, os_usb_scratchpad
+	stosq				; Store the address of the scratchpad
+	mov rcx, 8
+	mov rax, os_usb_DC0		; Start of the Device Context Entries
+xhci_store_DC:
+	stosq
+	add rax, 0x800			; 2KiB
+	dec rcx
+	jnz xhci_store_DC
+
+	; Build entries in the Command Ring
+	; Each TRB in the Command Ring is 16 bytes
+	; Build 8 entries for now. Last one is a link to the first
+	; mov rdi, os_usb_CR
+	; TODO Create the link TRB
+
+	; Configure Event Ring for Primary Interrupter (Interrupt 0)
+	mov rdi, [xhci_rt]
+	add rdi, XHCI_IR_0		; Interrupt Register 0
+	xor eax, eax			; Interrupt Enable (bit 1), Interrupt Pending (bit 0)
+	stosd				; Interrupter Management Register (IMR)
+	stosd				; Interrupter Moderation (IR)
+	mov eax, 1
+	stosd				; Event Ring Segment Table Size (ERSTS)
+	add rdi, 4			; Skip Padding
+	mov rax, os_usb_ER
+	; TODO - Load the register and preserve bits 5:0
+	stosq				; Event Ring Segment Table Base Address (ERSTB)
+	add rax, 0x40
+	stosq				; Event Ring Dequeue Pointer (ERDP)
+
 	; Check the available ports and reset them
 	xor ecx, ecx			; Slot counter
 	xor edx, edx			; Max slots
@@ -180,123 +186,26 @@ xhci_reset_skip:
 	inc ecx
 	cmp ecx, edx
 	jne xhci_check_next
-    ; jmp xhci_init_done                 ; If all slots are Reset, jump to init done
 
-
-    ; Issue No Op Command to check the system state and wait for completion
-	
-	mov rdi, os_XHCI_COMMAND_RING         ; Command Ring base address
-	mov rax, [rdi]                        ; Read the Command Ring Control Register (CRCR)
-	bts rax, 0                            ; Set the Cycle Bit (bit 0) to indicate the command
-	mov [rdi], rax                        ; Write the updated value back to CRCR
-
-	; Prepare a No Op Command TRB
-	mov rdi, os_XHCI_TRB_BASE             ; TRB base address (where TRBs are stored)
-	xor rax, rax                          ; Clear RAX for new TRB preparation
-
-	; No Op Command TRB (Type 0x08, No Op command)
-	mov dword [rdi], 0x00                 ; Clear DWORD0
-	mov dword [rdi + 4], 0x00             ; Clear DWORD1
-	mov dword [rdi + 8], 0x00             ; Clear DWORD2
-
-	; Set TRB Type (bits 10-15 for No Op Command) and Cycle Bit (bit 0) in DWORD3
-	mov eax, 23                         ; No Op Command Type = 0x08
-	shl eax, 10                           ; Shift the value to bits 10-15 of DWORD3
-	bts eax, 0                            ; Set the Cycle Bit (bit 0)
-	mov [rdi + 12], eax                   ; Write DWORD3 (TRB Type and Cycle Bit)
-
-	; Write the No Op TRB to the Command Ring
-	mov rbx, [rdi]                        ; Load the TRB
-	mov [rsi + XHCI_CRCR + 8], rbx        ; Write the TRB to the Command Ring
+	; Build a No Op Command TRB (4.6.2)
+	mov rdi, os_usb_CR
+	xor eax, eax
+	stosd
+	stosd
+	stosd
+	mov al, 0x08
+	shl eax, 10
+	bts eax, 9			; Block Event Interrupt
+	bts eax, 5			; Interrupt on Completion
+	bts eax, 0			; Cycle Bit
+	stosd
 
 	; Ring the Doorbell for the Command Ring (No Op Command)
-	mov eax, 0x01                         ; Doorbell for Slot 0 (Command Ring, No Op Command)
-	mov [xhci_db + XHCI_CDR], eax         ; Write to the Doorbell Register
+	mov eax, 0x00			; Doorbell for Slot 0
+	mov rdi, [xhci_db]
+	stosd				; Write to the Doorbell Register
 
-	; Wait for Event TRB indicating No Op completion (Completion Code 1 for success)
-	mov rdi, os_XHCI_EVENT_RING           ; Event Ring base address
-	mov rsi, os_XHCI_ERST                 ; Event Ring Segment Table base address
-wait_no_op_event:
-	mov rbx, [rdi+12]                     ; Load the Event TRB
-	bt rbx, 0                             ; Check Cycle Bit (should be 1 for valid TRB)
-	jnz wait_no_op_event                  ; Wait for a valid event
-
-	mov eax, [rdi + 8]                    ; Completion Code is in DWORD1 of Event TRB
-	shr rax, 24
-	cmp eax, 1                             ; Compare with 1 (successful completion)	
-	jne wait_no_op_event
-
-	; Enable Device connected slots
-
-	xor ecx, ecx                      ; Reset Slot Counter
-    mov dl, byte [xhci_maxslots]      ; Load Max Slots into DL
-
-xhci_enable_slots_loop:
-    mov ebx, 0x400                    ; Base offset of Port Registers (Port 1 starts here)
-    shl ecx, 4                        ; Multiply ECX by 16 (each port has a 16-byte register set)
-    add ebx, ecx                      ; Add the offset to EBX
-    shr ecx, 4                        ; Divide ECX back to original value for slot tracking
-    mov rbx, [rsi + rbx]              ; Load the PORTSC register for the current port
-
-    bt rbx, 0                         ; Test bit 0 (Port Connect Status)
-    jnc xhci_enable_slots_next        ; If not connected, skip to the next port
-
-    ; Enable Slot for the connected device
-    mov rdi, os_XHCI_COMMAND_RING     ; Command Ring base address
-    mov rax, [rdi]                    ; Read the Command Ring Control Register (CRCR)
-    bts rax, 0                        ; Set the Slot Enable bit (bit 0)
-    mov [rdi], rax                    ; Write the updated value back to CRCR
-
-    ; Prepare a Slot Enable Command TRB
-    mov rdi, os_XHCI_TRB_BASE         ; TRB base address (where TRBs are stored)
-    xor rax, rax                      ; Clear RAX for new TRB preparation
-
-    ; Slot Enable Command TRB
-    mov dword [rdi], 0x00             ; Clear DWORD0
-    mov dword [rdi + 4], 0x00         ; Clear DWORD1
-    mov dword [rdi + 8], 0x00         ; Clear DWORD2
-
-    ; Set TRB Type and Cycle Bit in DWORD3
-    mov eax, 0x09                     ; TRB Type = Enable Slot Command (0x09)
-    shl eax, 10
-	bts eax, 0                        ; Set the Cycle Bit (bit 0)
-    mov [rdi + 12], eax               ; Write DWORD3 (TRB Type and Cycle Bit)
-
-    ; Write the TRB to the Command Ring
-    mov rbx, [rdi]                    ; Load the TRB
-    mov [rsi + XHCI_CRCR + 8], rbx    ; Write the TRB to the Command Ring
-
-    ; Ring the Doorbell for the Command Ring
-    mov eax, 0x01                     ; Doorbell for Slot 0 (Command Ring, Enable Slot Command)
-    mov [xhci_db + XHCI_CDR], eax     ; Write to the Doorbell Register
-
-	; Wait for Event TRB indicating completion (Completion Code 1 for success)
-	mov rdi, os_XHCI_EVENT_RING       ; Event Ring base address
-	mov rsi, os_XHCI_ERST             ; Event Ring Segment Table base address
-wait_event:
-    mov rbx, [rdi+12]                ; Load the Event TRB
-    bt rbx, 0          				; Check Cycle Bit (should be 1 for valid TRB)
-    jnz wait_event                 ; Wait for a valid event
-
-    ; Check Completion Code (should be 1 for success)
-    mov eax, [rdi + 8]            ; Completion Code is in DWORD1 of Event TRB
-    shr eax, 24
-	cmp eax, 1                    ; Compare with 1 (successful completion)
-    jne wait_event                ; If not 1, wait for another Event TRB
-
-    ; If we reach here, the Slot Enable Command was successful
-    ; Extract the Slot ID from the Event TRB
-    mov eax, [rdi + 12]            ; Slot ID is in DWORD2 of Event TRB (for this example)
-    shr eax, 24
-	mov [os_XHCI_SLOT_ID], eax    ; Store the Slot ID
-
-    xor rax, rax                  ; Clear RAX for initialization
-xhci_enable_slots_next:
-    inc ecx
-    cmp ecx, edx                      ; Compare current slot with max slots
-    jne xhci_enable_slots_loop        ; If more slots to enable, repeat the process
-
-    jmp xhci_init_done
+	jmp xhci_init_done
 
 xhci_init_error:
 	jmp $
@@ -313,6 +222,23 @@ xhci_db:	dq 0			; Start of Doorbell Registers
 xhci_rt:	dq 0			; Start of Runtime Registers
 ; -----------------------------------------------------------------------------
 
+; Memory (to be redone)
+os_usb:			equ 0x0000000000680000	; 0x680000 -> 0x69FFFF	128K USB Structures
+os_usb_DCI:		equ 0x0000000000680000	; 0x680000 -> 0x6807FF	2K Device Context Index
+os_usb_DC0:		equ 0x0000000000680800	; 2K Device Context 0
+os_usb_DC1:		equ 0x0000000000681000	; 2K Device Context 1
+os_usb_DC2:		equ 0x0000000000681800	; 2K Device Context 2
+os_usb_DC3:		equ 0x0000000000682000	; 2K Device Context 3
+os_usb_DC4:		equ 0x0000000000682800	; 2K Device Context 4
+os_usb_DC5:		equ 0x0000000000683000	; 2K Device Context 5
+os_usb_DC6:		equ 0x0000000000683800	; 2K Device Context 6
+os_usb_DC7:		equ 0x0000000000684000	; 2K Device Context 7
+
+os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring
+os_usb_ER:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring
+os_usb_TRB:		equ 0x00000000006B0000
+
+os_usb_scratchpad:	equ 0x0000000000700000
 
 ; Register list
 
@@ -343,12 +269,12 @@ XHCI_PORTPMSC	equ 0x04	; 4-byte Port PM Status and Control Register
 XHCI_PORTLI	equ 0x08	; 4-byte Port Link Info Register (Read-Only)
 XHCI_PORTHLPMC	equ 0x0C	; 4-byte Port Hardware LPM Control Register
 
-; Host Controller Doorbell Register Set (Starts at XHCI_Base + CAPLENGTH + DBOFF)
+; Host Controller Doorbell Register Set (Starts at XHCI_Base + DBOFF)
 XHCI_CDR	equ 0x00	; 4-byte Command Doorbell Register (Target bits 7:0)
 XHCI_DS1	equ 0x04	; 4-byte Device Slot #1 Doorbell
 XHCI_DS2	equ 0x08	; 4-byte Device Slot #2 Doorbell
 
-; Host Controller Runtime Register Set (Starts at XHCI_Base + CAPLENGTH + RTSOFF)
+; Host Controller Runtime Register Set (Starts at XHCI_Base + RTSOFF)
 XHCI_MICROFRAME	equ 0x00	; 4-byte Microframe Index Register
 ; Microframe is incremented every 125 microseconds. Each frame (1ms) is 8 microframes
 ; 28-bytes padding
