@@ -126,13 +126,13 @@ xhci_init_reset:
 	mov rax, os_usb_CR		; Load the address of the Command Ring
 	bts rax, 0			; Set RCS (bit 0)
 	mov [rsi+XHCI_CRCR], rax	; Set the Command Ring Control Register
+	mov eax, [rsi+XHCI_USBSTS]	; Read Status Register
+	mov [rsi+XHCI_USBSTS], eax	; Write Status Register back
 	xor eax, eax
 	mov al, [xhci_maxslots]
 	mov [rsi+XHCI_CONFIG], eax
-	mov eax, 1
+	mov eax, 0
 	mov [rsi+XHCI_DNCTRL], eax
-	mov eax, 0x01			; Set bits 0 (RS)
-	mov [rsi+XHCI_USBCMD], eax
 
 	; Build entries in the Device Controller Index
 	; TODO - Build what is needed. QEMU starts with 8
@@ -146,6 +146,12 @@ xhci_store_DC:
 	add rax, 0x800			; 2KiB
 	dec rcx
 	jnz xhci_store_DC
+
+	; Build scratchpad entries
+	mov rdi, os_usb_scratchpad
+	mov rax, os_usb_scratchpad
+	add rax, 65536
+	stosq
 
 	; Build entries in the Command Ring
 	; Each TRB in the Command Ring is 16 bytes
@@ -163,10 +169,15 @@ xhci_store_DC:
 	stosd				; Event Ring Segment Table Size (ERSTS)
 	add rdi, 4			; Skip Padding
 	mov rax, os_usb_ER
+	add rax, 0x10
 	; TODO - Load the register and preserve bits 5:0
 	stosq				; Event Ring Segment Table Base Address (ERSTB)
-	add rax, 0x40
+	sub rax, 0x10
 	stosq				; Event Ring Dequeue Pointer (ERDP)
+
+	; Start Controller
+	mov eax, 0x01			; Set bits 0 (RS)
+	mov [rsi+XHCI_USBCMD], eax
 
 	; Check the available ports and reset them
 	xor ecx, ecx			; Slot counter
@@ -195,13 +206,13 @@ xhci_reset_skip:
 	stosd				; Store dword 2
 	mov al, XHCI_CTRB_ESLOT		; Enable Slot opcode
 	shl eax, 10			; Shift opcode to bits 15:10
-	bts eax, 9			; Block Event Interrupt
-	bts eax, 5			; Interrupt on Completion
+;	bts eax, 9			; Block Event Interrupt
+;	bts eax, 5			; Interrupt on Completion
 	bts eax, 0			; Cycle Bit
 	stosd				; Store dword 3
 
-	; Ring the Doorbell for the Command Ring (No Op Command)
-	mov eax, 0x00			; Doorbell for Slot 0
+	; Ring the Doorbell for the Command Ring
+	xor eax, eax
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
