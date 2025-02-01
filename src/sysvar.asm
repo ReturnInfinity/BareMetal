@@ -132,6 +132,7 @@ os_ps2_mouse_buttons:	equ os_SystemVariables + 0x0218 ; Button state, bit 0 - le
 os_ps2_mouse_x:		equ os_SystemVariables + 0x021A ; Cursor screen position on X axis
 os_ps2_mouse_y:		equ os_SystemVariables + 0x021C ; Cursor screen position on Y axis
 os_ps2_mouse_count:	equ os_SystemVariables + 0x021E ; Byte counter
+os_boot_arch:		equ os_SystemVariables + 0x0220 ; Bit 0 set for legacy ports, bit 1 set for 60/64 support
 
 
 ; DB - Starting at offset 768, increments by 1
