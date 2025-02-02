@@ -215,28 +215,17 @@ b_delay:
 	shr rax, 32
 	mov rcx, rax			; RCX = RAX >> 32 (timer period in femtoseconds)
 	mov rax, 1000000000
-	div rcx				; Divide 10E9 (RDX:RAX) / RCX (converting from period in femtoseconds to frequency in MHz)
+	div rcx				; RDX:RAX / RCX (converting from period in femtoseconds to frequency in MHz)
 	mul rbx				; RAX *= RBX, should get number of HPET cycles to wait, save result in RBX
 	mov rbx, rax
 	mov ecx, HPET_MAIN_COUNTER
 	call os_hpet_read		; Get HPET counter in RAX
 	add rbx, rax			; RBX += RAX Until when to wait
-; Setup a one shot HPET interrupt when main counter=RBX
-	mov ecx, HPET_TIMER_0_CONF
-	movzx eax, byte [os_HPET_IRQ]
-	shl rax, 9
-	or rax, (1 << 2)
-	call os_hpet_write		; Value to write is (os_HPET_IRQ<<9 | 1<<2)
-	mov rax, rbx
-	mov ecx, HPET_TIMER_0_COMP
-	call os_hpet_write
 b_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
 	mov ecx, HPET_MAIN_COUNTER
 	call os_hpet_read		; Get HPET counter in RAX
-	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
-	jae b_delay_end
-	hlt				; Otherwise halt and the CPU will wait for an interrupt
-	jmp b_delay_loop
+	cmp rax, rbx			; If RAX < RBX then jump to loop, otherwise fall through to end
+	jb b_delay_loop
 b_delay_end:
 
 	pop rax
@@ -258,32 +247,6 @@ b_tsc:
 	shl rdx, 32			; Shift the low 32-bits to the high 32-bits
 	or rax, rdx			; Combine RAX and RDX
 	pop rdx
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; os_delay -- Delay by X HPET ticks
-; IN:	RAX = HPET ticks
-; OUT:	All registers preserved
-os_delay:
-	push rcx
-	push rbx
-	push rax
-
-	xor ebx, ebx
-	mov ecx, HPET_MAIN_COUNTER
-	call os_hpet_read		; Get HPET counter in RAX
-	add rbx, rax			; RBX += RAX Until when to wait
-os_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
-	mov ecx, HPET_MAIN_COUNTER
-	call os_hpet_read		; Get HPET counter in RAX
-	cmp rax, rbx			; If RAX >= RBX then jump to end, otherwise jump to loop
-	jb os_delay_loop
-
-	pop rax
-	pop rbx
-	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
 
