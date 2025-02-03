@@ -8,6 +8,11 @@
 
 ; -----------------------------------------------------------------------------
 ps2_init:
+	; Check if PS/2 is present via ACPI IAPC_BOOT_ARCH
+	mov ax, [os_boot_arch]
+	bt ax, 1			; 8042
+	jnc ps2_init_error
+
 	call ps2_flush			; Read any pending data
 
 	; Disable keyboard
@@ -62,6 +67,7 @@ ps2_init:
 	call ps2_mouse_init
 
 	; Set flag that the PS/2 keyboard was enabled
+	; TODO - Move to a ps2_keyboard_init function
 	or qword [os_SysConfEn], 1 << 0
 
 ps2_init_error:

@@ -55,6 +55,8 @@ init_64:
 	mov esi, 0x00005090		; PCIe bus count
 	lodsw
 	mov [os_pcie_count], ax
+	lodsw
+	mov [os_boot_arch], ax 
 	xor eax, eax
 	mov esi, 0x00005604		; IOAPIC
 	lodsd
@@ -101,13 +103,22 @@ make_interrupt_gate_stubs:
 	dec ecx
 	jnz make_interrupt_gate_stubs
 
-	; Set up the IRQ handlers (Network IRQ handler is configured in init_net)
+	; Set up the IRQ handlers on enabled PS/2 devices
+	mov rbx, [os_SysConfEn]
+	bt ebx, 0
+	jnc init_64_no_ps2keyboard
 	mov edi, 0x21
 	mov rax, int_keyboard
 	call create_gate
+init_64_no_ps2keyboard:
+	bt ebx, 0
+	jnc init_64_no_ps2mouse
 	mov edi, 0x2C
 	mov rax, int_mouse
 	call create_gate
+init_64_no_ps2mouse:
+
+	; Set up IRQ handlers for CPUs
 	mov edi, 0x80
 	mov rax, ap_wakeup
 	call create_gate
