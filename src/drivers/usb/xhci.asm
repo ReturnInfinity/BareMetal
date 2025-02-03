@@ -126,13 +126,13 @@ xhci_init_reset:
 	mov rax, os_usb_CR		; Load the address of the Command Ring
 	bts rax, 0			; Set RCS (bit 0)
 	mov [rsi+XHCI_CRCR], rax	; Set the Command Ring Control Register
+	mov eax, [rsi+XHCI_USBSTS]	; Read Status Register
+	mov [rsi+XHCI_USBSTS], eax	; Write Status Register back
 	xor eax, eax
 	mov al, [xhci_maxslots]
 	mov [rsi+XHCI_CONFIG], eax
-	mov eax, 1
+	mov eax, 0x02
 	mov [rsi+XHCI_DNCTRL], eax
-	mov eax, 0x01			; Set bits 0 (RS)
-	mov [rsi+XHCI_USBCMD], eax
 
 	; Build entries in the Device Controller Index
 	; TODO - Build what is needed. QEMU starts with 8
@@ -147,6 +147,12 @@ xhci_store_DC:
 	dec rcx
 	jnz xhci_store_DC
 
+	; Build scratchpad entries
+	mov rdi, os_usb_scratchpad
+	mov rax, os_usb_scratchpad
+	add rax, 65536
+	stosq
+
 	; Build entries in the Command Ring
 	; Each TRB in the Command Ring is 16 bytes
 	; Build 8 entries for now. Last one is a link to the first
@@ -159,14 +165,18 @@ xhci_store_DC:
 	xor eax, eax			; Interrupt Enable (bit 1), Interrupt Pending (bit 0)
 	stosd				; Interrupter Management Register (IMR)
 	stosd				; Interrupter Moderation (IR)
-	mov eax, 1
+	mov eax, 64
 	stosd				; Event Ring Segment Table Size (ERSTS)
 	add rdi, 4			; Skip Padding
-	mov rax, os_usb_ER
+	mov rax, os_usb_ERST
 	; TODO - Load the register and preserve bits 5:0
 	stosq				; Event Ring Segment Table Base Address (ERSTB)
-	add rax, 0x40
+	sub rax, os_usb_ER
 	stosq				; Event Ring Dequeue Pointer (ERDP)
+	
+	; Start Controller
+	mov eax, 0x01			; Set bits 0 (RS)
+	mov [rsi+XHCI_USBCMD], eax
 
 	; Check the available ports and reset them
 	xor ecx, ecx			; Slot counter
@@ -187,21 +197,21 @@ xhci_reset_skip:
 	cmp ecx, edx
 	jne xhci_check_next
 
-	; Build a No Op Command TRB (4.6.2)
+	; Build a TRB for Enable Slot
 	mov rdi, os_usb_CR
 	xor eax, eax
-	stosd
-	stosd
-	stosd
-	mov al, 0x08
-	shl eax, 10
+	stosd				; Store dword 0
+	stosd				; Store dword 1
+	stosd				; Store dword 2
+	mov al, XHCI_CTRB_ESLOT		; Enable Slot opcode
+	shl eax, 10			; Shift opcode to bits 15:10
 	bts eax, 9			; Block Event Interrupt
 	bts eax, 5			; Interrupt on Completion
 	bts eax, 0			; Cycle Bit
-	stosd
+	stosd				; Store dword 3
 
-	; Ring the Doorbell for the Command Ring (No Op Command)
-	mov eax, 0x00			; Doorbell for Slot 0
+	; Ring the Doorbell for the Command Ring
+	xor eax, eax
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
@@ -235,9 +245,8 @@ os_usb_DC6:		equ 0x0000000000683800	; 2K Device Context 6
 os_usb_DC7:		equ 0x0000000000684000	; 2K Device Context 7
 
 os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring
-os_usb_ER:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring
-os_usb_TRB:		equ 0x00000000006B0000
-
+os_usb_ERST:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring
+os_usb_ER:		equ 0x00000000006B0000
 os_usb_scratchpad:	equ 0x0000000000700000
 
 ; Register list
@@ -288,6 +297,18 @@ XHCI_IR_ERSTS	equ 0x08	; 4-byte Event Ring Segment Table Size
 ; 4-byte padding
 XHCI_IR_ERSTB	equ 0x10	; 8-byte Event Ring Segment Table Base Address
 XHCI_IR_ERDP	equ 0x18	; 8-byte Event Ring Dequeue Pointer
+
+; Command TRB List
+XHCI_CTRB_LINK	equ 0x06	; Link
+XHCI_CTRB_ESLOT	equ 0x09	; Enable Slot
+XHCI_CTRB_DSLOT	equ 0x10	; Disable Slot
+XHCI_CTRB_NOOP	equ 0x23	; No-Op
+
+; Event TRB List
+XHCI_ETRB_TE	equ 0x32	; Transfer Event
+XHCI_ETRB_CC	equ 0x33	; Command Completion Event
+XHCI_ETRB_PSC	equ 0x34	; Port Status Change
+
 
 ; =============================================================================
 ; EOF
