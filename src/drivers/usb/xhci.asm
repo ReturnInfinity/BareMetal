@@ -160,20 +160,6 @@ xhci_store_DC:
 	; mov rdi, os_usb_CR
 	; TODO Create the link TRB
 
-	; Configure Event Ring for Primary Interrupter (Interrupt 0)
-	mov rdi, [xhci_rt]
-	add rdi, xHCI_IR_0		; Interrupt Register 0
-	xor eax, eax			; Interrupt Enable (bit 1), Interrupt Pending (bit 0)
-	mov [rdi+0x00], eax		; Interrupter Management (IMAN)
-	mov eax, 64
-	mov [rdi+0x04], eax		; Interrupter Moderation (IMOD)
-	mov eax, 1			; ERSTBA points to 1 Segment Table
-	mov [rdi+0x08], eax		; Event Ring Segment Table Size (ERSTSZ)
-	mov rax, os_usb_ER
-	mov [rdi+0x10], rax		; Event Ring Segment Table Base Address (ERSTBA)
-	add rax, 0x10
-	mov [rdi+0x18], rax		; Event Ring Dequeue Pointer (ERDP)
-
 	; Configure Segment Table
 	; ┌──────────────────────────────────────┐
 	; | 31             16 15        6 5     0|
@@ -186,13 +172,27 @@ xhci_store_DC:
 	; ├──────────────────┴───────────────────┤
 	; |                RsvdZ                 |
 	; └──────────────────────────────────────┘
-	mov rax, os_usb_ST		; Starting Address of Segment Tables
-	mov rdi, os_usb_ER		; Starting Address of Event Ring
+	mov rax, os_usb_ERS		; Starting Address of Event Ring Segment
+	mov rdi, os_usb_ERST		; Starting Address of Event Ring Segment Table
 	mov [rdi], rax			; Ring Segment Base Address
 	mov eax, 16
 	mov [rdi+8], eax		; Ring Segment Size (bits 15:0)
 	xor eax, eax
 	mov [rdi+12], eax
+
+	; Configure Event Ring for Primary Interrupter (Interrupt 0)
+	mov rdi, [xhci_rt]
+	add rdi, xHCI_IR_0		; Interrupt Register 0
+	xor eax, eax			; Interrupt Enable (bit 1), Interrupt Pending (bit 0)
+	mov [rdi+0x00], eax		; Interrupter Management (IMAN)
+	mov eax, 64
+	mov [rdi+0x04], eax		; Interrupter Moderation (IMOD)
+	mov eax, 1			; ERSTBA points to 1 Segment Table
+	mov [rdi+0x08], eax		; Event Ring Segment Table Size (ERSTSZ)
+	add rax, os_usb_ERS
+	mov [rdi+0x18], rax		; Event Ring Dequeue Pointer (ERDP)
+	mov rax, os_usb_ERST
+	mov [rdi+0x10], rax		; Event Ring Segment Table Base Address (ERSTBA)
 
 	; Start Controller
 	mov eax, 0x01			; Set bits 0 (RS)
@@ -227,7 +227,7 @@ xhci_reset_skip:
 	shl eax, 10			; Shift opcode to bits 15:10
 ;	bts eax, 9			; Block Event Interrupt
 ;	bts eax, 5			; Interrupt on Completion
-;	bts eax, 0			; Cycle Bit
+	bts eax, 0			; Cycle Bit
 	stosd				; Store dword 3
 
 	; Ring the Doorbell for the Command Ring
@@ -265,8 +265,9 @@ os_usb_DC6:		equ 0x0000000000683800	; 2K Device Context 6
 os_usb_DC7:		equ 0x0000000000684000	; 2K Device Context 7
 
 os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring
-os_usb_ER:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring
-os_usb_ST:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Segment Tables
+os_usb_ERST:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring Segment Table
+os_usb_ERS:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Event Ring Segment
+
 
 os_usb_scratchpad:	equ 0x0000000000700000
 
