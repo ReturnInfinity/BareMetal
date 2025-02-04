@@ -36,8 +36,8 @@ xhci_init:
 	mov [rdi], rax
 
 	; Gather CAPLENGTH, check HCIVERSION, get offsets
-	mov [xhci_db], rsi
-	mov [xhci_rt], rsi
+	mov [xhci_db], rsi		; Copy XHCI Base to DB, this gets incremented later
+	mov [xhci_rt], rsi		; Copy XHCI Base to RT, this gets incremented later
 	mov eax, [rsi+XHCI_CAPLENGTH]	; Read 4 bytes starting at CAPLENGTH
 	mov [xhci_caplen], al		; Save the CAPLENGTH offset
 	; Check for a valid version number
@@ -57,6 +57,7 @@ xhci_init:
 	mov eax, [rsi+XHCI_RTSOFF]	; Read the xHCI Runtime Register Base Offset Register
 	and eax, 0xFFFFFFE0		; Clear bits 4:0
 	add [xhci_rt], rax
+	; TODO - Read HCSPARAMS2 to get Event Ring Segment Table Max (bits 7:4)
 
 ; QEMU xHCI Extended Capabilities Entries
 ; 00000000febf0020: 0x02 0x04 0x00 0x02 0x55 0x53 0x42 0x20 <- USB 2
@@ -166,22 +167,30 @@ xhci_store_DC:
 	mov [rdi+0x00], eax		; Interrupter Management (IMAN)
 	mov eax, 64
 	mov [rdi+0x04], eax		; Interrupter Moderation (IMOD)
-	mov eax, 64
+	mov eax, 16
 	mov [rdi+0x08], eax		; Event Ring Segment Table Size (ERSTSZ)
-;	mov rax, [rdi+0x10]		; Load the register to preserve bits 5:0
-;	or rax, os_usb_ER
 	mov rax, os_usb_ER
-	add rax, 0x1000
 	mov [rdi+0x10], rax		; Event Ring Segment Table Base Address (ERSTBA)
-	sub rax, 0x1000
+	add rax, 0x10
 	mov [rdi+0x18], rax		; Event Ring Dequeue Pointer (ERDP)
 
 	; Configure Segment Table
-	mov rax, os_usb_ST
-	mov rdi, os_usb_ER
+	; ┌──────────────────────────────────────┐
+	; | 31             16 15        6 5     0|
+	; ├──────────────────────────────┬───────┤
+	; | Ring Segment Base Address Lo | RsvdZ |
+	; ├──────────────────────────────┴───────┤
+	; |     Ring Segment Base Address Hi     |
+	; ├──────────────────┬───────────────────┤
+	; |      RsvdZ       | Ring Segment Size | 
+	; ├──────────────────┴───────────────────┤
+	; |                RsvdZ                 |
+	; └──────────────────────────────────────┘
+	mov rax, os_usb_ST		; Starting Address of Segment Tables
+	mov rdi, os_usb_ER		; Starting Address of Event Ring
 	mov [rdi], rax			; Ring Segment Base Address
 	mov eax, 16
-	mov [rdi+8], eax		; Ring Segment Size
+	mov [rdi+8], eax		; Ring Segment Size (bits 15:0)
 	xor eax, eax
 	mov [rdi+12], eax
 
