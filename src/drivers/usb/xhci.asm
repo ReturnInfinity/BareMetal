@@ -163,17 +163,27 @@ xhci_store_DC:
 	mov rdi, [xhci_rt]
 	add rdi, XHCI_IR_0		; Interrupt Register 0
 	xor eax, eax			; Interrupt Enable (bit 1), Interrupt Pending (bit 0)
-	stosd				; Interrupter Management Register (IMR)
-	stosd				; Interrupter Moderation (IR)
+	mov [rdi+0x00], eax		; Interrupter Management (IMAN)
 	mov eax, 64
-	stosd				; Event Ring Segment Table Size (ERSTS)
-	add rdi, 4			; Skip Padding
+	mov [rdi+0x04], eax		; Interrupter Moderation (IMOD)
+	mov eax, 64
+	mov [rdi+0x08], eax		; Event Ring Segment Table Size (ERSTSZ)
+;	mov rax, [rdi+0x10]		; Load the register to preserve bits 5:0
+;	or rax, os_usb_ER
 	mov rax, os_usb_ER
-	add rax, 0x10
-	; TODO - Load the register and preserve bits 5:0
-	stosq				; Event Ring Segment Table Base Address (ERSTB)
-	sub rax, 0x10
-	stosq				; Event Ring Dequeue Pointer (ERDP)
+	add rax, 0x1000
+	mov [rdi+0x10], rax		; Event Ring Segment Table Base Address (ERSTBA)
+	sub rax, 0x1000
+	mov [rdi+0x18], rax		; Event Ring Dequeue Pointer (ERDP)
+
+	; Configure Segment Table
+	mov rax, os_usb_ST
+	mov rdi, os_usb_ER
+	mov [rdi], rax			; Ring Segment Base Address
+	mov eax, 16
+	mov [rdi+8], eax		; Ring Segment Size
+	xor eax, eax
+	mov [rdi+12], eax
 
 	; Start Controller
 	mov eax, 0x01			; Set bits 0 (RS)
@@ -208,7 +218,7 @@ xhci_reset_skip:
 	shl eax, 10			; Shift opcode to bits 15:10
 ;	bts eax, 9			; Block Event Interrupt
 ;	bts eax, 5			; Interrupt on Completion
-	bts eax, 0			; Cycle Bit
+;	bts eax, 0			; Cycle Bit
 	stosd				; Store dword 3
 
 	; Ring the Doorbell for the Command Ring
@@ -247,6 +257,7 @@ os_usb_DC7:		equ 0x0000000000684000	; 2K Device Context 7
 
 os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring
 os_usb_ER:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring
+os_usb_ST:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Segment Tables
 
 os_usb_scratchpad:	equ 0x0000000000700000
 
@@ -292,11 +303,11 @@ XHCI_IR_0	equ 0x20	; 32-byte Interrupter Register Set 0
 XHCI_IR_1	equ 0x40	; 32-byte Interrupter Register Set 1
 
 ; Interrupter Register Set
-XHCI_IR_IMR	equ 0x00	; 4-byte Interrupter Management Register
-XHCI_IR_IM	equ 0x04	; 4-byte Interrupter Moderation
-XHCI_IR_ERSTS	equ 0x08	; 4-byte Event Ring Segment Table Size
+XHCI_IR_IMAN	equ 0x00	; 4-byte Interrupter Management
+XHCI_IR_IMOD	equ 0x04	; 4-byte Interrupter Moderation
+XHCI_IR_ERSTSZ	equ 0x08	; 4-byte Event Ring Segment Table Size
 ; 4-byte padding
-XHCI_IR_ERSTB	equ 0x10	; 8-byte Event Ring Segment Table Base Address
+XHCI_IR_ERSTBA	equ 0x10	; 8-byte Event Ring Segment Table Base Address
 XHCI_IR_ERDP	equ 0x18	; 8-byte Event Ring Dequeue Pointer
 
 ; Command TRB List
