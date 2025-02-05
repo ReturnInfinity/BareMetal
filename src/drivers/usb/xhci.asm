@@ -235,6 +235,49 @@ xhci_reset_skip:
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
+	; Slot Enable Command Event TRB
+	; ┌──────────────────────────────────────┐
+	; | 31    24 23        15      10 9   1 0|
+	; ├──────────────────────────────────────┤
+	; |     Address of Enable Slot TRB Lo    |
+	; ├──────────────────────────────────────┤
+	; |     Address of Enable Slot TRB Hi    |
+	; ├─────────┬────────────────────────────┤
+	; |CompCode |          RsvdZ             | 
+	; ├─────────┴────────────┬───────┬─────┬─┤
+	; | Slot ID |    RsvdZ   |   33  |RsvdZ|C|
+	; └─────────┴────────────┴───────┴─────┴─┘
+
+	; TODO - Check Event ring for the Completion Code of the TRB that was sent
+	; Look for the Address of the TRB
+
+	mov eax, 100000
+	call b_delay
+
+	; Set Address
+;	mov rdi, os_usb_CR
+;	add rdi, 16
+;	mov rax, os_usb_DC0
+;	stosq
+;	xor eax, eax
+;	stosd
+;	mov eax, 0x01
+;	mov al, xHCI_CTRB_ADDRD
+;	shl ax, 10
+;	bts eax, 9
+;	bts eax, 0
+;	stosd
+;
+;	xor eax, eax
+;	mov rdi, [xhci_db]
+;	stosd				; Write to the Doorbell Register
+
+	; Initialize Slot Context
+
+	; Initialize Endpoint Context
+
+	; Get Device Descriptor
+
 	jmp xhci_init_done
 
 xhci_init_error:
@@ -321,15 +364,17 @@ xHCI_IR_ERSTBA	equ 0x10	; 8-byte Event Ring Segment Table Base Address
 xHCI_IR_ERDP	equ 0x18	; 8-byte Event Ring Dequeue Pointer
 
 ; Command TRB List
-xHCI_CTRB_LINK	equ 0x06	; Link
-xHCI_CTRB_ESLOT	equ 0x09	; Enable Slot
-xHCI_CTRB_DSLOT	equ 0x10	; Disable Slot
-xHCI_CTRB_NOOP	equ 0x23	; No-Op
+xHCI_CTRB_LINK	equ 06		; Link
+xHCI_CTRB_ESLOT	equ 09		; Enable Slot
+xHCI_CTRB_DSLOT	equ 10		; Disable Slot
+xHCI_CTRB_ADDRD	equ 11		; Address Device
+xHCI_CTRB_RESD	equ 17		; Reset Device
+xHCI_CTRB_NOOP	equ 23		; No-Op
 
 ; Event TRB List
-xHCI_ETRB_TE	equ 0x32	; Transfer Event
-xHCI_ETRB_CC	equ 0x33	; Command Completion Event
-xHCI_ETRB_PSC	equ 0x34	; Port Status Change
+xHCI_ETRB_TE	equ 32		; Transfer Event
+xHCI_ETRB_CC	equ 33		; Command Completion Event
+xHCI_ETRB_PSC	equ 34		; Port Status Change
 
 
 ; =============================================================================
