@@ -223,7 +223,7 @@ xhci_reset_skip:
 	stosd				; Store dword 0
 	stosd				; Store dword 1
 	stosd				; Store dword 2
-	mov al, xHCI_CTRB_NOOP		; Enable Slot opcode
+	mov al, xHCI_CTRB_ESLOT		; Enable Slot opcode
 	shl eax, 10			; Shift opcode to bits 15:10
 	bts eax, 9			; Block Event Interrupt
 	bts eax, 5			; Interrupt on Completion
@@ -262,7 +262,7 @@ xhci_reset_skip:
 	add rax, 7
 	mov ebx, dword [rax + 8]
     shr ebx, 24              ; Extract Slot ID (bits [31:24])
-    ; and rbx, 0xFF            ; Mask to keep only 8 bits
+    and rbx, 0xFF            ; Mask to keep only 8 bits
     mov [os_XHCI_SLOT_ID], ebx  ; Store Slot ID
 
 
@@ -298,8 +298,37 @@ xhci_reset_skip:
 	add rax, 7
 	mov ebx, dword [rax + 8]
     shr ebx, 24              ; Extract Slot ID (bits [31:24])
-    ; and rbx, 0xFF            ; Mask to keep only 8 bits
+    and rbx, 0xFF            ; Mask to keep only 8 bits
     mov [os_XHCI_SLOT_ID], ebx  ; Store Slot ID
+
+xhci_slot_configuration:
+	; Slot Context Data Structure
+	; ┌──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+	; | 31    	27  26   25   24  23 22 21 20 19 18 17 16 15             		8 7                			0|
+	; ├───────────┬────┬────┬────┬───────────┬───────────────────────────────────────────────────────────────┤
+	; | Con. Ent. |Hub |MTT |Rsvd|   Speed   |                  		Route String	   				 	 |		Dword 0
+	; ├───────────┴────┴────┴────┴───────────┴───────────┬───────────────────────────────────────────────────┤
+	; |      Number of Ports 	 | Root Hub Port Number  | 		   			Max Exit Latency          		 |
+	; ├──────────────────────────┴─────┬───────────┬─────┴───────────────────────┬───────────────────────────┤
+	; |		 Interrupter Target        |   RsvdZ   | TTT |	   TT Port Number	 |      TT Hub Slot ID       | 
+	; ├───────────┬────────────────────┴───────────┴─────┴───────────────────────┴───────────────────────────┤
+	; | Slot State| 	  				        RsvdZ		   		   	   	     |    USB Device Address     |
+	; ├───────────┴──────────────────────────────────────────────────────────────┴───────────────────────────┤
+	; | 									 xHCI Reserved (RsvdO)											 |
+	; ├──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | 									 xHCI Reserved (RsvdO)											 |
+	; ├──────────────────────────────────────────────────────────────────────────────────────────────────────┤		
+	; | 									 xHCI Reserved (RsvdO)											 |
+	; ├──────────────────────────────────────────────────────────────────────────────────────────────────────┤		
+	; | 									 xHCI Reserved (RsvdO)											 |
+	; └──────────────────────────────────────────────────────────────────────────────────────────────────────┘		
+
+	; Initialize Slot Context
+
+
+	; Initialize Endpoint Context
+
+	; Get Device Descriptor
 
 
 	; ; Set Address
@@ -319,12 +348,6 @@ xhci_reset_skip:
 	; xor eax, eax
 	; mov rdi, [xhci_db]
 	; stosd				; Write to the Doorbell Register
-
-	; Initialize Slot Context
-
-	; Initialize Endpoint Context
-
-	; Get Device Descriptor
 
 	jmp xhci_init_done
 
@@ -359,9 +382,11 @@ os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring
 os_usb_ERST:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring Segment Table
 os_usb_ERS:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Event Ring Segment
 
-
 os_usb_scratchpad:	equ 0x0000000000700000
 
+os_slot_context:	equ 0x0000000000740000
+os_endpoint_context:	equ 0x0000000000780000
+os_input_contextP:	equ 0x00000000007C0000
 ; Register list
 
 ; Host Controller Capability Registers (Read-Only)
