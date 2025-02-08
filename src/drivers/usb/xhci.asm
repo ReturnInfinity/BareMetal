@@ -281,6 +281,16 @@ xhci_enable_slot:
 	add rdi, rax
 	mov dword [rdi+0], 0x08300000		; Set Context Entries (31:27) to 1, set Speed (23:20)
 	mov dword [rdi+4], 0x00050000		; Set Root Hub Port Number (23:16)
+	; Set Endpoint Context
+	mov eax, [xhci_csz]
+	shl rax, 1
+	add rdi, rax
+	mov dword [rdi+0], 0x00000000
+	mov dword [rdi+4], 0x00080026		; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
+	mov rax, os_usb_TR0			; Address of Transfer Ring
+	bts rax, 0				; DCS
+	mov qword [rdi+8], rax
+	mov dword [rdi+16], 0x00000008		; Set Average TRB Length (15:0)
 
 	; Set Address
 	mov rdi, os_usb_CR
@@ -340,6 +350,7 @@ os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring (16-b
 os_usb_ERST:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring Segment Table
 os_usb_ERS:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Event Ring Segment
 os_usb_IDC:		equ 0x00000000006C0000	; Input device context (temporary buffer of max 64+2048 bytes)
+os_usb_TR0:		equ 0x00000000006D0000	; Temp transfer ring
 
 os_usb_scratchpad:	equ 0x0000000000700000
 
