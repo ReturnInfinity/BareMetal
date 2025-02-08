@@ -275,34 +275,34 @@ xhci_enable_slot:
 	mov rdi, os_usb_IDC
 	; Set Control Context
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00000003		; Set A01 and A00
+	mov dword [rdi+4], 0x00000003	; Set A01 and A00
 	; Set Slot Context
 	mov eax, [xhci_csz]
 	add rdi, rax
-	mov dword [rdi+0], 0x08300000		; Set Context Entries (31:27) to 1, set Speed (23:20)
-	mov dword [rdi+4], 0x00050000		; Set Root Hub Port Number (23:16)
+	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
 	; Set Endpoint Context
 	mov eax, [xhci_csz]
 	shl rax, 1
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00080026		; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
-	mov rax, os_usb_TR0			; Address of Transfer Ring
-	bts rax, 0				; DCS
+	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
+	mov rax, os_usb_TR0		; Address of Transfer Ring
+	bts rax, 0			; DCS
 	mov qword [rdi+8], rax
-	mov dword [rdi+16], 0x00000008		; Set Average TRB Length (15:0)
+	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0)
 
-	; Set Address
+	; Add Set Address command to Command Ring
 	mov rdi, os_usb_CR
 	add rdi, 16
-	mov rax, os_usb_IDC
+	mov rax, os_usb_IDC		; Address of the Input Context
 	stosq				; dword 0 & 1
 	xor eax, eax
 	stosd				; dword 2
-	mov eax, 0x01000000
+	mov eax, 0x01000000		; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_ADDRD
 	shl ax, 10
-	bts eax, 9			; B
+;	bts eax, 9			; B
 	bts eax, 0			; Cycle
 	stosd				; dword 3
 
@@ -310,9 +310,8 @@ xhci_enable_slot:
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
-	; Initialize Slot Context
-
-	; Initialize Endpoint Context
+	mov eax, 100000
+	call b_delay
 
 	; Get Device Descriptor
 
