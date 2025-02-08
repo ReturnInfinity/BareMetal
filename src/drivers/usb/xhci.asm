@@ -51,6 +51,11 @@ xhci_init:
 	mov al, [xhci_caplen]
 	add rax, rsi			; RAX points to base of Host Controller Operational Registers
 	mov [xhci_op], rax
+	mov eax, [rsi+xHCI_HCCPARAMS1]	;
+	bt eax, 2			; Context Size (CSZ)
+	jnc xhci_init_not2k		; If bit is clear then use 32
+	mov dword [xhci_csz], 64	; Otherwise set to 64
+xhci_init_not2k:
 	mov eax, [rsi+xHCI_DBOFF]	; Read the xHCI Doorbell Offset Register
 	and eax, 0xFFFFFFFC		; Clear bits 1:0
 	add [xhci_db], rax
@@ -151,8 +156,12 @@ xhci_store_DC:
 	; Build scratchpad entries
 	mov rdi, os_usb_scratchpad
 	mov rax, os_usb_scratchpad
-	add rax, 65536
+	mov rcx, 16
+xhci_build_scratchpad:
+	add rax, 4096
 	stosq
+	dec rcx
+	jnz xhci_build_scratchpad
 
 	; Build entries in the Command Ring
 	; Each TRB in the Command Ring is 16 bytes
@@ -217,6 +226,14 @@ xhci_reset_skip:
 	cmp ecx, edx
 	jne xhci_check_next
 
+	; Check Event ring for xHCI_ETRB_PSC
+	mov rsi, os_usb_ERS
+	mov eax, [rsi+12]		; Load dword 3
+	shr eax, 10			; Shift Type to AL
+	cmp al, xHCI_ETRB_PSC
+	je xhci_enable_slot
+xhci_enable_slot:
+
 	; Build a TRB for Enable Slot
 	mov rdi, os_usb_CR
 	xor eax, eax
@@ -254,23 +271,34 @@ xhci_reset_skip:
 	mov eax, 100000
 	call b_delay
 
+	; Initialize Input Context
+	mov rdi, os_usb_IDC
+	; Set Control Context
+	mov dword [rdi+0], 0x00000000
+	mov dword [rdi+4], 0x00000003		; Set A01 and A00
+	; Set Slot Context
+	mov eax, [xhci_csz]
+	add rdi, rax
+	mov dword [rdi+0], 0x08300000		; Set Context Entries (31:27) to 1, set Speed (23:20)
+	mov dword [rdi+4], 0x00050000		; Set Root Hub Port Number (23:16)
+
 	; Set Address
-;	mov rdi, os_usb_CR
-;	add rdi, 16
-;	mov rax, os_usb_DC0
-;	stosq
-;	xor eax, eax
-;	stosd
-;	mov eax, 0x01
-;	mov al, xHCI_CTRB_ADDRD
-;	shl ax, 10
-;	bts eax, 9
-;	bts eax, 0
-;	stosd
-;
-;	xor eax, eax
-;	mov rdi, [xhci_db]
-;	stosd				; Write to the Doorbell Register
+	mov rdi, os_usb_CR
+	add rdi, 16
+	mov rax, os_usb_IDC
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x01000000
+	mov al, xHCI_CTRB_ADDRD
+	shl ax, 10
+	bts eax, 9			; B
+	bts eax, 0			; Cycle
+	stosd				; dword 3
+
+	xor eax, eax
+	mov rdi, [xhci_db]
+	stosd				; Write to the Doorbell Register
 
 	; Initialize Slot Context
 
@@ -293,6 +321,7 @@ xhci_maxslots:	db 0
 xhci_op:	dq 0			; Start of Operational Registers
 xhci_db:	dq 0			; Start of Doorbell Registers
 xhci_rt:	dq 0			; Start of Runtime Registers
+xhci_csz:	dd 32
 ; -----------------------------------------------------------------------------
 
 ; Memory (to be redone)
@@ -307,10 +336,10 @@ os_usb_DC5:		equ 0x0000000000683000	; 2K Device Context 5
 os_usb_DC6:		equ 0x0000000000683800	; 2K Device Context 6
 os_usb_DC7:		equ 0x0000000000684000	; 2K Device Context 7
 
-os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring
+os_usb_CR:		equ 0x0000000000690000	; 0x690000 -> 0x69FFFF	64K Command Ring (16-bytes per entry. 4K in future)
 os_usb_ERST:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring Segment Table
 os_usb_ERS:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Event Ring Segment
-
+os_usb_IDC:		equ 0x00000000006C0000	; Input device context (temporary buffer of max 64+2048 bytes)
 
 os_usb_scratchpad:	equ 0x0000000000700000
 
