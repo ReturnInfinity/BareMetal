@@ -313,7 +313,21 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
+	; Setup Stage
+;	mov rdi, os_usb_TR0
+;	mov rax, 0x0000000004416000
+;	stosq
+;	mov rax, 0x0008000001000680	; Setup
+;	stosq
+
 	; Get Device Descriptor
+
+	; Ring doorbell for Slot 1
+;	mov eax, 1
+;	mov rdi, [xhci_db]
+;	add rdi, 4
+;	stosd				; Write to the Doorbell Register
+
 
 	jmp xhci_init_done
 
