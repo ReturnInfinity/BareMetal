@@ -434,6 +434,108 @@ xhci_enable_slot:
 	stosd				; Write to the Doorbell Register
 	pop rdi
 
+	mov eax, 100000
+	call b_delay
+
+	; Request 9 bytes from Configuration Descriptor
+	
+	; Setup Stage
+	mov rax, 0x02000680
+	stosd				; dword 0
+	mov eax, 0x00080000
+	stosd				; dword 1
+	mov eax, 0x00000008
+	stosd				; dword 2
+	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
+	stosd				; dword 3
+	
+	; Data Stage
+	mov rax, os_usb_data0
+	add rax, 0x20
+	stosq				; dword 0 & 1
+	mov eax, 0x00000008
+	stosd				; dword 2
+	mov eax, 0x00010C01
+	stosd				; dword 3
+	
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1
+	stosd				; dword 2
+	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
+	stosd				; dword 3
+	
+	; Event Data
+	mov rax, os_usb_data1
+	add rax, 0x40
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x00001C21
+	stosd				; dword 3
+	
+	; Ring doorbell for Slot 1
+	mov eax, 1
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd				; Write to the Doorbell Register
+	pop rdi
+
+	mov eax, 100000
+	call b_delay
+	xor ebx, ebx
+	mov bl, [os_usb_data0+0x20+2]	; BL contains length
+
+	; Request full data from Configuration Descriptor
+	
+	; Setup Stage
+	mov rax, 0x02000680
+	stosd				; dword 0
+	mov eax, ebx			; BL contains length
+	shl eax, 16
+	stosd				; dword 1
+	mov eax, 0x00000008
+	stosd				; dword 2
+	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
+	stosd				; dword 3
+	
+	; Data Stage
+	mov rax, os_usb_data0
+	add rax, 0x20
+	stosq				; dword 0 & 1
+	mov eax, ebx			; BL contains length
+	stosd				; dword 2
+	mov eax, 0x00010C01
+	stosd				; dword 3
+	
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1
+	stosd				; dword 2
+	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
+	stosd				; dword 3
+	
+	; Event Data
+	mov rax, os_usb_data1
+	add rax, 0x40
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x00001C21
+	stosd				; dword 3
+	
+	; Ring doorbell for Slot 1
+	mov eax, 1
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd				; Write to the Doorbell Register
+	pop rdi
+
+	mov eax, 100000
+	call b_delay
+
 	jmp xhci_init_done
 
 xhci_init_error:
