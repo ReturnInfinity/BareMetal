@@ -344,28 +344,28 @@ xhci_enable_slot:
 
 	; Setup Stage
 	mov rax, 0x01000680
-	stosd				; dword 0
+	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, 0x00080000		; Request 8 bytes
-	stosd				; dword 1
+	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
 	mov eax, 0x00000008
-	stosd				; dword 2
+	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
 	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
-	stosd				; dword 3
+	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
 
 	; Data Stage
 	mov rax, os_usb_data0
-	stosq				; dword 0 & 1
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	mov eax, 0x00000008		; Request 8 bytes
-	stosd				; dword 2
+	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
 	mov eax, 0x00010C01
-	stosd				; dword 3
+	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
 
 	; Status Stage
 	xor eax, eax
-	stosq				; dword 0 & 1
-	stosd				; dword 2
+	stosq				; dword 0 & 1 - Reserved Zero
+	stosd				; dword 2 - Interrupter Target (31:22)
 	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
-	stosd				; dword 3
+	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 
 	; Event Data
 	mov rax, os_usb_data1
@@ -437,7 +437,7 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
-	; Request 9 bytes from Configuration Descriptor
+	; Request 8 bytes from Configuration Descriptor
 	
 	; Setup Stage
 	mov rax, 0x02000680
