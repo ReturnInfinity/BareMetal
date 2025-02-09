@@ -53,9 +53,9 @@ xhci_init:
 	mov [xhci_op], rax
 	mov eax, [rsi+xHCI_HCCPARAMS1]	;
 	bt eax, 2			; Context Size (CSZ)
-	jnc xhci_init_not2k		; If bit is clear then use 32
+	jnc xhci_init_not32byte		; If bit is clear then use 32 bytes
 	mov dword [xhci_csz], 64	; Otherwise set to 64
-xhci_init_not2k:
+xhci_init_not32byte:
 	mov eax, [rsi+xHCI_DBOFF]	; Read the xHCI Doorbell Offset Register
 	and eax, 0xFFFFFFFC		; Clear bits 1:0
 	add [xhci_db], rax
@@ -221,6 +221,7 @@ xhci_check_next:
 	jnc xhci_reset_skip
 	bts eax, 4			; Port Reset
 	mov [rsi+rbx], eax
+	; TODO - insert Enable Slot, Set Address, and others here
 xhci_reset_skip:
 	inc ecx
 	cmp ecx, edx
@@ -234,7 +235,7 @@ xhci_reset_skip:
 	je xhci_enable_slot
 xhci_enable_slot:
 
-	; Build a TRB for Enable Slot
+	; Build a TRB for Enable Slot in the Command Ring
 	mov rdi, os_usb_CR
 	xor eax, eax
 	stosd				; Store dword 0
@@ -242,8 +243,6 @@ xhci_enable_slot:
 	stosd				; Store dword 2
 	mov al, xHCI_CTRB_ESLOT		; Enable Slot opcode
 	shl eax, 10			; Shift opcode to bits 15:10
-;	bts eax, 9			; Block Event Interrupt
-;	bts eax, 5			; Interrupt on Completion
 	bts eax, 0			; Cycle Bit
 	stosd				; Store dword 3
 
@@ -272,10 +271,11 @@ xhci_enable_slot:
 	call b_delay
 
 	; Initialize Input Context
+	; TODO - clear memory if this will be re-used later on
 	mov rdi, os_usb_IDC
 	; Set Control Context
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00000003	; Set A01 and A00
+	mov dword [rdi+4], 0x00000003	; Set A01 and A00 as we want Control EP0 and Slot, respectively
 	; Set Slot Context
 	mov eax, [xhci_csz]
 	add rdi, rax
@@ -283,7 +283,6 @@ xhci_enable_slot:
 	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
 	; Set Endpoint Context
 	mov eax, [xhci_csz]
-	shl rax, 1
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
 	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
@@ -292,7 +291,7 @@ xhci_enable_slot:
 	mov qword [rdi+8], rax
 	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0)
 
-	; Add Set Address command to Command Ring
+	; Build a TRB for Set Address in the Command Ring
 	mov rdi, os_usb_CR
 	add rdi, 16
 	mov rax, os_usb_IDC		; Address of the Input Context
@@ -310,24 +309,90 @@ xhci_enable_slot:
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
+	; Set Address Command Event TRB
+	; ┌──────────────────────────────────────┐
+	; | 31    24 23        15      10 9   1 0|
+	; ├──────────────────────────────────────┤
+	; |      Address of Input Context Lo     |
+	; ├──────────────────────────────────────┤
+	; |      Address of Input Context Hi     |
+	; ├─────────┬────────────────────────────┤
+	; |CompCode |          RsvdZ             | 
+	; ├─────────┴────────────┬───────┬─────┬─┤
+	; | Slot ID |    RsvdZ   |   33  |RsvdZ|C|
+	; └─────────┴────────────┴───────┴─────┴─┘
+
+	; TODO - Check Event ring for the Completion Code of the TRB that was sent
+	; Look for the Address of the TRB
+
 	mov eax, 100000
 	call b_delay
 
-	; Setup Stage
-;	mov rdi, os_usb_TR0
-;	mov rax, 0x0000000004416000
-;	stosq
-;	mov rax, 0x0008000001000680	; Setup
-;	stosq
+	; Add TRBs to Transfer ring
+	mov rdi, os_usb_TR0
 
-	; Get Device Descriptor
+	; Link
+;	mov rax, os_usb_TR0
+;	add rax, 16
+;	stosq				; dword 0 & 1 - Address in Transfer Ring
+;	mov eax, 0			; Interrupter Target 0
+;	stosd				; dword 2
+;	mov eax, 0x00001801		; xHCI_TTRB_LINK (bits 15:10) and Cycle (0)
+;	stosd				; dword 3
+
+	; Setup Stage
+	mov rax, 0x01000680
+	stosd				; dword 0
+	mov eax, 0x00080000
+	stosd				; dword 1
+	mov eax, 0x00000008
+	stosd				; dword 2
+	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
+	stosd				; dword 3
+
+	; Data Stage
+	mov rax, os_usb_data0
+	stosq				; dword 0 & 1
+	mov eax, 0x00000008
+	stosd				; dword 2
+	mov eax, 0x00010C01
+	stosd				; dword 3
+
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1
+	stosd				; dword 2
+	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
+	stosd				; dword 3
+
+	; Event Data
+	mov rax, os_usb_data1
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x00001C21
+	stosd				; dword 3
+
+;	mov rsi, [xhci_op]
+;	mov eax, [rsi+0x04]
+;	mov rsi, [xhci_rt]
+;	mov eax, [rsi+0x20]
+;	mov rsi, [xhci_op]
+;	mov dword [rsi+0x04], 0x00000008
+;	mov rsi, [xhci_rt]
+;	mov dword [rsi+0x20], 0x00000001
+;	add rax, os_usb_ERS
+;	mov [rsi+0x38], rax		; Event Ring Dequeue Pointer (ERDP)
+;	mov eax, [xhci_db]
 
 	; Ring doorbell for Slot 1
-;	mov eax, 1
-;	mov rdi, [xhci_db]
-;	add rdi, 4
-;	stosd				; Write to the Doorbell Register
+	mov eax, 1
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd				; Write to the Doorbell Register
 
+	; Get Device Descriptor
+	
 
 	jmp xhci_init_done
 
@@ -344,7 +409,7 @@ xhci_maxslots:	db 0
 xhci_op:	dq 0			; Start of Operational Registers
 xhci_db:	dq 0			; Start of Doorbell Registers
 xhci_rt:	dq 0			; Start of Runtime Registers
-xhci_csz:	dd 32
+xhci_csz:	dd 32			; Default Context Size
 ; -----------------------------------------------------------------------------
 
 ; Memory (to be redone)
@@ -364,6 +429,8 @@ os_usb_ERST:		equ 0x00000000006A0000	; 0x6A0000 -> 0x6AFFFF	64K Event Ring Segme
 os_usb_ERS:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Event Ring Segment
 os_usb_IDC:		equ 0x00000000006C0000	; Input device context (temporary buffer of max 64+2048 bytes)
 os_usb_TR0:		equ 0x00000000006D0000	; Temp transfer ring
+os_usb_data0:		equ 0x00000000006E0000
+os_usb_data1:		equ 0x00000000006F0000
 
 os_usb_scratchpad:	equ 0x0000000000700000
 
@@ -416,9 +483,19 @@ xHCI_IR_ERSTSZ	equ 0x08	; 4-byte Event Ring Segment Table Size
 xHCI_IR_ERSTBA	equ 0x10	; 8-byte Event Ring Segment Table Base Address
 xHCI_IR_ERDP	equ 0x18	; 8-byte Event Ring Dequeue Pointer
 
+; Transfer TRB List
+xHCI_TTRB_NORM	equ 1		; Normal
+xHCI_TTRB_SETUP	equ 2		; Setup Stage
+xHCI_TTRB_DATA	equ 3		; Data Stage
+xHCI_TTRB_STS	equ 4		; Status Stage
+xHCI_TTRB_ISOC	equ 5		; Isoch
+xHCI_TTRB_LINK	equ 6		; Link
+xHCI_TTRB_EDATA	equ 7		; Event Data
+xHCI_TTRB_NOOP	equ 8		; No-Op
+
 ; Command TRB List
-xHCI_CTRB_LINK	equ 06		; Link
-xHCI_CTRB_ESLOT	equ 09		; Enable Slot
+xHCI_CTRB_LINK	equ 6		; Link
+xHCI_CTRB_ESLOT	equ 9		; Enable Slot
 xHCI_CTRB_DSLOT	equ 10		; Disable Slot
 xHCI_CTRB_ADDRD	equ 11		; Address Device
 xHCI_CTRB_RESD	equ 17		; Reset Device
