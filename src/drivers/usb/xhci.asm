@@ -437,12 +437,12 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
-	; Request 8 bytes from Configuration Descriptor
+	; Request 9 bytes from Configuration Descriptor
 	
 	; Setup Stage
 	mov rax, 0x02000680
 	stosd				; dword 0
-	mov eax, 0x00080000
+	mov eax, 0x00090000
 	stosd				; dword 1
 	mov eax, 0x00000008
 	stosd				; dword 2
@@ -453,7 +453,7 @@ xhci_enable_slot:
 	mov rax, os_usb_data0
 	add rax, 0x20
 	stosq				; dword 0 & 1
-	mov eax, 0x00000008
+	mov eax, 0x00000009
 	stosd				; dword 2
 	mov eax, 0x00010C01
 	stosd				; dword 3
@@ -535,6 +535,50 @@ xhci_enable_slot:
 
 	mov eax, 100000
 	call b_delay
+	
+	; Request 32 bytes from String Descriptor 2
+	
+	; Setup Stage
+	mov rax, 0x03020680		; 0x03 String Desc, 0x02 Product Desc
+	stosd				; dword 0
+	mov eax, 0x00200000
+	stosd				; dword 1
+	mov eax, 0x00000008
+	stosd				; dword 2
+	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
+	stosd				; dword 3
+	
+	; Data Stage
+	mov rax, os_usb_data0
+	add rax, 0x60
+	stosq				; dword 0 & 1
+	mov eax, 0x00000020
+	stosd				; dword 2
+	mov eax, 0x00010C01
+	stosd				; dword 3
+	
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1
+	stosd				; dword 2
+	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
+	stosd				; dword 3
+	
+	; Event Data
+	mov rax, os_usb_data1
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x00001C21
+	stosd				; dword 3
+	
+	; Ring doorbell for Slot 1
+	mov eax, 1
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd				; Write to the Doorbell Register
+	pop rdi
 
 	jmp xhci_init_done
 
