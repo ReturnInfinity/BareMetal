@@ -331,19 +331,10 @@ xhci_enable_slot:
 	; Add TRBs to Transfer ring
 	mov rdi, os_usb_TR0
 
-	; Link
-;	mov rax, os_usb_TR0
-;	add rax, 16
-;	stosq				; dword 0 & 1 - Address in Transfer Ring
-;	mov eax, 0			; Interrupter Target 0
-;	stosd				; dword 2
-;	mov eax, 0x00001801		; xHCI_TTRB_LINK (bits 15:10) and Cycle (0)
-;	stosd				; dword 3
-
 	; Request 8 bytes from Device Descriptor to get the length
 
 	; Setup Stage
-	mov rax, 0x01000680
+	mov rax, 0x01000680		; 0x01 Device Descriptor
 	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, 0x00080000		; Request 8 bytes
 	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
@@ -351,7 +342,6 @@ xhci_enable_slot:
 	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
 	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
 	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
-
 	; Data Stage
 	mov rax, os_usb_data0
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
@@ -359,14 +349,12 @@ xhci_enable_slot:
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
 	mov eax, 0x00010C01
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
-
 	; Status Stage
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
 	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-
 	; Event Data
 	mov rax, os_usb_data1
 	stosq				; dword 0 & 1
@@ -386,13 +374,13 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
+	; Request full data from Device Descriptor
+
 	xor ebx, ebx
 	mov bl, [os_usb_data0]		; BL contains length
 
-	; Request full data from Device Descriptor
-
 	; Setup Stage
-	mov rax, 0x01000680
+	mov rax, 0x01000680		; 0x01 Device Descriptor
 	stosd				; dword 0
 	mov eax, ebx			; BL contains length
 	shl eax, 16
@@ -401,7 +389,6 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
 	stosd				; dword 3
-
 	; Data Stage
 	mov rax, os_usb_data0
 	stosq				; dword 0 & 1
@@ -409,14 +396,12 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00010C01
 	stosd				; dword 3
-	
 	; Status Stage
 	xor eax, eax
 	stosq				; dword 0 & 1
 	stosd				; dword 2
 	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
 	stosd				; dword 3
-
 	; Event Data
 	mov rax, os_usb_data1
 	add rax, 0x40
@@ -425,7 +410,7 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00001C21
 	stosd				; dword 3
-	
+
 	; Ring doorbell for Slot 1
 	mov eax, 1
 	push rdi
@@ -438,9 +423,9 @@ xhci_enable_slot:
 	call b_delay
 
 	; Request 9 bytes from Configuration Descriptor
-	
+
 	; Setup Stage
-	mov rax, 0x02000680
+	mov rax, 0x02000680		; 0x02 Configuration Descriptor
 	stosd				; dword 0
 	mov eax, 0x00090000
 	stosd				; dword 1
@@ -448,7 +433,6 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
 	stosd				; dword 3
-	
 	; Data Stage
 	mov rax, os_usb_data0
 	add rax, 0x20
@@ -457,14 +441,12 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00010C01
 	stosd				; dword 3
-	
 	; Status Stage
 	xor eax, eax
 	stosq				; dword 0 & 1
 	stosd				; dword 2
 	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
 	stosd				; dword 3
-	
 	; Event Data
 	mov rax, os_usb_data1
 	add rax, 0x40
@@ -473,7 +455,7 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00001C21
 	stosd				; dword 3
-	
+
 	; Ring doorbell for Slot 1
 	mov eax, 1
 	push rdi
@@ -484,13 +466,14 @@ xhci_enable_slot:
 
 	mov eax, 100000
 	call b_delay
+
+	; Request full data from Configuration Descriptor
+
 	xor ebx, ebx
 	mov bl, [os_usb_data0+0x20+2]	; BL contains length
 
-	; Request full data from Configuration Descriptor
-	
 	; Setup Stage
-	mov rax, 0x02000680
+	mov rax, 0x02000680		; 0x02 Configuration Descriptor
 	stosd				; dword 0
 	mov eax, ebx			; BL contains length
 	shl eax, 16
@@ -499,7 +482,6 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
 	stosd				; dword 3
-	
 	; Data Stage
 	mov rax, os_usb_data0
 	add rax, 0x20
@@ -508,14 +490,12 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00010C01
 	stosd				; dword 3
-	
 	; Status Stage
 	xor eax, eax
 	stosq				; dword 0 & 1
 	stosd				; dword 2
 	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
 	stosd				; dword 3
-	
 	; Event Data
 	mov rax, os_usb_data1
 	add rax, 0x40
@@ -524,7 +504,7 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00001C21
 	stosd				; dword 3
-	
+
 	; Ring doorbell for Slot 1
 	mov eax, 1
 	push rdi
@@ -535,9 +515,9 @@ xhci_enable_slot:
 
 	mov eax, 100000
 	call b_delay
-	
+
 	; Request 32 bytes from String Descriptor 2
-	
+
 	; Setup Stage
 	mov rax, 0x03020680		; 0x03 String Desc, 0x02 Product Desc
 	stosd				; dword 0
@@ -547,7 +527,6 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
 	stosd				; dword 3
-	
 	; Data Stage
 	mov rax, os_usb_data0
 	add rax, 0x60
@@ -556,14 +535,12 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00010C01
 	stosd				; dword 3
-	
 	; Status Stage
 	xor eax, eax
 	stosq				; dword 0 & 1
 	stosd				; dword 2
 	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
 	stosd				; dword 3
-	
 	; Event Data
 	mov rax, os_usb_data1
 	stosq				; dword 0 & 1
@@ -571,7 +548,7 @@ xhci_enable_slot:
 	stosd				; dword 2
 	mov eax, 0x00001C21
 	stosd				; dword 3
-	
+
 	; Ring doorbell for Slot 1
 	mov eax, 1
 	push rdi
