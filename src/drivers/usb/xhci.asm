@@ -557,6 +557,58 @@ xhci_enable_slot:
 	stosd				; Write to the Doorbell Register
 	pop rdi
 
+	mov eax, 100000
+	call b_delay
+
+	; Build a TRB for Evaluate Context in the Command Ring
+	mov rdi, os_usb_CR
+	add rdi, 32
+	mov rax, os_usb_IDC		; Address of the Input Context
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, xHCI_CTRB_EVALC
+	shl ax, 10
+	bts eax, 0			; Cycle
+	stosd				; dword 3
+
+	xor eax, eax
+	mov rdi, [xhci_db]
+	stosd				; Write to the Doorbell Register
+
+	; TODO - Read the event code to verify success
+
+	mov eax, 100000
+	call b_delay
+
+	; Configure the endpoint
+	mov rdi, os_usb_IDC
+	; Set Control Context
+	mov dword [rdi+4], 0x00000007	; Set A02, A01, and A00 as we want EP1 Out, Control EP0, and Slot, respectively
+	; Set Slot Context
+	mov eax, [xhci_csz]
+	add rdi, rax
+	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
+
+	; Build a TRB for Configure Endpoint in the Command Ring
+	mov rdi, os_usb_CR
+	add rdi, 48
+	mov rax, os_usb_IDC		; Address of the Input Context
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, xHCI_CTRB_CONFE
+	shl ax, 10
+	bts eax, 0			; Cycle
+	stosd				; dword 3
+
+	xor eax, eax
+	mov rdi, [xhci_db]
+	stosd				; Write to the Doorbell Register
+
 	jmp xhci_init_done
 
 xhci_init_error:
@@ -661,6 +713,11 @@ xHCI_CTRB_LINK	equ 6		; Link
 xHCI_CTRB_ESLOT	equ 9		; Enable Slot
 xHCI_CTRB_DSLOT	equ 10		; Disable Slot
 xHCI_CTRB_ADDRD	equ 11		; Address Device
+xHCI_CTRB_CONFE	equ 12		; Configure Endpoint
+xHCI_CTRB_EVALC	equ 13		; Evaluate Context
+xHCI_CTRB_RESE	equ 14		; Reset Endpoint
+xHCI_CTRB_STPE	equ 15		; Stop Endpoint
+xHCI_CTRB_SETTR	equ 16		; Set TR Dequeue Pointer
 xHCI_CTRB_RESD	equ 17		; Reset Device
 xHCI_CTRB_NOOP	equ 23		; No-Op
 
