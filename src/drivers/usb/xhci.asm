@@ -585,12 +585,32 @@ xhci_enable_slot:
 	; Configure the endpoint
 	mov rdi, os_usb_IDC
 	; Set Control Context
-	mov dword [rdi+4], 0x00000007	; Set A02, A01, and A00 as we want EP1 Out, Control EP0, and Slot, respectively
+	mov dword [rdi+4], 0x00000009
 	; Set Slot Context
 	mov eax, [xhci_csz]
 	add rdi, rax
-	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+	mov dword [rdi+0], 0xf8300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
 	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
+	; Set Endpoint Context
+	mov eax, [xhci_csz]
+	add rdi, rax
+	mov dword [rdi+0], 0x00000000
+	mov dword [rdi+4], 0x00040026	; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
+	mov rax, os_usb_TR0		; Address of Transfer Ring
+	bts rax, 0			; DCS
+	mov qword [rdi+8], rax
+	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0)
+	; Set EP1 In
+	mov eax, [xhci_csz]
+	add rdi, rax
+	add rdi, rax
+	mov dword [rdi+0], 0x00060000
+	mov dword [rdi+4], 0x0004003e
+	mov rax, os_usb_TR0
+	add rax, 0x200
+	bts rax, 0
+	mov qword [rdi+8], rax
+	mov dword [rdi+16], 0x00040004
 
 	; Build a TRB for Configure Endpoint in the Command Ring
 	mov rdi, os_usb_CR
