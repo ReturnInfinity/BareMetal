@@ -560,6 +560,7 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
+	push rdi
 	; Build a TRB for Evaluate Context in the Command Ring
 	mov rdi, os_usb_CR
 	add rdi, 32
@@ -576,12 +577,13 @@ xhci_enable_slot:
 	xor eax, eax
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
-
+	pop rdi
 	; TODO - Read the event code to verify success
 
 	mov eax, 100000
 	call b_delay
 
+	push rdi
 	; Configure the endpoint
 	mov rdi, os_usb_IDC
 	; Set Control Context
@@ -628,6 +630,107 @@ xhci_enable_slot:
 	xor eax, eax
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
+	pop rdi
+
+	; ---------------------------------------
+	; Set Configuration Device
+	; ---------------------------------------
+	
+	; Load configuration value from configuration descriptor
+	xor ebx, ebx  
+	mov bl, [os_usb_data0+0x20+5]    ; Load bConfigurationValue (offset 5)
+
+	; Setup Stage
+	mov rax, 0x01000900          ; bmRequestType: Host to Device, Standard, Interface
+	stosd                       ; dword 0
+	xor eax, eax                ; 
+	stosd                       ; dword 1
+	xor eax, 0x00000008
+	stosd                       ; dword 2
+	mov eax, 0x00030841         ; TRT = 3 (OUT Transfer), TRB Type (15:10), IDT (bit 6), Cycle (bit 0)
+	stosd                       ; dword 3
+
+	; Status Stage (IN Transfer) - No Data
+	xor rax, rax
+	stosq                       ; dword 0 & 1
+	stosd                       ; dword 2
+	mov eax, 0x00001013         ; TRB Type (15:10 = Status Stage), Cycle bit set
+	stosd                       ; dword 3
+
+	; Event Data TRB
+	mov rax, os_usb_data1
+	add rax, 0x40
+	stosq                       ; dword 0 & 1
+	xor eax, eax
+	stosd                       ; dword 2
+	mov eax, 0x00001C21         ; TRB Type (15:10 = Event Data), Cycle bit set
+	stosd                       ; dword 3
+
+	; Ring the doorbell for Slot 1
+	mov eax, 1
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd                ; Write to the Doorbell Register
+	pop rdi
+
+	mov eax, 100000
+	call b_delay
+	
+	; ---------------------------------------
+	; Get HID Report Descriptor
+	; ---------------------------------------
+		
+	xor ebx, ebx
+	mov bl, [os_usb_data0+0x30+9]  ; Load LSB of wReportDescriptorLength
+	mov bh, [os_usb_data0+0x30+10] ; Load MSB of wReportDescriptorLength
+	mov r12, rbx                   ; Store the length in r12
+
+	; Setup Stage
+	mov rax, 0x22000681         ; bmRequestType (0x81) | bRequest (0x06) | wValue (0x22 << 8)
+	stosd                       ; dword 0
+	mov eax, 0x00340000         ; DWORD 1: wLength (52 bytes) | wIndex (Interface 0)
+	stosd                       ; dword 1
+	mov eax, 0x00000008			; TRB Length (8 bytes)
+	stosd                       ; dword 2
+	mov eax, 0x00030841         ; TRT = 3 (OUT Transfer), TRB Type (15:10), IDT (bit 6), Cycle (bit 0)
+	stosd                       ; dword 3
+
+	; Data Stage (OUT Transfer) - Send 1 byte
+	mov rax, os_usb_data0
+	add rax, 0x80
+	stosq                       ; dword 0 & 1
+	mov eax, r12d		        ; byte to send
+	stosd                       ; dword 2
+	mov eax, 0x00010C01         ; OUT Transfer, Cycle bit set
+	stosd                       ; dword 3
+
+	; Status Stage (IN Transfer) - No Data
+	xor rax, rax
+	stosq                       ; dword 0 & 1
+	stosd                       ; dword 2
+	mov eax, 0x00001013         ; TRB Type (15:10 = Status Stage), Cycle bit set
+	stosd                       ; dword 3
+
+	; Event Data TRB
+	mov rax, os_usb_data1
+	add rax, 0x40
+	stosq                       ; dword 0 & 1
+	xor eax, eax
+	stosd                       ; dword 2
+	mov eax, 0x00001C21         ; TRB Type (15:10 = Event Data), Cycle bit set
+	stosd                       ; dword 3
+
+	; Ring the doorbell for Slot 1
+	mov eax, 1
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd                ; Write to the Doorbell Register
+	pop rdi
+
+	mov eax, 100000
+	call b_delay
 
 	jmp xhci_init_done
 
