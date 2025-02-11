@@ -281,6 +281,7 @@ xhci_enable_slot:
 	add rdi, rax
 	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
 	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
+	; TODO - Value above should not be hard-coded
 	; Set Endpoint Context
 	mov eax, [xhci_csz]
 	add rdi, rax
@@ -419,6 +420,17 @@ xhci_enable_slot:
 	stosd				; Write to the Doorbell Register
 	pop rdi
 
+	; TODO - Check Device Descriptor
+	; Example from QEMU mouse
+	;
+	; 0000: 0x12 0x01 0x00 0x02 0x00 0x00 0x00 0x40
+	; 0008: 0x27 0x06 0x01 0x00 0x00 0x00 0x01 0x02
+	; 0010: 0x09 0x01
+	;
+	; Gather Vendor ID (offset 8) and Product ID (offset 10)
+	; Build a table
+	; Slot / Vendor / Product / Class / Protocol
+
 	mov eax, 100000
 	call b_delay
 
@@ -467,10 +479,12 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
-	; Request full data from Configuration Descriptor
 
+	; Check TotalLength
 	xor ebx, ebx
-	mov bl, [os_usb_data0+0x20+2]	; BL contains length
+	mov bx, [os_usb_data0+0x20+2]	; BX contains length
+
+	; Request full data from Configuration Descriptor (includes Interface Descriptor (0x04) / HID Descriptor (0x21))
 
 	; Setup Stage
 	mov rax, 0x02000680		; 0x02 Configuration Descriptor
@@ -513,49 +527,67 @@ xhci_enable_slot:
 	stosd				; Write to the Doorbell Register
 	pop rdi
 
-	mov eax, 100000
-	call b_delay
+	; TODO - Check Configuration Descriptor
+	; Example from QEMU mouse
+	;
+	; 0000: 0x09 0x02 0x22 0x00 0x01 0x01 0x06 0xa0
+	; 0008: 0x32 0x09 0x04 0x00 0x00 0x01 0x03 0x01
+	; 0010: 0x02 0x00 0x09 0x21 0x01 0x00 0x00 0x01
+	; 0018: 0x22 0x34 0x00 0x07 0x05 0x81 0x03 0x04
+	; 0020: 0x00 0x07
+	;
+	; Step though Configuration Descriptor (0x2) looking for the Interface Descriptor (0x4)
+	; Check Class Code (offset 5) - 0x03 = HID
+	; Check Protocol (offset 7) - 0x1 = Keyboard, 0x2 = Mouse
+	; Look for Endpoint Descriptor (0x5)
+	; Check MaxPacketSize (offset 4) - 0x0008 = keyboard (ideally), 0x0004 = mouse (ideally)
 
-	; Request 32 bytes from String Descriptor 2
+	; TODO - Send Set_Idle
+	; 0x00000000000A21
 
-	; Setup Stage
-	mov rax, 0x03020680		; 0x03 String Desc, 0x02 Product Desc
-	stosd				; dword 0
-	mov eax, 0x00200000
-	stosd				; dword 1
-	mov eax, 0x00000008
-	stosd				; dword 2
-	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
-	stosd				; dword 3
-	; Data Stage
-	mov rax, os_usb_data0
-	add rax, 0x60
-	stosq				; dword 0 & 1
-	mov eax, 0x00000020
-	stosd				; dword 2
-	mov eax, 0x00010C01
-	stosd				; dword 3
-	; Status Stage
-	xor eax, eax
-	stosq				; dword 0 & 1
-	stosd				; dword 2
-	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
-	stosd				; dword 3
-	; Event Data
-	mov rax, os_usb_data1
-	stosq				; dword 0 & 1
-	xor eax, eax
-	stosd				; dword 2
-	mov eax, 0x00001C21
-	stosd				; dword 3
-
-	; Ring doorbell for Slot 1
-	mov eax, 1
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
+;	mov eax, 100000
+;	call b_delay
+;
+;	; Request 32 bytes from String Descriptor 2
+;
+;	; Setup Stage
+;	mov rax, 0x03020680		; 0x03 String Desc, 0x02 Product Desc
+;	stosd				; dword 0
+;	mov eax, 0x00200000
+;	stosd				; dword 1
+;	mov eax, 0x00000008
+;	stosd				; dword 2
+;	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
+;	stosd				; dword 3
+;	; Data Stage
+;	mov rax, os_usb_data0
+;	add rax, 0x60
+;	stosq				; dword 0 & 1
+;	mov eax, 0x00000020
+;	stosd				; dword 2
+;	mov eax, 0x00010C01
+;	stosd				; dword 3
+;	; Status Stage
+;	xor eax, eax
+;	stosq				; dword 0 & 1
+;	stosd				; dword 2
+;	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
+;	stosd				; dword 3
+;	; Event Data
+;	mov rax, os_usb_data1
+;	stosq				; dword 0 & 1
+;	xor eax, eax
+;	stosd				; dword 2
+;	mov eax, 0x00001C21
+;	stosd				; dword 3
+;
+;	; Ring doorbell for Slot 1
+;	mov eax, 1
+;	push rdi
+;	mov rdi, [xhci_db]
+;	add rdi, 4
+;	stosd				; Write to the Doorbell Register
+;	pop rdi
 
 	mov eax, 100000
 	call b_delay
@@ -590,12 +622,15 @@ xhci_enable_slot:
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0xf8300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+	; TODO - Value above should not be hard-coded
 	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
+	; TODO - Value above should not be hard-coded
 	; Set Endpoint Context
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
 	mov dword [rdi+4], 0x00040026	; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
+	; TODO - Value above should not be hard-coded
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	bts rax, 0			; DCS
 	mov qword [rdi+8], rax
@@ -746,6 +781,49 @@ xHCI_ETRB_TE	equ 32		; Transfer Event
 xHCI_ETRB_CC	equ 33		; Command Completion Event
 xHCI_ETRB_PSC	equ 34		; Port Status Change
 
+; Standard Request Codes
+xHCI_GET_STATUS		equ 0x00
+xHCI_CLEAR_FEATURE	equ 0x01
+xHCI_SET_FEATURE	equ 0x03
+xHCI_GET_DESCRIPTOR	equ 0x06
+xHCI_SET_DESCRIPTOR	equ 0x07
+
+; Completion Codes
+xHCI_CC_INVALID				equ 0
+xHCI_CC_SUCCESS				equ 1
+xHCI_CC_DATA_BUFFER_ERROR		equ 2
+xHCI_CC_BABBLE_DETECTED			equ 3
+xHCI_CC_USB_TRANSACTION_ERROR		equ 4
+xHCI_CC_TRB_ERROR			equ 5
+xHCI_CC_STALL_ERROR			equ 6
+xHCI_CC_RESOURCE_ERROR			equ 7
+xHCI_CC_BANDWIDTH_ERROR			equ 8
+xHCI_CC_NO_SLOTS_ERROR			equ 9
+xHCI_CC_INVALID_STREAM_TYPE_ERROR	equ 10 
+xHCI_CC_SLOT_NOT_ENABLED_ERROR		equ 11
+xHCI_CC_EP_NOT_ENABLED_ERROR		equ 12
+xHCI_CC_SHORT_PACKET			equ 13
+xHCI_CC_RING_UNDERRUN			equ 14
+xHCI_CC_RING_OVERRUN			equ 15
+xHCI_CC_VF_ER_FULL			equ 16
+xHCI_CC_PARAMETER_ERROR			equ 17
+xHCI_CC_BANDWIDTH_OVERRUN		equ 18
+xHCI_CC_CONTEXT_STATE_ERROR		equ 19
+xHCI_CC_NO_PING_RESPONSE_ERROR		equ 20
+xHCI_CC_EVENT_RING_FULL_ERROR		equ 21
+xHCI_CC_INCOMPATIBLE_DEVICE_ERROR	equ 22
+xHCI_CC_MISSED_SERVICE_ERROR		equ 23
+xHCI_CC_COMMAND_RING_STOPPED		equ 24
+xHCI_CC_COMMAND_ABORTED			equ 25
+xHCI_CC_STOPPED				equ 26
+xHCI_CC_STOPPED_LENGTH_INVAID		equ 27
+xHCI_CC_MAX_EXIT_LATENCY_TOO_LARGE_ERROR	equ 29
+xHCI_CC_ISOCH_BUFFER_OVERRUN		equ 31
+xHCI_CC_EVENT_LOST_ERROR		equ 32
+xHCI_CC_UNDEFINED_ERROR			equ 33
+xHCI_CC_INVALID_STREAM_ID_ERROR		equ 34
+xHCI_CC_SECONDARY_BANDWIDTH_ERROR	equ 35
+xHCI_CC_SPLIT_TRANSACTION_ERROR		equ 36
 
 ; =============================================================================
 ; EOF
