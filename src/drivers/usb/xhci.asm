@@ -471,6 +471,7 @@ xhci_enable_slot:
 
 	xor ebx, ebx
 	mov bl, [os_usb_data0+0x20+2]	; BL contains length
+	mov bh, [os_usb_data0+0x20+3]	; BH contains higher byte of length
 
 	; Setup Stage
 	mov rax, 0x02000680		; 0x02 Configuration Descriptor
@@ -635,7 +636,7 @@ xhci_enable_slot:
 	; ---------------------------------------
 	; Set Configuration Device
 	; ---------------------------------------
-	
+xhci_set_conifguration_device:	
 	; Load configuration value from configuration descriptor
 	xor ebx, ebx  
 	mov bl, [os_usb_data0+0x20+5]    ; Load bConfigurationValue (offset 5)
@@ -680,7 +681,7 @@ xhci_enable_slot:
 	; ---------------------------------------
 	; Get HID Report Descriptor
 	; ---------------------------------------
-		
+xhci_get_hid_descriptor:		
 	xor ebx, ebx
 	mov bl, [os_usb_data0+0x30+9]  ; Load LSB of wReportDescriptorLength
 	mov bh, [os_usb_data0+0x30+10] ; Load MSB of wReportDescriptorLength
@@ -703,6 +704,103 @@ xhci_enable_slot:
 	mov eax, r12d		        ; byte to send
 	stosd                       ; dword 2
 	mov eax, 0x00010C01         ; OUT Transfer, Cycle bit set
+	stosd                       ; dword 3
+
+	; Status Stage (IN Transfer) - No Data
+	xor rax, rax
+	stosq                       ; dword 0 & 1
+	stosd                       ; dword 2
+	mov eax, 0x00001013         ; TRB Type (15:10 = Status Stage), Cycle bit set
+	stosd                       ; dword 3
+
+	; Event Data TRB
+	mov rax, os_usb_data1
+	add rax, 0x40
+	stosq                       ; dword 0 & 1
+	xor eax, eax
+	stosd                       ; dword 2
+	mov eax, 0x00001C21         ; TRB Type (15:10 = Event Data), Cycle bit set
+	stosd                       ; dword 3
+
+	; Ring the doorbell for Slot 1
+	mov eax, 1
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd                ; Write to the Doorbell Register
+	pop rdi
+
+	mov eax, 100000
+	call b_delay
+
+	; ---------------------------------------
+	; Get Protocol HID
+	; ---------------------------------------
+xhci_get_protocol_hid:
+	xor ebx, ebx
+	mov bl, [os_usb_data0+0x20+11]  ; Load LSB of wReportDescriptorLength
+
+
+	; Setup Stage
+	mov rax, 0x000003A1         ; bmRequestType (0xA1) | bRequest (0x03) 
+	shl rbx, 16					; wValue(Interface Num)
+	or rax, rbx					
+	stosd                       ; dword 0
+	mov eax, 0x00010000         ; DWORD 1: wLength (1 bytes) | wIndex (Interface 0)
+	stosd                       ; dword 1
+	mov eax, 0x00000008			; TRB Length (8 bytes)
+	stosd                       ; dword 2
+	mov eax, 0x00030841         ; TRT = 3 (OUT Transfer), TRB Type (15:10), IDT (bit 6), Cycle (bit 0)
+	stosd                       ; dword 3
+
+	; Data Stage (OUT Transfer) - Send 1 byte
+	mov rax, os_usb_data0
+	add rax, 0xC0 
+	stosq                       ; dword 0 & 1
+	mov eax, 1		        	; byte to send
+	stosd                       ; dword 2
+	mov eax, 0x00010C01         ; OUT Transfer, Cycle bit set
+	stosd                       ; dword 3
+
+	; Status Stage (IN Transfer) - No Data
+	xor rax, rax
+	stosq                       ; dword 0 & 1
+	stosd                       ; dword 2
+	mov eax, 0x00001013         ; TRB Type (15:10 = Status Stage), Cycle bit set
+	stosd                       ; dword 3
+
+	; Event Data TRB
+	mov rax, os_usb_data1
+	add rax, 0x40
+	stosq                       ; dword 0 & 1
+	xor eax, eax
+	stosd                       ; dword 2
+	mov eax, 0x00001C21         ; TRB Type (15:10 = Event Data), Cycle bit set
+	stosd                       ; dword 3
+
+	; Ring the doorbell for Slot 1
+	mov eax, 1
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd                ; Write to the Doorbell Register
+	pop rdi
+
+	mov eax, 100000
+	call b_delay
+
+	; ---------------------------------------
+	; Set Protocol HID
+	; ---------------------------------------
+xhci_set_protocol_hid:
+	; Setup Stage
+	mov rax, 0x01000B21         ; bmRequestType (0x21) | bRequest (0x0B) 			
+	stosd                       ; dword 0
+	mov eax, 0x00000000         ; DWORD 1: wLength (0 bytes) | wIndex (Interface 0)
+	stosd                       ; dword 1
+	mov eax, 0x00000008			; TRB Length (8 bytes)
+	stosd                       ; dword 2
+	mov eax, 0x00030841         ; TRT = 3 (OUT Transfer), TRB Type (15:10), IDT (bit 6), Cycle (bit 0)
 	stosd                       ; dword 3
 
 	; Status Stage (IN Transfer) - No Data
