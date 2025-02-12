@@ -184,7 +184,7 @@ xhci_build_scratchpad:
 	mov rax, os_usb_ERS		; Starting Address of Event Ring Segment
 	mov rdi, os_usb_ERST		; Starting Address of Event Ring Segment Table
 	mov [rdi], rax			; Ring Segment Base Address
-	mov eax, 16
+	mov eax, 32				; Size of Event Ring Segment
 	mov [rdi+8], eax		; Ring Segment Size (bits 15:0)
 	xor eax, eax
 	mov [rdi+12], eax
@@ -690,7 +690,8 @@ xhci_get_hid_descriptor:
 	; Setup Stage
 	mov rax, 0x22000681         ; bmRequestType (0x81) | bRequest (0x06) | wValue (0x22 << 8)
 	stosd                       ; dword 0
-	mov eax, 0x00340000         ; DWORD 1: wLength (52 bytes) | wIndex (Interface 0)
+	mov eax, r12d		        ; DWORD 1: wLength (52 bytes) | wIndex (Interface 0)
+	shl rax, 16
 	stosd                       ; dword 1
 	mov eax, 0x00000008			; TRB Length (8 bytes)
 	stosd                       ; dword 2
@@ -738,7 +739,7 @@ xhci_get_hid_descriptor:
 	; ---------------------------------------
 xhci_get_protocol_hid:
 	xor ebx, ebx
-	mov bl, [os_usb_data0+0x20+11]  ; Load LSB of wReportDescriptorLength
+	mov bl, [os_usb_data0+0x20+11]  ; Load Interface Number
 
 
 	; Setup Stage
