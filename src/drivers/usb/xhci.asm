@@ -664,6 +664,38 @@ xhci_enable_slot:
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
+	mov eax, 2000000		; 2 Seconds
+	call b_delay
+
+	; Attempt to read a packet
+
+	; Normal
+	mov rdi, os_usb_TR0
+	add rdi, 0x200
+	mov rax, os_usb_data0
+	add rax, 0x100
+	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
+	mov eax, 4
+	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
+	mov eax, 0x000413
+	stosd				; dword 3 - TRB Type (15:10)
+	; Event Data
+	mov rax, os_usb_data0
+	add rax, 0x120
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x00001C21
+	stosd				; dword 3
+	
+	; Ring doorbell for Slot 1
+	mov eax, 3			; epid 3
+	push rdi
+	mov rdi, [xhci_db]
+	add rdi, 4
+	stosd				; Write to the Doorbell Register
+	pop rdi
+
 	jmp xhci_init_done
 
 xhci_init_error:
