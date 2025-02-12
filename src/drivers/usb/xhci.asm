@@ -672,6 +672,8 @@ xhci_enable_slot:
 	; Normal
 	mov rdi, os_usb_TR0
 	add rdi, 0x200
+
+xhci_read_loop:
 	mov rax, os_usb_data0
 	add rax, 0x100
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
@@ -695,6 +697,13 @@ xhci_enable_slot:
 	add rdi, 4
 	stosd				; Write to the Doorbell Register
 	pop rdi
+
+	mov eax, 10000
+	call b_delay
+	mov eax, [os_usb_data0+0x100]
+	call os_debug_dump_eax
+
+	jmp xhci_read_loop
 
 	jmp xhci_init_done
 
