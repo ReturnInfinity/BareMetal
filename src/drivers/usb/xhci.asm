@@ -270,23 +270,35 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
-	; Initialize Input Context
-	; TODO - clear memory if this will be re-used later on
+	; Build the Input Context (6.2.5)
+	; Each section of the Input Context is either 32 or 64-bytes in length (depending on HCPARAMS1.CSZ)
+	; Entries are as follows:
+	;
+	; Input Control Context (6.2.5.1)
+	; Slot Context
+	; Endpoint Context 0
+	; Endpoint Context 1 OUT
+	; Endpoint Context 1 IN
+	; ...
+	; Endpoint Context 15 OUT
+	; Endpoint Context 15 IN
+	;
 	mov rdi, os_usb_IDC
-	; Set Control Context
+	; Set Input Control Context
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00000003	; Set A01 and A00 as we want Control EP0 and Slot, respectively
+	mov dword [rdi+4], 0x00000003	; Set A01 and A00 as we want Endpoint Context 0 and Slot Context, respectively
 	; Set Slot Context
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
 	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
-	; TODO - Value above should not be hard-coded
-	; Set Endpoint Context
+	mov dword [rdi+8], 0x00000000	; Set Interrupter Target (31:22)
+	; TODO - Values above should not be hard-coded
+	; Set Endpoint Context 0
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
+	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	bts rax, 0			; DCS
 	mov qword [rdi+8], rax
@@ -479,7 +491,6 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
-
 	; Check TotalLength
 	xor ebx, ebx
 	mov bx, [os_usb_data0+0x20+2]	; BX contains length
@@ -545,50 +556,6 @@ xhci_enable_slot:
 	; TODO - Send Set_Idle
 	; 0x00000000000A21
 
-;	mov eax, 100000
-;	call b_delay
-;
-;	; Request 32 bytes from String Descriptor 2
-;
-;	; Setup Stage
-;	mov rax, 0x03020680		; 0x03 String Desc, 0x02 Product Desc
-;	stosd				; dword 0
-;	mov eax, 0x00200000
-;	stosd				; dword 1
-;	mov eax, 0x00000008
-;	stosd				; dword 2
-;	mov eax, 0x00030841		; TRT (bits 17:16), TRB Type (15:10), IDT (bit 6), Cycle (0)
-;	stosd				; dword 3
-;	; Data Stage
-;	mov rax, os_usb_data0
-;	add rax, 0x60
-;	stosq				; dword 0 & 1
-;	mov eax, 0x00000020
-;	stosd				; dword 2
-;	mov eax, 0x00010C01
-;	stosd				; dword 3
-;	; Status Stage
-;	xor eax, eax
-;	stosq				; dword 0 & 1
-;	stosd				; dword 2
-;	mov eax, 0x00001013		; TRB Type (15:10), Chain (4), ENT (1), Cycle (0)
-;	stosd				; dword 3
-;	; Event Data
-;	mov rax, os_usb_data1
-;	stosq				; dword 0 & 1
-;	xor eax, eax
-;	stosd				; dword 2
-;	mov eax, 0x00001C21
-;	stosd				; dword 3
-;
-;	; Ring doorbell for Slot 1
-;	mov eax, 1
-;	push rdi
-;	mov rdi, [xhci_db]
-;	add rdi, 4
-;	stosd				; Write to the Doorbell Register
-;	pop rdi
-
 	mov eax, 100000
 	call b_delay
 
@@ -614,38 +581,40 @@ xhci_enable_slot:
 	mov eax, 100000
 	call b_delay
 
-	; Configure the endpoint
+	; Update Input Context
 	mov rdi, os_usb_IDC
 	; Set Control Context
 	mov dword [rdi+4], 0x00000009
 	; Set Slot Context
 	mov eax, [xhci_csz]
 	add rdi, rax
-	mov dword [rdi+0], 0xf8300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+	mov dword [rdi+0], 0xF8300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
 	; TODO - Value above should not be hard-coded
+	; 0xF8 for all entries
 	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
 	; TODO - Value above should not be hard-coded
-	; Set Endpoint Context
+	; Set Endpoint Context 0
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00040026	; Set Max Packet Size (31:16), EP Type (5:3), CErr (2:1)
+	mov dword [rdi+4], 0x00040026	; Set Max Packet Size (31:16) to 4, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
 	; TODO - Value above should not be hard-coded
+	; Needs to be based on MaxPacketSize in the Configuration Descriptor
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	bts rax, 0			; DCS
 	mov qword [rdi+8], rax
-	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0)
-	; Set EP1 In
+	mov dword [rdi+16], 0x00000004	; Set Average TRB Length (15:0) to 4
+	; Set Endpoint Context 1 IN
 	mov eax, [xhci_csz]
 	add rdi, rax
 	add rdi, rax
-	mov dword [rdi+0], 0x00060000
-	mov dword [rdi+4], 0x0004003e
-	mov rax, os_usb_TR0
+	mov dword [rdi+0], 0x00060000	; Set Interval (23:16) to 6
+	mov dword [rdi+4], 0x0004003e	; Set Max Packet Size (31:16) to 4, EP Type (5:3) to 7 (Interrupt IN), CErr (2:1) to 3
+	mov rax, os_usb_TR0		; Address of Transfer Ring
 	add rax, 0x200
 	bts rax, 0
 	mov qword [rdi+8], rax
-	mov dword [rdi+16], 0x00040004
+	mov dword [rdi+16], 0x00040004	; Set Max ESIT Payload (31:16) to 4, Average TRB Length (15:0) to 4
 
 	; Build a TRB for Configure Endpoint in the Command Ring
 	mov rdi, os_usb_CR
@@ -689,7 +658,7 @@ xhci_read_loop:
 	stosd				; dword 2
 	mov eax, 0x00001C21
 	stosd				; dword 3
-	
+
 	; Ring doorbell for Slot 1
 	mov eax, 3			; epid 3
 	push rdi
