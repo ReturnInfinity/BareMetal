@@ -547,10 +547,29 @@ xhci_enable_slot:
 	; 0018: 0x22 0x34 0x00 0x07 0x05 0x81 0x03 0x04
 	; 0020: 0x00 0x07
 	;
+	; Expanded out:
+	; Configuration Descriptor
+	; 0000: 0x09 0x02 0x22 0x00 0x01 0x01 0x06 0xa0
+	; 0008: 0x32
+	; Interface Descriptor
+	; 0008:      0x09 0x04 0x00 0x00 0x01 0x03 0x01
+	; 0010: 0x02 0x00
+	; HID Descriptor
+	; 0010:           0x09 0x21 0x01 0x00 0x00 0x01
+	; 0018: 0x22 0x34 0x00
+	; Endpoint Descriptor
+	; 0018:                0x07 0x05 0x81 0x03 0x04
+	; 0020: 0x00 0x07
+	;
+	; Check Number of Interfaces (offset 4) - A HID should have 0x01
 	; Step though Configuration Descriptor (0x2) looking for the Interface Descriptor (0x4)
+	; Check Interface Number (offset 2)
+	; Check Number of Endpoints (offset 4) - Should be 0x01
 	; Check Class Code (offset 5) - 0x03 = HID
 	; Check Protocol (offset 7) - 0x1 = Keyboard, 0x2 = Mouse
 	; Look for Endpoint Descriptor (0x5)
+	; Check Endpoint Address (offset 2) - Bit 7 defines In(1)/Out(0). Bits 3:0 is Endpoint number
+	; Check Attribute (offset 3) - Should be 0x03 for Interrupt
 	; Check MaxPacketSize (offset 4) - 0x0008 = keyboard (ideally), 0x0004 = mouse (ideally)
 
 	; TODO - Send Set_Idle
