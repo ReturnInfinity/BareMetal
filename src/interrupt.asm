@@ -130,6 +130,15 @@ hpet:
 
 
 ; -----------------------------------------------------------------------------
+; USB interrupt. INT 0xA0 via MSI-X
+align 8
+int_usb:
+	; TODO
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; A simple interrupt that just acknowledges an IPI. Useful for getting an AP past a 'hlt' in the code.
 align 8
 ap_wakeup:
