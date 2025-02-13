@@ -638,17 +638,16 @@ xhci_enable_slot:
 
 	; Attempt to read a packet
 
-	; Normal
 	mov rdi, os_usb_TR0
 	add rdi, 0x200
-
 xhci_read_loop:
+	; Normal
 	mov rax, os_usb_data0
 	add rax, 0x100
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
-	mov eax, 4
+	mov eax, 0x00000004
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x000413
+	mov eax, 0x00000413
 	stosd				; dword 3 - TRB Type (15:10)
 	; Event Data
 	mov rax, os_usb_data0
