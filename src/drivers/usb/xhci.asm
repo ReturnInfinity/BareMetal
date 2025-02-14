@@ -109,7 +109,7 @@ xhci_init_msix_stub:
 	mov rdi, 0x10000		; Base of low PDE
 	add rdi, rax
 	mov rax, [rdi]
-	btc rax, 3			; Clear PWT to disable caching
+	btr rax, 3			; Clear PWT to disable caching
 	bts rax, 4			; Set PCD to disable caching
 	mov [rdi], rax
 
@@ -184,7 +184,7 @@ xhci_init_halt:
 	mov eax, [rsi+xHCI_USBCMD]	; Read current Command Register value
 	bt eax, 0			; Check RS (bit 0)
 	jnc xhci_init_reset		; If the bit was clear, proceed to reset
-	btc eax, 0			; Clear RS (bit 0)
+	btr eax, 0			; Clear RS (bit 0)
 	mov [rsi+xHCI_USBCMD], eax	; Write updated Command Register value
 	mov rax, 20000			; Wait 20ms (20000µs)
 	call b_delay
@@ -729,9 +729,9 @@ xhci_enable_slot:
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
-	mov eax, 2000000		; 2 Seconds
-	call b_delay
-
+;	mov eax, 2000000		; 2 Seconds
+;	call b_delay
+;
 ;	; Attempt to read a packet
 ;
 ;	mov rdi, os_usb_TR0
@@ -778,7 +778,7 @@ xhci_init_done:
 	; Unmask MSI-X
 	pop rdx
 	call os_bus_read
-	btc eax, 30			; Clear Function Mask
+	btr eax, 30			; Clear Function Mask
 	call os_bus_write
 
 	pop rdx
@@ -797,14 +797,33 @@ xhci_csz:	dd 32			; Default Context Size
 ; xHCI Interrupter 0
 align 8
 xhci_int0:
+	push rsi
+	push rax
+
 	; Increment counter
 	add dword [os_xhci_int0_count], 1
+
+;	; Clear Controller Interrupt Pending
+;	mov rdi, [xhci_op]
+;	add rdi, xHCI_USBSTS
+;	mov eax, [rdi]
+;	btr eax, 3			; Clear Event Interrupt (EINT) (bit 3)
+;	mov [rdi], eax
+
+	; Clear Interrupter 0 Pending
+	mov rdi, [xhci_rt]
+	add rdi, xHCI_IR_0		; Interrupt Register 0
+	mov eax, [rdi]
+	btr eax, 0			; Clear Interrupt Pending (IP) (bit 0)
+	mov [rdi], eax
 
 	; Acknowledge the interrupt
 	mov ecx, APIC_EOI
 	xor eax, eax
 	call os_apic_write
 
+	pop rax
+	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
 
