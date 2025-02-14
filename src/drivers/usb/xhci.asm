@@ -131,9 +131,9 @@ xhci_init_msix_stub:
 	mov [xhci_op], rax
 	mov eax, [rsi+xHCI_HCCPARAMS1]	;
 	bt eax, 2			; Context Size (CSZ)
-	jnc xhci_init_not32byte		; If bit is clear then use 32 bytes
+	jnc xhci_init_32bytecsz		; If bit is clear then use 32 bytes
 	mov dword [xhci_csz], 64	; Otherwise set to 64
-xhci_init_not32byte:
+xhci_init_32bytecsz:
 	mov eax, [rsi+xHCI_DBOFF]	; Read the xHCI Doorbell Offset Register
 	and eax, 0xFFFFFFFC		; Clear bits 1:0
 	add [xhci_db], rax
