@@ -47,9 +47,9 @@ xhci_init_msix:
 	push rdx
 	; Enable MSI-X, Mask it, Get Table Size
 	; QEMU MSI-X Entry
-	; 000FA011 <- 1st Cap ID 0x11 (MSIX), next ptr 0xFA, message control 0x00 - Table size is bits 10:0 so 0?
+	; 000FA011 <- 1st Cap ID 0x11 (MSIX), next ptr 0xA0, message control 0x0F - Table size is bits 10:0 so 0x0F
 	; 00003000 <- BIR (2:0) is 0x0 so BAR0, Table Offset (31:3) - 8-byte aligned so clear low 3 bits - 0x3000 in this case
-	; 00000801 <- Pending Bit BIR (2:0) and Pending Bit Offset (31:3) - 
+	; 00003800 <- Pending Bit BIR (2:0) and Pending Bit Offset (31:3) - 0x3800 in this case
 	call os_bus_read
 	mov ecx, eax			; Save for Table Size
 	bts eax, 31			; Enable MSIX
@@ -72,13 +72,16 @@ xhci_init_msix:
 	mov rdi, rax
 	pop rdx
 	; Configure MSI-X Table
+	push rcx
 	add cx, 1			; Table Size is 0-indexed
+	mov ebx, 0x000040A0		; Trigger Mode (15), Level (14), Delivery Mode (10:8), Vector (7:0)
 xhci_init_msix_entry:
 	mov rax, [os_LocalAPICAddress]	; 0xFEE for bits 31:20, Dest (19:12), RH (3), DM (2)
 	stosd				; Store Message Address Low
 	shr rax, 32			; Rotate the high bits to EAX
 	stosd				; Store Message Address High
-	mov eax, 0x000040A0		; Trigger Mode (15), Level (14), Delivery Mode (10:8), Vector (7:0)
+	mov eax, ebx
+	inc ebx
 	stosd				; Store Message Data
 	xor eax, eax			; Bits 31:1 are reserved, Masked (0) - 1 for masked
 	stosd				; Store Vector Control
@@ -87,8 +90,17 @@ xhci_init_msix_entry:
 	jne xhci_init_msix_entry
 	; Create a gate in the IDT
 	mov edi, 0xA0
-	mov rax, int_usb
-	call create_gate
+	mov rax, xhci_int0
+	call create_gate		; Create the gate for the Primary Interrupter
+	pop rcx
+	mov edi, 0xA1
+	mov rax, xhci_int_stub
+xhci_init_msix_stub:
+	call create_gate		; Create stub gates for Interrupter 1-X
+	inc edi
+	dec cx
+	cmp cx, 0
+	jne xhci_init_msix_stub
 
 	; Mark controller memory as un-cacheable
 	mov rax, [os_xHCI_Base]
@@ -270,9 +282,7 @@ xhci_build_scratchpad:
 	mov [rdi+0x10], rax		; Event Ring Segment Table Base Address (ERSTBA)
 
 	; Start Controller
-	mov eax, 0x01			; Set bits 0 (RS)
-; Enable Interrupts on controller
-;	bts eax, 2			; Set INTE - Interrupter Enable (bit 3)
+	mov eax, 0x05			; Set bit 0 (RS) and bit 2 (INTE)
 	mov [rsi+xHCI_USBCMD], eax
 
 	; Check the available ports and reset them
@@ -382,7 +392,6 @@ xhci_enable_slot:
 	mov eax, 0x01000000		; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_ADDRD
 	shl ax, 10
-;	bts eax, 9			; B
 	bts eax, 0			; Cycle
 	stosd				; dword 3
 
@@ -782,6 +791,50 @@ xhci_db:	dq 0			; Start of Doorbell Registers
 xhci_rt:	dq 0			; Start of Runtime Registers
 xhci_csz:	dd 32			; Default Context Size
 ; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; xHCI Interrupter 0
+align 8
+xhci_int0:
+	; Increment counter
+	add dword [os_xhci_int0_count], 1
+
+	; Acknowledge the interrupt
+	mov ecx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; xHCI Interrupter Stub
+align 8
+xhci_int_stub:
+	; Acknowledge the interrupt
+	mov ecx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; xHCI Mouse Interrupter
+align 8
+xhci_int_mouse:
+	; Acknowledge the interrupt
+	mov ecx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+	iretq
+; -----------------------------------------------------------------------------
+
+
 
 ; Memory (to be redone)
 os_usb:			equ 0x0000000000680000	; 0x680000 -> 0x69FFFF	128K USB Structures

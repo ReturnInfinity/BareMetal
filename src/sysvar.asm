@@ -62,7 +62,7 @@ os_nvme_NSID:		equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identi
 os_nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
 
 ; USB memory
-;os_usb:			equ 0x0000000000180000	; 0x180000 -> 0x19FFFF	128K USB Structures
+;os_usb:		equ 0x0000000000180000	; 0x180000 -> 0x19FFFF	128K USB Structures
 ;os_usb_DCBAPP:		equ 0x0000000000180000	; 0x180000 -> 0x18FFFF	64K USB Device Context
 ;os_usb_CRCR:		equ 0x0000000000190000	; 0x190000 -> 0x19FFFF	64K USB Command Ring Control
 
@@ -117,6 +117,7 @@ os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
 os_ps2_mouse_packet:	equ os_SystemVariables + 0x0118
+os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interrupter 0
 
 
 ; DW - Starting at offset 512, increments by 2
