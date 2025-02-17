@@ -913,10 +913,10 @@ xhci_int1:
 	mov eax, [os_usb_data0+0x100]
 	shr eax, 16
 	and eax, 0xFF			; Keep AL only
-	mov rbx, usbkeylayoutlower
-	add rbx, rax
-	mov bl, [rbx]
-	mov [key], bl
+	mov rdi, usbkeylayoutlower
+	add rdi, rax
+	mov byte al, [rdi]
+	mov [key], al
 
 	; Clear Interrupter 1 Pending
 	mov rdi, [xhci_rt]
