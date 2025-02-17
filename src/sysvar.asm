@@ -126,7 +126,7 @@ os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
 os_ps2_mouse_packet:	equ os_SystemVariables + 0x0118
-
+os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interrupter 0
 
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 0x0200

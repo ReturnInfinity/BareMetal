@@ -209,7 +209,7 @@ b_system_ahci_pxssts_get_fail:
 ; OUT: RAX = NVME_LBA
 ; -----------------------------------------------------------------------------
 b_system_nvme_lba_get:
-    mov rax, [os_XHCI_SLOT_ID] ; Load the address from the system variable
+    mov rax, [os_xhci_int0_count] ; Load the address from the system variable
     ret
 
 ; -----------------------------------------------------------------------------
