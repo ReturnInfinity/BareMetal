@@ -924,9 +924,9 @@ xhci_int1:
 	mov [rdi], eax
 
 	; Increment Interrupter Event Ring Dequeue Pointer
-	mov eax, [rdi+xHCI_IR_ERDP]
-	add eax, 16
-	mov [rdi+xHCI_IR_ERDP], eax
+	mov rax, [rdi+xHCI_IR_ERDP]
+	add rax, 16
+	mov [rdi+xHCI_IR_ERDP], rax
 
 	add qword [tval], 32
 
