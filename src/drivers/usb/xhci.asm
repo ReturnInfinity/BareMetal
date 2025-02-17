@@ -875,7 +875,7 @@ xhci_int0:
 ; xHCI Interrupter 1 - Keyboard
 align 8
 xhci_int1:
-	push rsi
+	push rdi
 	push rax
 
 ;	mov eax, 0xBB0101BB
@@ -888,6 +888,17 @@ xhci_int1:
 	btr eax, 3			; Clear Event Interrupt (EINT) (bit 3)
 	mov [rdi], eax
 
+	; Get key press
+	; TODO Logic for shift press
+	mov eax, [os_usb_data0+0x100]
+	shr eax, 16
+	and eax, 0xFF			; Keep AL only
+	mov rdi, usbkeylayoutlower
+	add rdi, rax
+	mov byte al, [rdi]
+	mov [key], al
+
+	; Add TRBs for next interrupt
 	mov rdi, os_usb_TR0
 	add rdi, 0x200
 	add rdi, [tval]
@@ -908,24 +919,14 @@ xhci_int1:
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Get key press
-	; TODO Logic for shift press
-	mov eax, [os_usb_data0+0x100]
-	shr eax, 16
-	and eax, 0xFF			; Keep AL only
-	mov rdi, usbkeylayoutlower
-	add rdi, rax
-	mov byte al, [rdi]
-	mov [key], al
-
-	; Clear Interrupter 1 Pending
+	; Clear Interrupter 1 Pending (if set)
 	mov rdi, [xhci_rt]
 	add rdi, xHCI_IR_1		; Interrupt Register 1
 	mov eax, [rdi]
 	btr eax, 0			; Clear Interrupt Pending (IP) (bit 0)
 	mov [rdi], eax
 
-	; Increment dequeue
+	; Increment Interrupter Event Ring Dequeue Pointer
 	mov eax, [rdi+xHCI_IR_ERDP]
 	add eax, 16
 	mov [rdi+xHCI_IR_ERDP], eax
