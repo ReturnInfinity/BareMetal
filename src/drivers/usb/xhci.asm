@@ -878,9 +878,6 @@ xhci_int1:
 	push rdi
 	push rax
 
-;	mov eax, 0xBB0101BB
-;	call os_debug_dump_eax
-
 	; Clear Controller Interrupt Pending
 	mov rdi, [xhci_op]
 	add rdi, xHCI_USBSTS
