@@ -930,7 +930,7 @@ xhci_int1:
 	add eax, 16
 	mov [rdi+xHCI_IR_ERDP], eax
 
-	add qword [tval], 16
+	add qword [tval], 32
 
 	; Ring doorbell for Slot 1
 	mov eax, 3			; epid 3
@@ -949,7 +949,7 @@ xhci_int1:
 	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
-tval: dq 16
+tval: dq 32
 
 ; -----------------------------------------------------------------------------
 ; xHCI Interrupter 2 - Mouse
