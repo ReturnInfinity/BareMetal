@@ -284,6 +284,7 @@ xhci_build_scratchpad:
 	; Configure Event Ring for Primary Interrupter (Interrupt 0)
 	mov rdi, [xhci_rt]
 	add rdi, xHCI_IR_0		; Interrupt Register 0
+; DEBUG - Disable int 0 for now - Interrupts don't fire until kernel is fully started
 ;	mov eax, 2			; Interrupt Enable (bit 1), Interrupt Pending (bit 0)
 	xor eax, eax
 	mov [rdi+0x00], eax		; Interrupter Management (IMAN)
@@ -912,7 +913,7 @@ xhci_int1:
 	shr eax, 16
 	; TODO - Convert to ASCII code
 	; Move key to memory for b_input
-	add al, 93
+	add al, 93			; A-Z = 4-29, 1-0 = 30-39, Enter = 40, Backspace = 42, Space = 44
 	mov [key], al	
 
 	; Clear Interrupter 1 Pending
