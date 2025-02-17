@@ -907,10 +907,13 @@ xhci_int1:
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Debug
+	; Get key press
 	mov eax, [os_usb_data0+0x100]
 	shr eax, 16
-	call os_debug_dump_al
+	; TODO - Convert to ASCII code
+	; Move key to memory for b_input
+	add al, 93
+	mov [key], al	
 
 	; Clear Interrupter 1 Pending
 	mov rdi, [xhci_rt]
