@@ -739,24 +739,24 @@ xhci_enable_slot:
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00040026	; Set Max Packet Size (31:16) to 4, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
+	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
 	; TODO - Value above should not be hard-coded
 	; Needs to be based on MaxPacketSize in the Configuration Descriptor
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	bts rax, 0			; DCS
 	mov qword [rdi+8], rax
-	mov dword [rdi+16], 0x00000004	; Set Average TRB Length (15:0) to 4
+	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0) to 8
 	; Set Endpoint Context 1 IN
 	mov eax, [xhci_csz]
 	add rdi, rax
 	add rdi, rax
 	mov dword [rdi+0], 0x00060000	; Set Interval (23:16) to 6
-	mov dword [rdi+4], 0x0004003e	; Set Max Packet Size (31:16) to 4, EP Type (5:3) to 7 (Interrupt IN), CErr (2:1) to 3
+	mov dword [rdi+4], 0x0008003e	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 7 (Interrupt IN), CErr (2:1) to 3
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	add rax, 0x200
 	bts rax, 0
 	mov qword [rdi+8], rax
-	mov dword [rdi+16], 0x00040004	; Set Max ESIT Payload (31:16) to 4, Average TRB Length (15:0) to 4
+	mov dword [rdi+16], 0x00080008	; Set Max ESIT Payload (31:16) to 8, Average TRB Length (15:0) to 8
 
 	; Build a TRB for Configure Endpoint in the Command Ring
 	mov rdi, os_usb_CR
@@ -775,32 +775,24 @@ xhci_enable_slot:
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
 
-	; Skip debug
-;	jmp xhci_init_done
-
-;	mov eax, 2000000		; 2 Seconds
-;	call b_delay
-
 	; Prepare to read a packet
-
 	mov rdi, os_usb_TR0
 	add rdi, 0x200
-;xhci_read_loop:
 	; Normal
 	mov rax, os_usb_data0
 	add rax, 0x100
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
-	mov eax, 0x00000004
+	mov eax, 0x00000008
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00000413
-	stosd				; dword 3 - TRB Type (15:10)
+	mov eax, 0x00000413		; TRB Type 1, CH, ENT, C
+	stosd				; dword 3 - TRB Type (15:10), CH (4), ENT (1), Cycle (0)
 	; Event Data
 	mov rax, os_usb_data0
 	add rax, 0x120
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
-	mov eax, 0x00400000
-	stosd				; dword 2 - Interrupter Target 1 (31:22)
-	mov eax, 0x00001C21
+	mov eax, 0x00400000		; Interrupter Target 1
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Ring doorbell for Slot 1
@@ -810,13 +802,6 @@ xhci_enable_slot:
 	add rdi, 4
 	stosd				; Write to the Doorbell Register
 	pop rdi
-
-;	mov eax, 10000
-;	call b_delay
-;	mov eax, [os_usb_data0+0x100]
-;	call os_debug_dump_eax
-;
-;	jmp xhci_read_loop
 
 	jmp xhci_init_done
 
@@ -886,7 +871,7 @@ xhci_int0:
 
 
 ; -----------------------------------------------------------------------------
-; xHCI Interrupter 1
+; xHCI Interrupter 1 - Keyboard
 align 8
 xhci_int1:
 	push rsi
@@ -904,35 +889,28 @@ xhci_int1:
 
 	mov rdi, os_usb_TR0
 	add rdi, 0x200
+	add rdi, [tval]
 	; Normal
 	mov rax, os_usb_data0
 	add rax, 0x100
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
-	mov eax, 0x00000004
+	mov eax, 0x00000008
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00000413
-	stosd				; dword 3 - TRB Type (15:10)
+	mov eax, 0x00000413		; TRB Type 1, CH, ENT, C
+	stosd				; dword 3 - TRB Type (15:10), CH (4), ENT (1), Cycle (0)
 	; Event Data
 	mov rax, os_usb_data0
 	add rax, 0x120
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
-	mov eax, 0x00400000
-	stosd				; dword 2 - Interrupter Target 1 (31:22)
-	mov eax, 0x00001C21
+	mov eax, 0x00400000		; Interrupter Target 1
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring doorbell for Slot 1
-	mov eax, 3			; epid 3
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
-
-;	mov eax, 10000
-;	call b_delay
+	; Debug
 	mov eax, [os_usb_data0+0x100]
-	call os_debug_dump_eax
+	shr eax, 16
+	call os_debug_dump_al
 
 	; Clear Interrupter 1 Pending
 	mov rdi, [xhci_rt]
@@ -945,6 +923,8 @@ xhci_int1:
 	mov eax, [rdi+xHCI_IR_ERDP]
 	add eax, 16
 	mov [rdi+xHCI_IR_ERDP], eax
+
+	add qword [tval], 16
 
 	; Ring doorbell for Slot 1
 	mov eax, 3			; epid 3
@@ -963,10 +943,10 @@ xhci_int1:
 	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
-
+tval: dq 16
 
 ; -----------------------------------------------------------------------------
-; xHCI Interrupter 2
+; xHCI Interrupter 2 - Mouse
 align 8
 xhci_int2:
 	push rsi
