@@ -909,12 +909,14 @@ xhci_int1:
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Get key press
+	; TODO Logic for shift press
 	mov eax, [os_usb_data0+0x100]
 	shr eax, 16
-	; TODO - Convert to ASCII code
-	; Move key to memory for b_input
-	add al, 93			; A-Z = 4-29, 1-0 = 30-39, Enter = 40, Backspace = 42, Space = 44
-	mov [key], al	
+	and eax, 0xFF			; Keep AL only
+	mov rbx, usbkeylayoutlower
+	add rbx, rax
+	mov bl, [rbx]
+	mov [key], bl
 
 	; Clear Interrupter 1 Pending
 	mov rdi, [xhci_rt]
@@ -1154,6 +1156,15 @@ xHCI_CC_UNDEFINED_ERROR			equ 33
 xHCI_CC_INVALID_STREAM_ID_ERROR		equ 34
 xHCI_CC_SECONDARY_BANDWIDTH_ERROR	equ 35
 xHCI_CC_SPLIT_TRANSACTION_ERROR		equ 36
+
+
+usbkeylayoutlower:
+db 0, 0, 0, 0, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0x1C, 0, 0x0E, 0, ' ', '-', '=', '[', ']', "\", 0, ';', "'", '`', ',', '.', '/', 0
+usbkeylayoutupper:
+db 0, 0, 0, 0, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', 0x1C, 0, 0x0E, 0, ' ', '_', '+', '{', '}', '|', 0, ':', '"', '~', '<', '>', '?', 0
+; 0e = backspace
+; 1c = enter
+
 
 ; =============================================================================
 ; EOF
