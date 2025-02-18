@@ -875,11 +875,8 @@ xhci_int0:
 ; xHCI Interrupter 1 - Keyboard
 align 8
 xhci_int1:
-	push rsi
+	push rdi
 	push rax
-
-;	mov eax, 0xBB0101BB
-;	call os_debug_dump_eax
 
 	; Clear Controller Interrupt Pending
 	mov rdi, [xhci_op]
@@ -888,6 +885,17 @@ xhci_int1:
 	btr eax, 3			; Clear Event Interrupt (EINT) (bit 3)
 	mov [rdi], eax
 
+	; Get key press
+	; TODO Logic for shift press
+	mov eax, [os_usb_data0+0x100]
+	shr eax, 16
+	and eax, 0xFF			; Keep AL only
+	mov rdi, usbkeylayoutlower
+	add rdi, rax
+	mov byte al, [rdi]
+	mov [key], al
+	
+	; Add TRBs for next interrupt
 	mov rdi, os_usb_TR0
 	add rdi, 0x200
 	add rdi, [tval]
@@ -908,27 +916,19 @@ xhci_int1:
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Get key press
-	mov eax, [os_usb_data0+0x100]
-	shr eax, 16
-	; TODO - Convert to ASCII code
-	; Move key to memory for b_input
-	add al, 93			; A-Z = 4-29, 1-0 = 30-39, Enter = 40, Backspace = 42, Space = 44
-	mov [key], al	
-
-	; Clear Interrupter 1 Pending
+	; Clear Interrupter 1 Pending (if set)
 	mov rdi, [xhci_rt]
 	add rdi, xHCI_IR_1		; Interrupt Register 1
 	mov eax, [rdi]
 	btr eax, 0			; Clear Interrupt Pending (IP) (bit 0)
 	mov [rdi], eax
 
-	; Increment dequeue
-	mov eax, [rdi+xHCI_IR_ERDP]
-	add eax, 16
-	mov [rdi+xHCI_IR_ERDP], eax
-
-	add qword [tval], 16
+	; Increment Interrupter Event Ring Dequeue Pointer
+	mov rax, [rdi+xHCI_IR_ERDP]
+	add rax, 16
+	mov [rdi+xHCI_IR_ERDP], rax
+	
+	add qword [tval], 32
 
 	; Ring doorbell for Slot 1
 	mov eax, 3			; epid 3
@@ -947,7 +947,7 @@ xhci_int1:
 	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
-tval: dq 16
+tval: dq 32
 
 ; -----------------------------------------------------------------------------
 ; xHCI Interrupter 2 - Mouse
@@ -1155,5 +1155,12 @@ xHCI_CC_INVALID_STREAM_ID_ERROR		equ 34
 xHCI_CC_SECONDARY_BANDWIDTH_ERROR	equ 35
 xHCI_CC_SPLIT_TRANSACTION_ERROR		equ 36
 
-; =============================================================================
-; EOF
+
+usbkeylayoutlower:
+db 0, 0, 0, 0, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 0x1C, 0, 0x0E, 0, ' ', '-', '=', '[', ']', "\", 0, ';', "'", '`', ',', '.', '/', 0
+; usbkeylayoutupper:
+; db 0, 0, 0, 0, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', 0x1C, 0, 0x0E, 0, ' ', '_', '+', '{', '}', '|', 0, ':', '"', '~', '<', '>', '?', 0
+; ; 0e = backspace
+; ; 1c = enter
+; ; =============================================================================
+; ; EOF
