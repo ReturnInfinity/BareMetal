@@ -24,8 +24,6 @@ xhci_init:
 	bts eax, 1			; Enable Memory Space
 	call os_bus_write		; Write updated Status/Command
 
-; Debug
-jmp skipmsix
 	; Check for MSI-X in PCI Capabilities
 	mov dl, 1
 	call os_bus_read		; Read register 1 for Status/Command
@@ -40,6 +38,8 @@ xhci_init_cap_next:
 	call os_bus_read
 	cmp al, 0x11
 	je xhci_init_msix
+	cmp al, 0x05
+	je xhci_init_msi
 xhci_init_cap_next_offset:
 	shr eax, 8			; Shift pointer to AL
 	cmp al, 0x00			; End of linked list?
@@ -89,6 +89,17 @@ xhci_init_msix_entry:
 	dec cx
 	cmp cx, 0
 	jne xhci_init_msix_entry
+	jmp xhci_init_msix_done
+xhci_init_msi:
+	push rdx
+	; Enable MSI, Mask it, Get Table Size
+	; Example MSI Entry
+	; 00869005 <- 1st Cap ID 0x05 (MSI), next ptr 0x90, message control 0x0x0086 (64-bit (7), MMC (3:1) is 011b, Enable (0))
+	; 00000000
+	; 00000000
+	; 00000000
+	pop rdx
+xhci_init_msix_done:
 	; Create a gate in the IDT
 	mov edi, 0xA0
 	mov rax, xhci_int0
@@ -99,7 +110,6 @@ xhci_init_msix_entry:
 ;	mov edi, 0xA2
 ;	mov rax, xhci_int2
 ;	call create_gate		; Create the gate for Interrupter 2 (Mouse)
-skipmsix:
 
 	; Mark controller memory as un-cacheable
 	mov rax, [os_xHCI_Base]
@@ -539,17 +549,36 @@ xhci_check_port_end:
 	mov eax, 100000
 	call b_delay
 
-	; TODO - Check Device Descriptor
+	; TODO - Check first 8 bytes of Device Descriptor
 	; Example from QEMU keyboard
 	;
 	; 0000: 0x12 0x01 0x00 0x02 0x00 0x00 0x00 0x40
 	; 
-	; Update Endpoint Context 0 Max Packet Size (to 0x40 in the case above)
+	; 1) Update Endpoint Context 0 Max Packet Size (to 0x40 in the case above)
+	; 2) Run Evaluate Context
+	;
+	;	; Build a TRB for Evaluate Context in the Command Ring
+	;	mov rdi, os_usb_CR
+	;	add rdi, [xhci_croff]
+	;	mov rax, os_usb_IDC		; Address of the Input Context
+	;	stosq				; dword 0 & 1
+	;	xor eax, eax
+	;	stosd				; dword 2
+	;	mov eax, 0x01000000		; Set Slot ID (31:24)
+	;	mov al, xHCI_CTRB_EVALC
+	;	shl ax, 10
+	;	bts eax, 0			; Cycle
+	;	stosd				; dword 3
+	;	add qword [xhci_croff], 16
+	;
+	;	xor eax, eax
+	;	mov rdi, [xhci_db]
+	;	stosd				; Write to the Doorbell Register
 
 	; Request full data from Device Descriptor
 
 	xor ebx, ebx
-	mov bl, [os_usb_data0]		; BL contains length
+	mov bl, [os_usb_data0]		; BL contains Device Descriptor length
 
 	; Setup Stage
 	mov rax, 0x01000680		; 0x01 Device Descriptor
@@ -591,7 +620,7 @@ xhci_check_port_end:
 	stosd				; Write to the Doorbell Register
 	pop rdi
 
-	; TODO - Check Device Descriptor
+	; TODO - Check full Device Descriptor
 	; Example from QEMU keyboard
 	;
 	; 0000: 0x12 0x01 0x00 0x02 0x00 0x00 0x00 0x40
@@ -668,7 +697,7 @@ xhci_check_port_end:
 
 	; Check TotalLength
 	xor ebx, ebx
-	mov bx, [os_usb_data0+0x20+2]	; BX contains length
+	mov bx, [os_usb_data0+0x20+2]	; BX contains Configuration Descriptor length
 
 	; Request full data from Configuration Descriptor (includes Interface Descriptor (0x04) / HID Descriptor (0x21))
 
