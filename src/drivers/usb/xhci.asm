@@ -25,7 +25,7 @@ xhci_init:
 	call os_bus_write		; Write updated Status/Command
 
 ; Debug
-;jmp skipmsix
+jmp skipmsix
 	; Check for MSI-X in PCI Capabilities
 	mov dl, 1
 	call os_bus_read		; Read register 1 for Status/Command
@@ -389,6 +389,7 @@ xhci_check_port_end:
 	bts eax, 0			; Cycle Bit
 	stosd				; Store dword 3
 	add qword [xhci_croff], 16
+	; 0x00000000 0x00000000 0x0000000 0x00002401
 
 	; Ring the Doorbell for the Command Ring
 	xor eax, eax
@@ -410,6 +411,7 @@ xhci_check_port_end:
 
 	; TODO - Check Event ring for the Completion Code of the TRB that was sent
 	; Look for the Address of the TRB
+	; 0x0000000000690000 0x01000000 0x01008401
 
 	mov eax, 100000
 	call b_delay
@@ -445,7 +447,7 @@ xhci_check_port_end:
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
+	mov dword [rdi+4], 0x00400026	; Set Max Packet Size (31:16) to 64, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	bts rax, 0			; DCS
 	mov qword [rdi+8], rax
@@ -482,6 +484,7 @@ xhci_check_port_end:
 	; ├─────────┴────────────┬───────┬─────┬─┤
 	; | Slot ID |    RsvdZ   |   33  |RsvdZ|C|
 	; └─────────┴────────────┴───────┴─────┴─┘
+	; 0x XX XX 84 01
 
 	; TODO - Check Event ring for the Completion Code of the TRB that was sent
 	; Look for the Address of the TRB
@@ -508,7 +511,7 @@ xhci_check_port_end:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	mov eax, 0x00000008		; Request 8 bytes
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00010C01		; DIR, TRB Type 3, C
+	mov eax, 0x00010C13		; DIR, TRB Type 3, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
 	; Status Stage
 	xor eax, eax
@@ -535,7 +538,7 @@ xhci_check_port_end:
 
 	mov eax, 100000
 	call b_delay
-
+;jmp xhci_init_done
 	; Request full data from Device Descriptor
 
 	xor ebx, ebx
@@ -556,7 +559,7 @@ xhci_check_port_end:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	mov eax, ebx			; BL contains length
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00010C01		; DIR, TRB Type 3, C
+	mov eax, 0x00010C13		; DIR, TRB Type 3, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
 	; Status Stage
 	xor eax, eax
