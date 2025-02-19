@@ -538,7 +538,14 @@ xhci_check_port_end:
 
 	mov eax, 100000
 	call b_delay
-;jmp xhci_init_done
+
+	; TODO - Check Device Descriptor
+	; Example from QEMU keyboard
+	;
+	; 0000: 0x12 0x01 0x00 0x02 0x00 0x00 0x00 0x40
+	; 
+	; Update Endpoint Context 0 Max Packet Size (to 0x40 in the case above)
+
 	; Request full data from Device Descriptor
 
 	xor ebx, ebx
