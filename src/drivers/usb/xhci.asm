@@ -24,6 +24,8 @@ xhci_init:
 	bts eax, 1			; Enable Memory Space
 	call os_bus_write		; Write updated Status/Command
 
+; Debug
+;jmp skipmsix
 	; Check for MSI-X in PCI Capabilities
 	mov dl, 1
 	call os_bus_read		; Read register 1 for Status/Command
@@ -97,6 +99,7 @@ xhci_init_msix_entry:
 ;	mov edi, 0xA2
 ;	mov rax, xhci_int2
 ;	call create_gate		; Create the gate for Interrupter 2 (Mouse)
+skipmsix:
 
 	; Mark controller memory as un-cacheable
 	mov rax, [os_xHCI_Base]
@@ -432,7 +435,10 @@ xhci_check_port_end:
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
-	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
+	xor eax, eax
+	mov al, [xhci_portlist]		; Collect port number
+	shl eax, 16			; Shift value to 23:16
+	mov dword [rdi+4], eax		; Set Root Hub Port Number (23:16)
 	mov dword [rdi+8], 0x00000000	; Set Interrupter Target (31:22)
 	; TODO - Values above should not be hard-coded
 	; Set Endpoint Context 0
@@ -516,7 +522,7 @@ xhci_check_port_end:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Ring doorbell for Slot 1
@@ -564,7 +570,7 @@ xhci_check_port_end:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax			; Interrupter 0 (31:22)
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Ring doorbell for Slot 1
@@ -636,7 +642,7 @@ xhci_check_port_end:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax			; Interrupter 0 (31:22)
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Ring doorbell for Slot 1
@@ -686,7 +692,7 @@ xhci_check_port_end:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax			; Interrupter 0 (31:22)
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Ring doorbell for Slot 1
