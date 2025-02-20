@@ -38,8 +38,8 @@ xhci_init_cap_next:
 	call os_bus_read
 	cmp al, 0x11
 	je xhci_init_msix
-	cmp al, 0x05
-	je xhci_init_msi
+;	cmp al, 0x05
+;	je xhci_init_msi
 xhci_init_cap_next_offset:
 	shr eax, 8			; Shift pointer to AL
 	cmp al, 0x00			; End of linked list?
@@ -49,9 +49,10 @@ xhci_init_msix:
 	push rdx
 	; Enable MSI-X, Mask it, Get Table Size
 	; QEMU MSI-X Entry
-	; 000FA011 <- 1st Cap ID 0x11 (MSIX), next ptr 0xA0, message control 0x0F - Table size is bits 10:0 so 0x0F
+	; 000FA011 <- Cap ID 0x11 (MSI-X), next ptr 0xA0, message control 0x000F - Table size is bits 10:0 so 0x0F
 	; 00003000 <- BIR (2:0) is 0x0 so BAR0, Table Offset (31:3) - 8-byte aligned so clear low 3 bits - 0x3000 in this case
 	; 00003800 <- Pending Bit BIR (2:0) and Pending Bit Offset (31:3) - 0x3800 in this case
+	; Message Control - Enable (15), Function Mask (14), Table Size (10:0)
 	call os_bus_read
 	mov ecx, eax			; Save for Table Size
 	bts eax, 31			; Enable MSIX
@@ -94,10 +95,13 @@ xhci_init_msi:
 	push rdx
 	; Enable MSI, Mask it, Get Table Size
 	; Example MSI Entry
-	; 00869005 <- 1st Cap ID 0x05 (MSI), next ptr 0x90, message control 0x0x0086 (64-bit (7), MMC (3:1) is 011b, Enable (0))
-	; 00000000
-	; 00000000
-	; 00000000
+	; 00869005 <- Cap ID 0x05 (MSI), next ptr 0x90, message control 0x0x0086
+	; 00000000 <- Message Address Low
+	; 00000000 <- Message Address High
+	; 00000000 <- Message Data (15:0)
+	; 00000000 <- Mask (only exists if Per-vector masking is enabled)
+	; 00000000 <- Pending (only exists if Per-vector masking is enabled)
+	; Message Control - Per-vector masking (8), 64-bit (7), Multiple Message Enable (6:4), Multiple Message Capable (3:1), Enable (0)
 	pop rdx
 xhci_init_msix_done:
 	; Create a gate in the IDT
@@ -186,6 +190,12 @@ xhci_init_32bytecsz:
 ;	add rbx, rax
 ;	jmp xhci_xecp_read
 ;xhci_xecp_end:
+
+	; Clear memory controller will be using
+	mov rdi, os_usb
+	xor eax, eax
+	mov ecx, 131072			; 131072 * 8 = 1048576 bytes
+	rep stosq
 
 	; Reset the controller
 xhci_init_halt:
