@@ -8,6 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 xhci_init:
+	push rsi			; Used in init_usb
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 
 	; Gather the Base I/O Address of the device
@@ -25,6 +26,7 @@ xhci_init:
 	call os_bus_write		; Write updated Status/Command
 
 	; Check for MSI-X in PCI Capabilities
+xhci_init_msix_check:
 	mov dl, 1
 	call os_bus_read		; Read register 1 for Status/Command
 	bt eax, 20			; Check bit 4 of the Status word (31:16)
@@ -32,17 +34,17 @@ xhci_init:
 	mov dl, 13
 	call os_bus_read		; Read register 13 for the Capabilities Pointer (7:0)
 	and al, 0xFC			; Clear the bottom two bits as they are reserved
-xhci_init_cap_msix_next:
+xhci_init_msix_check_cap_next:
 	shr al, 2			; Quick divide by 4
 	mov dl, al
 	call os_bus_read
 	cmp al, 0x11
 	je xhci_init_msix
-xhci_init_cap_msix_next_offset:
+xhci_init_msix_check_cap_next_offset:
 	shr eax, 8			; Shift pointer to AL
 	cmp al, 0x00			; End of linked list?
-	jne xhci_init_cap_msix_next	; If not, continue reading
-	jmp xhci_init_msi		; Otherwise bail out and check for MSI
+	jne xhci_init_msix_check_cap_next	; If not, continue reading
+	jmp xhci_init_msi_check		; Otherwise bail out and check for MSI
 xhci_init_msix:
 	push rdx
 	; Enable MSI-X, Mask it, Get Table Size
@@ -88,9 +90,15 @@ xhci_init_msix_entry:
 	dec cx
 	cmp cx, 0
 	jne xhci_init_msix_entry
+	; Unmask MSI-X
+	pop rdx
+	call os_bus_read
+	btr eax, 30			; Clear Function Mask
+	call os_bus_write
 	jmp xhci_init_msix_msi_done
 
 	; Check for MSI in PCI Capabilities
+xhci_init_msi_check:
 	mov dl, 1
 	call os_bus_read		; Read register 1 for Status/Command
 	bt eax, 20			; Check bit 4 of the Status word (31:16)
@@ -98,33 +106,30 @@ xhci_init_msix_entry:
 	mov dl, 13
 	call os_bus_read		; Read register 13 for the Capabilities Pointer (7:0)
 	and al, 0xFC			; Clear the bottom two bits as they are reserved
-xhci_init_cap_msi_next:
+xhci_init_msi_check_cap_next:
 	shr al, 2			; Quick divide by 4
 	mov dl, al
 	call os_bus_read
 	cmp al, 0x05
 	je xhci_init_msi
-xhci_init_cap_msi_next_offset:
+xhci_init_msi_check_cap_next_offset:
 	shr eax, 8			; Shift pointer to AL
 	cmp al, 0x00			; End of linked list?
-	jne xhci_init_cap_msi_next	; If not, continue reading
+	jne xhci_init_msi_check_cap_next	; If not, continue reading
 	jmp xhci_init_error		; Otherwise bail out
 xhci_init_msi:
 	push rdx
 	; Enable MSI
-	; Example MSI Entry (From AMD test system)
-	; 00869005 <- Cap ID 0x05 (MSI), next ptr 0x90, message control 0x0x0086
+	; Example MSI Entry (From Intel test system)
+	; 00869005 <- Cap ID 0x05 (MSI), next ptr 0x90, message control 0x0x0086 (64-bit, MMC 8)
 	; 00000000 <- Message Address Low
 	; 00000000 <- Message Address High
 	; 00000000 <- Message Data (15:0)
 	; 00000000 <- Mask (only exists if Per-vector masking is enabled)
 	; 00000000 <- Pending (only exists if Per-vector masking is enabled)
 	; Message Control - Per-vector masking (8), 64-bit (7), Multiple Message Enable (6:4), Multiple Message Capable (3:1), Enable (0)
+	; MME/MMC 000b = 1, 001b = 2, 010b = 4, 011b = 8, 100b = 16, 101b = 32
 	; Todo - Test bit 7, Check Multiple Message Capable, copy to Multiple Message Enable
-	bts eax, 21			; Debug - See MME to 8
-	bts eax, 20			; Debug - See MME to 8
-	bts eax, 16			; Set Enable
-	call os_bus_write		; Update Message Control
 	add dl, 1
 	mov rax, [os_LocalAPICAddress]	; 0xFEE for bits 31:20, Dest (19:12), RH (3), DM (2)
 	call os_bus_write		; Store Message Address Low
@@ -134,6 +139,12 @@ xhci_init_msi:
 	add dl, 1
 	mov eax, 0x000040A0		; Trigger Mode (15), Level (14), Delivery Mode (10:8), Vector (7:0)
 	call os_bus_write		; Store Message Data
+	sub dl, 3
+	call os_bus_read		; Get Message Control
+	bts eax, 21			; Debug - See MME to 8
+	bts eax, 20			; Debug - See MME to 8
+	bts eax, 16			; Set Enable
+	call os_bus_write		; Update Message Control
 	pop rdx
 
 xhci_init_msix_msi_done:
@@ -1010,13 +1021,13 @@ xhci_init_error:
 	jmp $
 
 xhci_init_done:
-	; Unmask MSI-X
 	pop rdx
-	call os_bus_read
-	btr eax, 30			; Clear Function Mask
-	call os_bus_write
+	pop rsi
 
-	pop rdx
+	add rsi, 15
+	mov byte [rsi], 1		; Mark driver as installed in Bus Table
+	sub rsi, 15
+
 	ret
 
 xhci_caplen:	db 0
