@@ -638,6 +638,7 @@ xhci_check_port_end:
 	bts eax, 0			; Cycle
 	stosd				; dword 3
 	add qword [xhci_croff], 16
+	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003401
 
 	xor eax, eax
 	mov rdi, [xhci_db]
@@ -647,6 +648,9 @@ xhci_check_port_end:
 	
 	mov eax, 100000
 	call b_delay
+
+	; Todo - Check result in event ring
+	; 0xXXXXXXXX 0xXXXXXXXX 0x0100000 0x01008401
 
 	; Request full data from Device Descriptor
 
@@ -926,24 +930,22 @@ xhci_check_port_end:
 	mov dword [rdi+0], 0xF8300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
 	; TODO - Value above should not be hard-coded
 	; 0xF8 for all entries
-	mov dword [rdi+4], 0x00050000	; Set Root Hub Port Number (23:16)
-	; TODO - Value above should not be hard-coded
 	mov dword [rdi+8], 0x00400000	; Set Interrupter Target to 1 (31:22)
 	; Set Endpoint Context 0
 	mov eax, [xhci_csz]
 	add rdi, rax
-	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
-	; TODO - Value above should not be hard-coded
-	; Needs to be based on MaxPacketSize in the Configuration Descriptor
-	mov rax, os_usb_TR0		; Address of Transfer Ring
-	bts rax, 0			; DCS
-	mov qword [rdi+8], rax
-	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0) to 8
+;	mov dword [rdi+0], 0x00000000
+;	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
+;	; TODO - Value above should not be hard-coded
+;	; Needs to be based on MaxPacketSize in the Configuration Descriptor
+;	mov rax, os_usb_TR0		; Address of Transfer Ring
+;	bts rax, 0			; DCS
+;	mov qword [rdi+8], rax
+;	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0) to 8
 	; Set Endpoint Context 1 IN
 	mov eax, [xhci_csz]
-	add rdi, rax
-	add rdi, rax
+	add rdi, rax			; EP1 Out
+	add rdi, rax			; EP1 In
 	mov dword [rdi+0], 0x00060000	; Set Interval (23:16) to 6
 	mov dword [rdi+4], 0x0008003e	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 7 (Interrupt IN), CErr (2:1) to 3
 	mov rax, os_usb_TR0		; Address of Transfer Ring
@@ -965,10 +967,14 @@ xhci_check_port_end:
 	bts eax, 0			; Cycle
 	stosd				; dword 3
 	add qword [xhci_croff], 16
+	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003001
 
 	xor eax, eax
 	mov rdi, [xhci_db]
 	stosd				; Write to the Doorbell Register
+
+	; Todo - Check result in event ring
+	; 0xXXXXXXXX 0xXXXXXXXX 0x0100000 0x01008401
 
 	; Prepare Interrupter 1 to read a packet
 	mov rdi, os_usb_TR0
