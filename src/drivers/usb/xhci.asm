@@ -120,7 +120,7 @@ xhci_init_msi:
 	; 00000000 <- Mask (only exists if Per-vector masking is enabled)
 	; 00000000 <- Pending (only exists if Per-vector masking is enabled)
 	; Message Control - Per-vector masking (8), 64-bit (7), Multiple Message Enable (6:4), Multiple Message Capable (3:1), Enable (0)
-	; Todo - Check Multiple Message Capable, copy to Multiple Message Enable
+	; Todo - Test bit 7, Check Multiple Message Capable, copy to Multiple Message Enable
 	bts eax, 21			; Debug - See MME to 8
 	bts eax, 20			; Debug - See MME to 8
 	bts eax, 16			; Set Enable
@@ -402,6 +402,14 @@ xhci_reset_skip:
 	cmp ecx, edx
 	jne xhci_check_next
 
+	; At this point the event ring should contain some port status change event entries
+	; They should appear as follows:
+	; 0xXX000000 0x00000000 0x01000000 0x00008801
+	; dword 0 - Port ID number (31:24)
+	; dword 1 - Reserved
+	; dword 2 - Completion code (31:24)
+	; dword 3 - Type 34 (15:10), C (0)
+
 	mov eax, 100000
 	call b_delay
 
@@ -426,6 +434,10 @@ xhci_check_port_store:
 	jmp xhci_check_port
 xhci_check_port_end:
 	mov byte [xhci_portcount], cl
+
+	; Check that at least 1 port was enabled
+;	cmp cl, 0
+;	je XXXX
 
 	; At this point xhci_portcount contains the number of activated ports
 	; and xhci_portlist is a list of the port numbers
@@ -464,7 +476,7 @@ xhci_check_port_end:
 
 	; TODO - Check Event ring for the Completion Code of the TRB that was sent
 	; Look for the Address of the TRB
-	; 0x0000000000690000 0x01000000 0x01008401
+	; 0x00690000 0x00000000 0x01000000 0x01008401
 
 	mov eax, 100000
 	call b_delay
@@ -500,7 +512,7 @@ xhci_check_port_end:
 	mov eax, [xhci_csz]
 	add rdi, rax
 	mov dword [rdi+0], 0x00000000
-	mov dword [rdi+4], 0x00400026	; Set Max Packet Size (31:16) to 64, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
+	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	bts rax, 0			; DCS
 	mov qword [rdi+8], rax
@@ -592,31 +604,49 @@ xhci_check_port_end:
 	mov eax, 100000
 	call b_delay
 
-	; TODO - Check first 8 bytes of Device Descriptor
+	; Check first 8 bytes of Device Descriptor
 	; Example from QEMU keyboard
 	;
 	; 0000: 0x12 0x01 0x00 0x02 0x00 0x00 0x00 0x40
 	; 
 	; 1) Update Endpoint Context 0 Max Packet Size (to 0x40 in the case above)
+
+	push rdi
+
+	mov rdi, os_usb_IDC
+	mov eax, [xhci_csz]
+	shl eax, 1
+	add rdi, rax
+	mov eax, [rdi+4]
+	ror eax, 16
+	mov al, [os_usb_data0+7]
+	ror eax, 16
+	mov [rdi+4], eax
+
 	; 2) Run Evaluate Context
-	;
-	;	; Build a TRB for Evaluate Context in the Command Ring
-	;	mov rdi, os_usb_CR
-	;	add rdi, [xhci_croff]
-	;	mov rax, os_usb_IDC		; Address of the Input Context
-	;	stosq				; dword 0 & 1
-	;	xor eax, eax
-	;	stosd				; dword 2
-	;	mov eax, 0x01000000		; Set Slot ID (31:24)
-	;	mov al, xHCI_CTRB_EVALC
-	;	shl ax, 10
-	;	bts eax, 0			; Cycle
-	;	stosd				; dword 3
-	;	add qword [xhci_croff], 16
-	;
-	;	xor eax, eax
-	;	mov rdi, [xhci_db]
-	;	stosd				; Write to the Doorbell Register
+
+	; Build a TRB for Evaluate Context in the Command Ring
+	mov rdi, os_usb_CR
+	add rdi, [xhci_croff]
+	mov rax, os_usb_IDC		; Address of the Input Context
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, xHCI_CTRB_EVALC
+	shl ax, 10
+	bts eax, 0			; Cycle
+	stosd				; dword 3
+	add qword [xhci_croff], 16
+
+	xor eax, eax
+	mov rdi, [xhci_db]
+	stosd				; Write to the Doorbell Register
+
+	pop rdi
+	
+	mov eax, 100000
+	call b_delay
 
 	; Request full data from Device Descriptor
 
