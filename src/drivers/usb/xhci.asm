@@ -32,23 +32,21 @@ xhci_init:
 	mov dl, 13
 	call os_bus_read		; Read register 13 for the Capabilities Pointer (7:0)
 	and al, 0xFC			; Clear the bottom two bits as they are reserved
-xhci_init_cap_next:
+xhci_init_cap_msix_next:
 	shr al, 2			; Quick divide by 4
 	mov dl, al
 	call os_bus_read
 	cmp al, 0x11
 	je xhci_init_msix
-;	cmp al, 0x05
-;	je xhci_init_msi
-xhci_init_cap_next_offset:
+xhci_init_cap_msix_next_offset:
 	shr eax, 8			; Shift pointer to AL
 	cmp al, 0x00			; End of linked list?
-	jne xhci_init_cap_next		; If not, continue reading
-	jmp xhci_init_error		; Otherwise bail out
+	jne xhci_init_cap_msix_next	; If not, continue reading
+	jmp xhci_init_msi		; Otherwise bail out and check for MSI
 xhci_init_msix:
 	push rdx
 	; Enable MSI-X, Mask it, Get Table Size
-	; QEMU MSI-X Entry
+	; Example MSI-X Entry (From QEMU xHCI Controller)
 	; 000FA011 <- Cap ID 0x11 (MSI-X), next ptr 0xA0, message control 0x000F - Table size is bits 10:0 so 0x0F
 	; 00003000 <- BIR (2:0) is 0x0 so BAR0, Table Offset (31:3) - 8-byte aligned so clear low 3 bits - 0x3000 in this case
 	; 00003800 <- Pending Bit BIR (2:0) and Pending Bit Offset (31:3) - 0x3800 in this case
@@ -90,11 +88,31 @@ xhci_init_msix_entry:
 	dec cx
 	cmp cx, 0
 	jne xhci_init_msix_entry
-	jmp xhci_init_msix_done
+	jmp xhci_init_msix_msi_done
+
+	; Check for MSI in PCI Capabilities
+	mov dl, 1
+	call os_bus_read		; Read register 1 for Status/Command
+	bt eax, 20			; Check bit 4 of the Status word (31:16)
+	jnc xhci_init_error		; If if doesn't exist then bail out
+	mov dl, 13
+	call os_bus_read		; Read register 13 for the Capabilities Pointer (7:0)
+	and al, 0xFC			; Clear the bottom two bits as they are reserved
+xhci_init_cap_msi_next:
+	shr al, 2			; Quick divide by 4
+	mov dl, al
+	call os_bus_read
+	cmp al, 0x05
+	je xhci_init_msi
+xhci_init_cap_msi_next_offset:
+	shr eax, 8			; Shift pointer to AL
+	cmp al, 0x00			; End of linked list?
+	jne xhci_init_cap_msi_next	; If not, continue reading
+	jmp xhci_init_error		; Otherwise bail out
 xhci_init_msi:
 	push rdx
-	; Enable MSI, Mask it, Get Table Size
-	; Example MSI Entry
+	; Enable MSI
+	; Example MSI Entry (From AMD test system)
 	; 00869005 <- Cap ID 0x05 (MSI), next ptr 0x90, message control 0x0x0086
 	; 00000000 <- Message Address Low
 	; 00000000 <- Message Address High
@@ -102,8 +120,23 @@ xhci_init_msi:
 	; 00000000 <- Mask (only exists if Per-vector masking is enabled)
 	; 00000000 <- Pending (only exists if Per-vector masking is enabled)
 	; Message Control - Per-vector masking (8), 64-bit (7), Multiple Message Enable (6:4), Multiple Message Capable (3:1), Enable (0)
+	; Todo - Check Multiple Message Capable, copy to Multiple Message Enable
+	bts eax, 21			; Debug - See MME to 8
+	bts eax, 20			; Debug - See MME to 8
+	bts eax, 16			; Set Enable
+	call os_bus_write		; Update Message Control
+	add dl, 1
+	mov rax, [os_LocalAPICAddress]	; 0xFEE for bits 31:20, Dest (19:12), RH (3), DM (2)
+	call os_bus_write		; Store Message Address Low
+	add dl, 1
+	shr rax, 32			; Rotate the high bits to EAX
+	call os_bus_write		; Store Message Address High
+	add dl, 1
+	mov eax, 0x000040A0		; Trigger Mode (15), Level (14), Delivery Mode (10:8), Vector (7:0)
+	call os_bus_write		; Store Message Data
 	pop rdx
-xhci_init_msix_done:
+
+xhci_init_msix_msi_done:
 	; Create a gate in the IDT
 	mov edi, 0xA0
 	mov rax, xhci_int0
