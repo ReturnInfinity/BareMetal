@@ -516,6 +516,7 @@ xhci_check_port_end:
 	; Read port speed from port register
 	xor eax, eax
 	mov al, [xhci_portlist]
+	dec al
 	shl eax, 4			; Multiply by 16
 	add eax, 0x400			; Add 0x400 for Port Base
 	add rax, [xhci_op]		; Add op base
