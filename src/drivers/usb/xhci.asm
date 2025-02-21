@@ -512,7 +512,20 @@ xhci_check_port_end:
 	; Set Slot Context
 	mov eax, [xhci_csz]
 	add rdi, rax
-	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+;	mov dword [rdi+0], 0x08300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+	; Read port speed from port register
+	xor eax, eax
+	mov al, [xhci_portlist]
+	shl eax, 4			; Multiply by 16
+	add eax, 0x400			; Add 0x400 for Port Base
+	add rax, [xhci_op]		; Add op base
+	mov eax, [rax]			; Get PORTSC
+	; Todo SHL by 10 and do a proper AND
+	shr eax, 10			; Shift Port Speed (13:10) to (3:0)
+	and eax, 0xF			; Clear upper bits of EAX
+	shl eax, 20			; Shift Port Speed (3:0) to (23:20)
+	bts eax, 27			; Set bit 27 for 1 Context Entry (31:27)
+	mov dword [rdi+0], eax		; Set Context Entries (31:27) to 1, set Speed (23:20)
 	xor eax, eax
 	mov al, [xhci_portlist]		; Collect port number
 	shl eax, 16			; Shift value to 23:16
@@ -1131,6 +1144,19 @@ xhci_int1:
 	stosd				; dword 2 - Interrupter Target (31:22)
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	add qword [tval], 32
+
+	; Todo - Check if near the end of the transfer ring. If so, create a link TRB
+	
+	; Link
+;	mov rax, os_usb_TR0
+;	add rax, 0x200
+;	stosq				; dword 0 & 1 - Address in Transfer Ring
+;	mov eax, 0			; Interrupter Target 0
+;	stosd				; dword 2
+;	mov eax, 0x00001801		; xHCI_TTRB_LINK (bits 15:10) and Cycle (0)
+;	stosd				; dword 3
+;	add qword [tval], 16
 
 	; Clear Interrupter 1 Pending (if set)
 	mov rdi, [xhci_rt]
@@ -1143,8 +1169,6 @@ xhci_int1:
 	mov rax, [rdi+xHCI_IR_ERDP]
 	add rax, 16
 	mov [rdi+xHCI_IR_ERDP], rax
-
-	add qword [tval], 32
 
 	; Ring doorbell for Slot 1
 	mov eax, 3			; epid 3
