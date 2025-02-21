@@ -424,31 +424,60 @@ xhci_reset_skip:
 	mov eax, 100000
 	call b_delay
 
-	; Check Event ring for xHCI_ETRB_PSC and gather enabled ports
-	xor ecx, ecx
+;	; Check Event ring for xHCI_ETRB_PSC and gather enabled ports
+;	xor ecx, ecx
+;	mov rdi, xhci_portlist
+;	mov rsi, os_usb_ERS
+;	sub rsi, 16
+;xhci_check_port:
+;	add rsi, 16
+;	mov eax, [rsi+12]		; Load dword 3
+;	shr eax, 10			; Shift Type to AL
+;	cmp al, 0			; End of list
+;	je xhci_check_port_end
+;	cmp al, xHCI_ETRB_PSC
+;	je xhci_check_port_store
+;	jmp xhci_check_port	
+;xhci_check_port_store:
+;	inc cl
+;	mov al, [rsi+3]
+;	stosb
+;	jmp xhci_check_port
+;xhci_check_port_end:
+;	mov byte [xhci_portcount], cl
+
+	; Check Port Status registers for enabled devices with a set speed
+	xor ecx, ecx			; Slot counter
+	xor edx, edx			; Max slots
+	mov dl, byte [xhci_maxslots]
 	mov rdi, xhci_portlist
-	mov rsi, os_usb_ERS
-	sub rsi, 16
-xhci_check_port:
-	add rsi, 16
-	mov eax, [rsi+12]		; Load dword 3
-	shr eax, 10			; Shift Type to AL
-	cmp al, 0			; End of list
-	je xhci_check_port_end
-	cmp al, xHCI_ETRB_PSC
-	je xhci_check_port_store
-	jmp xhci_check_port	
-xhci_check_port_store:
-	inc cl
-	mov al, [rsi+3]
+xhci_check_port_next:
+	dec edx
+	cmp edx, 0
+	jz xhci_check_port_done		; Bail out if we've checked all ports
+	mov ebx, 0x400			; Offset to start of Port Registers
+	shl ecx, 4			; Quick multiply by 16
+	add ebx, ecx			; Add offset to EBX
+	shr ecx, 4			; Quick divide by 16
+	mov eax, [rsi+rbx]		; Load PORTSC
+	and eax, 0x00003C00
+	cmp eax, 0
+	je xhci_check_port_skip
+xhci_check_port_found:
+	sub ebx, 0x400			; Subtract Offset
+	shr ebx, 4			; Quick divide by 16
+	add ebx, 1			; Add 1 as ports start at 1
+	mov eax, ebx
 	stosb
-	jmp xhci_check_port
-xhci_check_port_end:
-	mov byte [xhci_portcount], cl
+	add byte [xhci_portcount], 1	; Increment the port count
+xhci_check_port_skip:
+	inc ecx
+	jmp xhci_check_port_next
+xhci_check_port_done:
 
 	; Check that at least 1 port was enabled
-;	cmp cl, 0
-;	je XXXX
+	add byte [xhci_portcount], 0
+	je xhci_init_done		; In no active ports then bail out
 
 	; At this point xhci_portcount contains the number of activated ports
 	; and xhci_portlist is a list of the port numbers
@@ -1052,6 +1081,7 @@ xhci_rt:	dq 0			; Start of Runtime Registers
 xhci_croff:	dq 0
 xhci_evtoken:	dq 0
 xhci_csz:	dd 32			; Default Context Size
+align 16
 xhci_portlist:	times 32 db 0x00
 xhci_portcount:	db 0
 ; -----------------------------------------------------------------------------
