@@ -964,6 +964,33 @@ xhci_check_port_done:
 ;	mov eax, 100000
 ;	call b_delay
 
+
+	; Send SET_IDLE
+	
+	; Setup Stage
+	mov rax, 0x80000A21		; bRequest 0x0A - Set Idle
+	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
+	mov eax, 0x00000000
+	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
+	mov eax, 0x00000008
+	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
+	mov eax, 0x00000841		; TRT 0, TRB Type 2, IDT, C
+	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1 - Reserved Zero
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00011021
+	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
+	
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
+	
+	mov eax, 100000
+	call b_delay
+
 	; Update Input Context
 	mov rdi, os_usb_IDC
 	; Set Control Context
@@ -1020,6 +1047,9 @@ xhci_check_port_done:
 
 	; Todo - Check result in event ring
 	; 0xXXXXXXXX 0xXXXXXXXX 0x0100000 0x01008401
+
+	mov eax, 100000
+	call b_delay
 
 	; Prepare Interrupter 1 to read a packet
 	mov rdi, os_usb_TR0
