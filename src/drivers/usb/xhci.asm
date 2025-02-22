@@ -961,65 +961,65 @@ xhci_check_port_done:
 ;	mov eax, 100000
 ;	call b_delay
 
-;	; Get HID report
-;	
-;	; Setup Stage
-;	mov eax, 0x22000681
-;	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
-;	mov eax, 0x00200000
-;	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
-;	mov eax, 0x00000008
-;	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
-;	mov eax, 0x00030841
-;	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
-;	; Data Stage
-;	mov rax, os_usb_data0
-;	add rax, 0x80
-;	stosq				; dword 0 & 1 - Data Buffer (63:0)
-;	mov eax, 0x00000022
-;	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-;	mov eax, 0x00010C01
-;	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
-;	; Status Stage
-;	xor eax, eax
-;	stosq				; dword 0 & 1 - Reserved Zero
-;	stosd				; dword 2 - Interrupter Target (31:22)
-;	mov eax, 0x00001021
-;	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-;	
-;	; Ring the doorbell for Slot 1
-;	mov eax, 1			; EPID 1
-;	mov ecx, 1			; Slot 1
-;	call xhci_ring_doorbell
-;
-;	mov eax, 100000
-;	call b_delay
+	; Get HID report
 
-;	; Send Set report
-;
-;	; Setup Stage
-;	mov eax, 0x00010900		; bRequest 0x09 - Set Report, wValue 0x01
-;	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
-;	mov eax, 0x00000000
-;	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
-;	mov eax, 0x00000008
-;	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
-;	mov eax, 0x00000841		; TRT 0, TRB Type 2, IDT, C
-;	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
-;	; Status Stage
-;	xor eax, eax
-;	stosq				; dword 0 & 1 - Reserved Zero
-;	stosd				; dword 2 - Interrupter Target (31:22)
-;	mov eax, 0x00011021
-;	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-;
-;	; Ring the doorbell for Slot 1
-;	mov eax, 1			; EPID 1
-;	mov ecx, 1			; Slot 1
-;	call xhci_ring_doorbell
-;
-;	mov eax, 100000
-;	call b_delay
+	; Setup Stage
+	mov eax, 0x22000681
+	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
+	mov eax, 0x00410000
+	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
+	mov eax, 0x00000008
+	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
+	mov eax, 0x00030841
+	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
+	; Data Stage
+	mov rax, os_usb_data0
+	add rax, 0x80
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	mov eax, 0x00000041
+	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
+	mov eax, 0x00010C01
+	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1 - Reserved Zero
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001021
+	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
+
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
+
+	mov eax, 100000
+	call b_delay
+
+	; Send Set report
+
+	; Setup Stage
+	mov eax, 0x00010900		; bRequest 0x09 - Set Report, wValue 0x01
+	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
+	mov eax, 0x00000000
+	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
+	mov eax, 0x00000008
+	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
+	mov eax, 0x00000841		; TRT 0, TRB Type 2, IDT, C
+	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1 - Reserved Zero
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00011021
+	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
+
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
+
+	mov eax, 100000
+	call b_delay
 
 	; Send Set protocol
 
@@ -1048,9 +1048,9 @@ xhci_check_port_done:
 	call b_delay
 
 	; Send SET_IDLE
-	
+
 	; Setup Stage
-	mov eax, 0x80000A21		; bRequest 0x0A - Set Idle
+	mov eax, 0x00000A21		; bRequest 0x0A - Set Idle
 	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, 0x00000000
 	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
@@ -1064,48 +1064,65 @@ xhci_check_port_done:
 	stosd				; dword 2 - Interrupter Target (31:22)
 	mov eax, 0x00011021
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-	
+
 	; Ring the doorbell for Slot 1
 	mov eax, 1			; EPID 1
 	mov ecx, 1			; Slot 1
 	call xhci_ring_doorbell
-	
+
 	mov eax, 100000
 	call b_delay
 
 	; Update Input Context
 	mov rdi, os_usb_IDC
-	; Set Control Context
-	mov dword [rdi+4], 0x00000009
-	; Set Slot Context
 	mov eax, [xhci_csz]
-	add rdi, rax
-	mov dword [rdi+0], 0xF8300000	; Set Context Entries (31:27) to 1, set Speed (23:20)
-	; TODO - Value above should not be hard-coded
-	; 0xF8 for all entries
-	mov dword [rdi+8], 0x00400000	; Set Interrupter Target to 1 (31:22)
-	; Set Endpoint Context 0
-	mov eax, [xhci_csz]
-	add rdi, rax
-;	mov dword [rdi+0], 0x00000000
-;	mov dword [rdi+4], 0x00080026	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 4 (Control), CErr (2:1) to 3
-;	; TODO - Value above should not be hard-coded
-;	; Needs to be based on MaxPacketSize in the Configuration Descriptor
-;	mov rax, os_usb_TR0		; Address of Transfer Ring
-;	bts rax, 0			; DCS
-;	mov qword [rdi+8], rax
-;	mov dword [rdi+16], 0x00000008	; Set Average TRB Length (15:0) to 8
 	; Set Endpoint Context 1 IN
-	mov eax, [xhci_csz]
+	add rdi, rax			; Slot
+	add rdi, rax			; Control
 	add rdi, rax			; EP1 Out
 	add rdi, rax			; EP1 In
-	mov dword [rdi+0], 0x00060000	; Set Interval (23:16) to 6
+	mov dword [rdi+0], 0x00180000	; Set Interval (23:16) to 6
 	mov dword [rdi+4], 0x0008003e	; Set Max Packet Size (31:16) to 8, EP Type (5:3) to 7 (Interrupt IN), CErr (2:1) to 3
 	mov rax, os_usb_TR0		; Address of Transfer Ring
 	add rax, 0x200
 	bts rax, 0
 	mov qword [rdi+8], rax
-	mov dword [rdi+16], 0x00080008	; Set Max ESIT Payload (31:16) to 8, Average TRB Length (15:0) to 8
+	mov dword [rdi+16], 0x00000008	; Set Max ESIT Payload (31:16) to 8, Average TRB Length (15:0) to 8
+
+	; Set Control Context
+	mov rdi, os_usb_IDC
+	mov dword [rdi+4], 0x00000009
+	; Set Slot Context
+	mov eax, [xhci_csz]
+	add rdi, rax
+	mov dword [rdi+0], 0x18200000	; Set Context Entries (31:27) to 1, set Speed (23:20)
+	; TODO - Value above should not be hard-coded
+	; 0xF8 for all entries
+	mov dword [rdi+8], 0x00400000	; Set Interrupter Target to 1 (31:22)
+	; Set Endpoint Context 0
+
+	; Build a TRB for Evaluate Context in the Command Ring
+	mov rdi, os_usb_CR
+	add rdi, [xhci_croff]
+	mov rax, os_usb_IDC		; Address of the Input Context
+	stosq				; dword 0 & 1
+	xor eax, eax
+	stosd				; dword 2
+	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, xHCI_CTRB_EVALC
+	shl ax, 10
+	bts eax, 0			; Cycle
+	stosd				; dword 3
+	add qword [xhci_croff], 16
+	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003401
+
+	; Ring the Doorbell for the Command Ring
+	xor eax, eax
+	xor ecx, ecx
+	call xhci_ring_doorbell
+
+	mov eax, 100000
+	call b_delay
 
 	; Build a TRB for Configure Endpoint in the Command Ring
 	mov rdi, os_usb_CR
