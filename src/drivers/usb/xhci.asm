@@ -498,8 +498,8 @@ xhci_check_port_done:
 
 	; Ring the Doorbell for the Command Ring
 	xor eax, eax
-	mov rdi, [xhci_db]
-	stosd				; Write to the Doorbell Register
+	xor ecx, ecx
+	call xhci_ring_doorbell
 
 	; Slot Enable Command Event TRB
 	; ┌──────────────────────────────────────┐
@@ -587,9 +587,10 @@ xhci_check_port_done:
 	stosd				; dword 3
 	add qword [xhci_croff], 16
 
+	; Ring the Doorbell for the Command Ring
 	xor eax, eax
-	mov rdi, [xhci_db]
-	stosd				; Write to the Doorbell Register
+	xor ecx, ecx
+	call xhci_ring_doorbell
 
 	; Set Address Command Event TRB
 	; ┌──────────────────────────────────────┐
@@ -647,13 +648,10 @@ xhci_check_port_done:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring doorbell for Slot 1
-	mov eax, 1
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
 
 	mov eax, 100000
 	call b_delay
@@ -694,9 +692,10 @@ xhci_check_port_done:
 	add qword [xhci_croff], 16
 	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003401
 
+	; Ring the Doorbell for the Command Ring
 	xor eax, eax
-	mov rdi, [xhci_db]
-	stosd				; Write to the Doorbell Register
+	xor ecx, ecx
+	call xhci_ring_doorbell
 
 	pop rdi
 	
@@ -743,13 +742,10 @@ xhci_check_port_done:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring doorbell for Slot 1
-	mov eax, 1
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
 
 	; TODO - Check full Device Descriptor
 	; Example from QEMU keyboard
@@ -815,13 +811,10 @@ xhci_check_port_done:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring doorbell for Slot 1
-	mov eax, 1
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
 
 	mov eax, 100000
 	call b_delay
@@ -865,13 +858,10 @@ xhci_check_port_done:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring doorbell for Slot 1
-	mov eax, 1
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
 
 	; TODO - Check Configuration Descriptor
 	; Example from QEMU keyboard
@@ -1023,9 +1013,10 @@ xhci_check_port_done:
 	add qword [xhci_croff], 16
 	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003001
 
+	; Ring the Doorbell for the Command Ring
 	xor eax, eax
-	mov rdi, [xhci_db]
-	stosd				; Write to the Doorbell Register
+	xor ecx, ecx
+	call xhci_ring_doorbell
 
 	; Todo - Check result in event ring
 	; 0xXXXXXXXX 0xXXXXXXXX 0x0100000 0x01008401
@@ -1050,13 +1041,10 @@ xhci_check_port_done:
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring doorbell for Slot 1
-	mov eax, 3			; epid 3
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
+	; Ring the doorbell for Slot 1
+	mov eax, 3			; EPID 3
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
 
 	jmp xhci_init_done
 
@@ -1084,6 +1072,27 @@ xhci_csz:	dd 32			; Default Context Size
 align 16
 xhci_portlist:	times 32 db 0x00
 xhci_portcount:	db 0
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; xhci_ring_doorbell - Ring the doorbell for a Slot / EPID
+; RCX = Slot
+; RAX = EPID
+xhci_ring_doorbell:
+	push rdi
+	push rcx
+	push rax
+	
+	mov rdi, [xhci_db]	; Base address for doorbell registers
+	shl rcx, 2		; Quick multiply by 4
+	add rdi, rcx		; Add offset to slot doorbell
+	stosd			; Store EPID
+	
+	pop rax
+	pop rcx
+	pop rdi
+	ret
 ; -----------------------------------------------------------------------------
 
 
@@ -1201,13 +1210,10 @@ xhci_int1:
 	add rax, 16
 	mov [rdi+xHCI_IR_ERDP], rax
 
-	; Ring doorbell for Slot 1
-	mov eax, 3			; epid 3
-	push rdi
-	mov rdi, [xhci_db]
-	add rdi, 4
-	stosd				; Write to the Doorbell Register
-	pop rdi
+	; Ring the doorbell for Slot 1
+	mov eax, 3			; EPID 3
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
 
 	; Acknowledge the interrupt
 	mov ecx, APIC_EOI
