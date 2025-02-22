@@ -618,7 +618,7 @@ xhci_check_port_done:
 	; Request 8 bytes from Device Descriptor to get the length
 
 	; Setup Stage
-	mov rax, 0x01000680		; 0x01 Device Descriptor
+	mov eax, 0x01000680		; 0x01 Device Descriptor
 	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, 0x00080000		; Request 8 bytes
 	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
@@ -711,7 +711,7 @@ xhci_check_port_done:
 	mov bl, [os_usb_data0]		; BL contains Device Descriptor length
 
 	; Setup Stage
-	mov rax, 0x01000680		; 0x01 Device Descriptor
+	mov eax, 0x01000680		; 0x01 Device Descriptor
 	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, ebx			; BL contains length
 	shl eax, 16
@@ -780,7 +780,7 @@ xhci_check_port_done:
 	; Request 9 bytes from Configuration Descriptor
 
 	; Setup Stage
-	mov rax, 0x02000680		; 0x02 Configuration Descriptor
+	mov eax, 0x02000680		; 0x02 Configuration Descriptor
 	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, 0x00090000
 	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
@@ -826,7 +826,7 @@ xhci_check_port_done:
 	; Request full data from Configuration Descriptor (includes Interface Descriptor (0x04) / HID Descriptor (0x21))
 
 	; Setup Stage
-	mov rax, 0x02000680		; 0x02 Configuration Descriptor
+	mov eax, 0x02000680		; 0x02 Configuration Descriptor
 	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, ebx			; BL contains length
 	shl eax, 16
@@ -935,9 +935,6 @@ xhci_check_port_done:
 	; Check Attribute (offset 3) - Should be 0x03 for Interrupt
 	; Check MaxPacketSize (offset 4) - 0x0008 = keyboard (ideally), 0x0004 = mouse (ideally)
 
-	; TODO - Send Set_Idle
-	; 0x00000000000A21
-
 	mov eax, 100000
 	call b_delay
 
@@ -964,11 +961,96 @@ xhci_check_port_done:
 ;	mov eax, 100000
 ;	call b_delay
 
+;	; Get HID report
+;	
+;	; Setup Stage
+;	mov eax, 0x22000681
+;	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
+;	mov eax, 0x00200000
+;	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
+;	mov eax, 0x00000008
+;	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
+;	mov eax, 0x00030841
+;	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
+;	; Data Stage
+;	mov rax, os_usb_data0
+;	add rax, 0x80
+;	stosq				; dword 0 & 1 - Data Buffer (63:0)
+;	mov eax, 0x00000022
+;	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
+;	mov eax, 0x00010C01
+;	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
+;	; Status Stage
+;	xor eax, eax
+;	stosq				; dword 0 & 1 - Reserved Zero
+;	stosd				; dword 2 - Interrupter Target (31:22)
+;	mov eax, 0x00001021
+;	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
+;	
+;	; Ring the doorbell for Slot 1
+;	mov eax, 1			; EPID 1
+;	mov ecx, 1			; Slot 1
+;	call xhci_ring_doorbell
+;
+;	mov eax, 100000
+;	call b_delay
+
+;	; Send Set report
+;
+;	; Setup Stage
+;	mov eax, 0x00010900		; bRequest 0x09 - Set Report, wValue 0x01
+;	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
+;	mov eax, 0x00000000
+;	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
+;	mov eax, 0x00000008
+;	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
+;	mov eax, 0x00000841		; TRT 0, TRB Type 2, IDT, C
+;	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
+;	; Status Stage
+;	xor eax, eax
+;	stosq				; dword 0 & 1 - Reserved Zero
+;	stosd				; dword 2 - Interrupter Target (31:22)
+;	mov eax, 0x00011021
+;	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
+;
+;	; Ring the doorbell for Slot 1
+;	mov eax, 1			; EPID 1
+;	mov ecx, 1			; Slot 1
+;	call xhci_ring_doorbell
+;
+;	mov eax, 100000
+;	call b_delay
+
+	; Send Set protocol
+
+	; Setup Stage
+	mov eax, 0x00000B21		; bRequest 0x0B - Set Protocol, wValue 0x00 - Boot Protocol
+	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
+	mov eax, 0x00000000
+	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
+	mov eax, 0x00000008
+	stosd				; dword 2 - Interrupter Target (31:22), TRB Transfer Length (16:0)
+	mov eax, 0x00000841		; TRT 0, TRB Type 2, IDT, C
+	stosd				; dword 3 - TRT (17:16), TRB Type (15:10), IDT (6), IOC (5), C (0)
+	; Status Stage
+	xor eax, eax
+	stosq				; dword 0 & 1 - Reserved Zero
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00011021
+	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
+
+	; Ring the doorbell for Slot 1
+	mov eax, 1			; EPID 1
+	mov ecx, 1			; Slot 1
+	call xhci_ring_doorbell
+
+	mov eax, 100000
+	call b_delay
 
 	; Send SET_IDLE
 	
 	; Setup Stage
-	mov rax, 0x80000A21		; bRequest 0x0A - Set Idle
+	mov eax, 0x80000A21		; bRequest 0x0A - Set Idle
 	stosd				; dword 0 - wValue (31:16), bRequest (15:8), bmRequestType (7:0)
 	mov eax, 0x00000000
 	stosd				; dword 1 - wLength (31:16), wIndex (15:0)
@@ -1445,8 +1527,13 @@ xHCI_ETRB_PSC	equ 34		; Port Status Change
 xHCI_GET_STATUS		equ 0x00
 xHCI_CLEAR_FEATURE	equ 0x01
 xHCI_SET_FEATURE	equ 0x03
+xHCI_SET_ADDRESS	equ 0x05
 xHCI_GET_DESCRIPTOR	equ 0x06
 xHCI_SET_DESCRIPTOR	equ 0x07
+xHCI_GET_CONFIGURATION	equ 0x08
+xHCI_SET_CONFIGURATION	equ 0x09
+xHCI_GET_INTERFACE	equ 0x0A
+xHCI_SET_INTERFACE	equ 0x0B
 
 ; Completion Codes
 xHCI_CC_INVALID				equ 0
