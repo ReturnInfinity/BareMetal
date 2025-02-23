@@ -475,8 +475,10 @@ xhci_check_port_skip:
 	jmp xhci_check_port_next
 xhci_check_port_done:
 
+xhci_search_devices:
+
 	; Check that at least 1 port was enabled
-	add byte [xhci_portcount], 0
+	cmp byte [xhci_portcount], 0
 	je xhci_init_done		; In no active ports then bail out
 
 	; At this point xhci_portcount contains the number of activated ports
@@ -716,7 +718,6 @@ xhci_skip_update_idc:
 
 	pop rdi
 
-
 	; Todo - Check result in event ring
 	; 0xXXXXXXXX 0xXXXXXXXX 0x0100000 0x01008401
 
@@ -953,6 +954,53 @@ xhci_skip_update_idc:
 	mov eax, 100000
 	call b_delay
 
+	; Verify that a keyboard was found
+	mov rax, os_usb_data0
+	add rax, 0x20			; Offset to Configuration Descriptor
+	add rax, 14			; Offset to Inferface Class Code
+	mov eax, [rax]
+	and eax, 0x00FFFFFF		; Keep low 3 bytes (discard Interface String)
+	cmp eax, 0x00010103		; Look for Class Code 0x03, Sub Class 0x01, and Protocol 0x01
+	je foundkeyboard
+
+	; If no keyboard was found at this port then disable the slot and try the next
+
+	; Build a TRB for Disable Slot in the Command Ring
+	mov rdi, os_usb_CR
+	add rdi, [xhci_croff]
+	xor eax, eax
+	stosd				; Store dword 0
+	stosd				; Store dword 1
+	stosd				; Store dword 2
+	mov eax, 0x01002801		; Disable Slot - Slot (31:24), xHCI_CTRB_DSLOT (15:10), C (0)
+	stosd				; Store dword 3
+	add qword [xhci_croff], 16
+	; 0x0000000000000000 0x0000000 0x01002801
+	
+	; Ring the Doorbell for the Command Ring
+	xor eax, eax
+	xor ecx, ecx
+	call xhci_ring_doorbell	
+
+	mov eax, 100000
+	call b_delay
+
+	; Shift the port list
+	push rsi
+	push rdi
+	xor ecx, ecx
+	mov cl, [xhci_portcount]
+	mov rdi, xhci_portlist
+	mov rsi, rdi
+	inc rsi
+	rep movsb
+	pop rdi
+	pop rsi
+	dec byte [xhci_portcount]
+
+	jmp xhci_search_devices
+
+foundkeyboard:
 	; Send Set report
 
 	; Setup Stage
