@@ -487,6 +487,7 @@ xhci_search_devices:
 	; Build a TRB for Enable Slot in the Command Ring
 	mov rdi, os_usb_CR
 	add rdi, [xhci_croff]
+	push rdi			; Save the Address of the Enable Slot command
 	xor eax, eax
 	stosd				; Store dword 0
 	stosd				; Store dword 1
@@ -522,6 +523,19 @@ xhci_search_devices:
 
 	mov eax, 100000
 	call b_delay
+
+	pop rbx				; Restore the Address of the Enable Slot command
+	mov rsi, os_usb_ERS
+loadnext:
+	lodsq
+	cmp rax, 0
+	je xhci_init_error
+	cmp rax, rbx
+	jne loadnext
+	add rsi, 4
+	lodsd				; EAX contains the slot ID in bits 31:24
+	shr eax, 24
+	mov [currentslot], al
 
 	; Clear the 4KiB IDC
 	mov rdi, os_usb_IDC
@@ -587,7 +601,8 @@ xhci_search_devices:
 	stosq				; dword 0 & 1
 	xor eax, eax			; Reserved
 	stosd				; dword 2
-	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, [currentslot]
+	shl eax, 24			; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_ADDRD
 	shl ax, 10
 	; TODO - Older devices need the Device Descriptor pulled first
@@ -659,9 +674,10 @@ xhci_search_devices:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
 	mov eax, 100000
@@ -698,7 +714,8 @@ xhci_search_devices:
 	stosq				; dword 0 & 1
 	xor eax, eax
 	stosd				; dword 2
-	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, [currentslot]
+	shl eax, 24			; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_EVALC
 	shl ax, 10
 	bts eax, 0			; Cycle
@@ -758,9 +775,10 @@ xhci_skip_update_idc:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
 	; TODO - Check full Device Descriptor
@@ -827,9 +845,10 @@ xhci_skip_update_idc:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
 	mov eax, 100000
@@ -874,9 +893,10 @@ xhci_skip_update_idc:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
 	; TODO - Check Configuration Descriptor
@@ -957,7 +977,7 @@ xhci_skip_update_idc:
 	; Verify that a keyboard was found
 	mov rax, os_usb_data0
 	add rax, 0x20			; Offset to Configuration Descriptor
-	add rax, 14			; Offset to Inferface Class Code
+	add rax, 14			; Offset to Interface Class Code
 	mov eax, [rax]
 	and eax, 0x00FFFFFF		; Keep low 3 bytes (discard Interface String)
 	cmp eax, 0x00010103		; Look for Class Code 0x03, Sub Class 0x01, and Protocol 0x01
@@ -972,7 +992,10 @@ xhci_skip_update_idc:
 	stosd				; Store dword 0
 	stosd				; Store dword 1
 	stosd				; Store dword 2
-	mov eax, 0x01002801		; Disable Slot - Slot (31:24), xHCI_CTRB_DSLOT (15:10), C (0)
+	mov eax, 0x00002801		; Disable Slot - Slot (31:24), xHCI_CTRB_DSLOT (15:10), C (0)
+	ror eax, 24
+	mov al, [currentslot]
+	rol eax, 24
 	stosd				; Store dword 3
 	add qword [xhci_croff], 16
 	; 0x0000000000000000 0x0000000 0x01002801
@@ -1027,9 +1050,10 @@ foundkeyboard:
 	mov eax, 0x00001C01		; TRB Type 7, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
 	mov eax, 100000
@@ -1053,9 +1077,10 @@ foundkeyboard:
 	mov eax, 0x00011001		; DIR, TRB Type 4, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
 	mov eax, 100000
@@ -1079,9 +1104,10 @@ foundkeyboard:
 	mov eax, 0x00011001		; DIR, TRB Type 4, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
 	mov eax, 100000
@@ -1122,7 +1148,8 @@ foundkeyboard:
 	stosq				; dword 0 & 1
 	xor eax, eax
 	stosd				; dword 2
-	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, [currentslot]
+	shl eax, 24			; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_EVALC
 	shl ax, 10
 	bts eax, 0			; Cycle
@@ -1145,7 +1172,8 @@ foundkeyboard:
 	stosq				; dword 0 & 1
 	xor eax, eax
 	stosd				; dword 2
-	mov eax, 0x01000000		; Set Slot ID (31:24)
+	mov al, [currentslot]
+	shl eax, 24			; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_CONFE
 	shl ax, 10
 	bts eax, 0			; Cycle
@@ -1163,6 +1191,9 @@ foundkeyboard:
 
 	mov eax, 100000
 	call b_delay
+
+	mov al, [currentslot]
+	mov [keyboardslot], al
 
 	; Prepare Interrupter 1 to read a packet
 	mov rdi, os_usb_TR0
@@ -1184,9 +1215,10 @@ foundkeyboard:
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
 	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for the Keyboard
 	mov eax, 3			; EPID 3
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [keyboardslot]
 	call xhci_ring_doorbell
 
 	jmp xhci_init_done
@@ -1215,6 +1247,8 @@ xhci_csz:	dd 32			; Default Context Size
 align 16
 xhci_portlist:	times 32 db 0x00
 xhci_portcount:	db 0
+currentslot:	db 0
+keyboardslot:	db 0
 ; -----------------------------------------------------------------------------
 
 
@@ -1351,9 +1385,10 @@ xhci_int1:
 	add rax, 16
 	mov [rdi+xHCI_IR_ERDP], rax
 
-	; Ring the doorbell for Slot 1
+	; Ring the doorbell for the Keyboard
 	mov eax, 3			; EPID 3
-	mov ecx, 1			; Slot 1
+	xor ecx, ecx
+	mov cl, [keyboardslot]
 	call xhci_ring_doorbell
 
 	; Acknowledge the interrupt
