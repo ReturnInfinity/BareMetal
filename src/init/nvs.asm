@@ -24,8 +24,8 @@ init_nvs_nvme_check:
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_nvs_nvme_skip		; If no NVMe the bail out
 	cmp ax, 0x0108			; Mass Storage Controller (01) / NVMe Controller (08)
-	je init_nvs_nvme_check
-	jmp init_nvs_check_bus	; Check Bus Table again
+	je init_nvs_nvme
+	jmp init_nvs_nvme_check		; Check Bus Table again
 init_nvs_nvme_skip:
 
 	; Check Bus Table for any other supported controllers
@@ -41,7 +41,7 @@ init_nvs_check_bus:
 	je init_nvs_ahci
 	cmp ax, 0x0100			; Mass Storage Controller (01) / SCSI storage controller (00)
 	je init_nvs_virtio_blk
-	jmp init_nvs_check_bus	; Check Bus Table again
+	jmp init_nvs_check_bus		; Check Bus Table again
 
 init_nvs_nvme:
 	sub rsi, 8			; Move RSI back to start of Bus record
