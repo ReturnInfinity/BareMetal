@@ -1275,7 +1275,8 @@ xhci_ring_doorbell:
 ; xHCI Interrupter 0 - Controller
 align 8
 xhci_int0:
-	push rsi
+	push rdi
+	push rcx
 	push rax
 
 	mov al, 0x00
@@ -1295,13 +1296,13 @@ xhci_int0:
 	mov rdi, [xhci_rt]
 	add rdi, xHCI_IR_0		; Interrupt Register 0
 	mov eax, [rdi+xHCI_IR_IMAN]
-;	btr eax, 0			; Clear Interrupt Pending (IP) (bit 0)
+	btr eax, 0			; Clear Interrupt Pending (IP) (bit 0)
 	mov [rdi+xHCI_IR_IMAN], eax
 
 	; Increment dequeue
-	mov eax, [rdi+xHCI_IR_ERDP]
-	add eax, 16
-	mov [rdi+xHCI_IR_ERDP], eax
+	mov rax, [rdi+xHCI_IR_ERDP]
+	add rax, 16
+	mov [rdi+xHCI_IR_ERDP], rax
 
 	; Acknowledge the interrupt
 	mov ecx, APIC_EOI
@@ -1309,6 +1310,7 @@ xhci_int0:
 	call os_apic_write
 
 	pop rax
+	pop rcx
 	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
@@ -1319,6 +1321,7 @@ xhci_int0:
 align 8
 xhci_int1:
 	push rdi
+	push rcx
 	push rax
 
 	; Clear Controller Interrupt Pending
@@ -1362,7 +1365,7 @@ xhci_int1:
 	add qword [tval], 32
 
 	; Todo - Check if near the end of the transfer ring. If so, create a link TRB
-	
+
 	; Link
 ;	mov rax, os_usb_TR0
 ;	add rax, 0x200
@@ -1397,6 +1400,7 @@ xhci_int1:
 	call os_apic_write
 
 	pop rax
+	pop rcx
 	pop rdi
 	iretq
 ; -----------------------------------------------------------------------------
@@ -1505,7 +1509,6 @@ os_usb_ERS:		equ 0x00000000006B0000	; 0x6B0000 -> 0x6BFFFF	64K Event Ring Segmen
 os_usb_IDC:		equ 0x00000000006C0000	; 0x6C0000 -> 0x6CFFFF	64K Input device contexts (temporary buffer of max 64+2048 bytes)
 os_usb_TR0:		equ 0x00000000006D0000	; Temp transfer ring
 os_usb_data0:		equ 0x00000000006E0000
-;os_usb_data1:		equ 0x00000000006F0000
 
 os_usb_scratchpad:	equ 0x0000000000700000
 
