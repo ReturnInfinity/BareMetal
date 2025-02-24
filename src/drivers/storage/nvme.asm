@@ -172,8 +172,8 @@ nvme_init_LBA_end:
 	mov [os_NVMeLBA], bl		; Store the highest LBADS
 
 nvme_init_done:
-	bts word [os_StorageVar], 0	; Set the bit flag that NVMe has been initialized
-	mov rdi, os_storage_io
+	bts word [os_nvsVar], 0	; Set the bit flag that NVMe has been initialized
+	mov rdi, os_nvs_io
 	mov rax, nvme_io
 	stosq
 	mov rax, nvme_id

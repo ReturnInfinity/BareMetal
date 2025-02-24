@@ -24,8 +24,8 @@ align 16
 	dq b_output			; 0x0018
 	dq b_net_tx			; 0x0020
 	dq b_net_rx			; 0x0028
-	dq b_storage_read		; 0x0030
-	dq b_storage_write		; 0x0038
+	dq b_nvs_read			; 0x0030
+	dq b_nvs_write			; 0x0038
 	dq b_system			; 0x0040
 	dq b_user			; 0x0048
 

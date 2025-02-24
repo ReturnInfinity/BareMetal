@@ -8,7 +8,7 @@
 
 %include "syscalls/bus.asm"
 %include "syscalls/debug.asm"
-%include "syscalls/storage.asm"
+%include "syscalls/nvs.asm"
 %include "syscalls/io.asm"
 %include "syscalls/net.asm"
 %include "syscalls/smp.asm"

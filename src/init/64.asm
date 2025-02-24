@@ -128,13 +128,13 @@ init_64_no_ps2mouse:
 
 	; Set device syscalls to stub
 	mov rax, os_stub
-	mov rdi, os_storage_io
+	mov rdi, os_nvs_io
 	stosq
 	stosq
 	mov rdi, os_net_transmit
 	stosq
 	stosq
-	stosq	
+	stosq
 
 	; Configure the Stack base
 	mov rax, 0x200000		; Stacks start at 2MiB

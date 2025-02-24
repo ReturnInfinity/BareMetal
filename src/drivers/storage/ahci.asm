@@ -174,8 +174,8 @@ ahci_init_skip_port:
 ahci_init_search_ports_done:
 
 ahci_init_done:
-	bts word [os_StorageVar], 1	; Set the bit flag that AHCI has been initialized
-	mov rdi, os_storage_io
+	bts word [os_nvsVar], 1	; Set the bit flag that AHCI has been initialized
+	mov rdi, os_nvs_io
 	mov rax, ahci_io
 	stosq
 	mov rax, ahci_id
