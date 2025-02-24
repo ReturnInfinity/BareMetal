@@ -10,7 +10,7 @@
 init_64:
 	; Debug output
 	mov rsi, msg_init_64
-	mov rcx, 10
+	mov rcx, 6
 	call b_output
 
 	; Clear all memory after the kernel up to 2MiB

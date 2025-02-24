@@ -41,7 +41,7 @@ start:
 	; System and driver initialization
 	call init_64			; After this point we are in a working 64-bit environment
 	call init_bus			; Initialize system bus
-	call init_storage		; Initialize storage
+	call init_nvs			; Initialize non-volatile storage
 	call init_net			; Initialize network
 
 	; Output system ready message

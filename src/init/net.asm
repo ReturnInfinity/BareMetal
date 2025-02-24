@@ -11,7 +11,7 @@
 init_net:
 	; Debug output
 	mov rsi, msg_init_net
-	mov rcx, 10
+	mov rcx, 6
 	call b_output
 
 	; Check Bus Table for a Ethernet device
