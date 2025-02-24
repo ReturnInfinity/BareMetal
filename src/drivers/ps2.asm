@@ -70,6 +70,29 @@ ps2_init:
 	; TODO - Move to a ps2_keyboard_init function
 	or qword [os_SysConfEn], 1 << 0
 
+	; Set up the IRQ handlers on enabled PS/2 devices
+	mov rbx, [os_SysConfEn]
+	bt ebx, 0
+	jnc init_64_no_ps2keyboard
+	mov edi, 0x21
+	mov rax, int_keyboard
+	call create_gate
+init_64_no_ps2keyboard:
+	bt ebx, 0
+	jnc init_64_no_ps2mouse
+	mov edi, 0x2C
+	mov rax, int_mouse
+	call create_gate
+init_64_no_ps2mouse:
+
+	; Enable specific interrupts
+	mov ecx, 1			; Keyboard IRQ
+	mov eax, 0x21			; Keyboard Interrupt Vector
+	call os_ioapic_mask_clear
+	mov ecx, 12			; Mouse IRQ
+	mov eax, 0x2C			; Mouse Interrupt Vector
+	call os_ioapic_mask_clear
+
 ps2_init_error:
 	ret
 ; -----------------------------------------------------------------------------

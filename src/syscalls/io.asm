@@ -19,7 +19,10 @@ b_input:
 	ret
 
 b_input_no_key:
+	bt qword [os_SysConfEn], 1 << 2
+	jnc b_input_no_serial
 	call serial_recv		; Try from the serial port
+b_input_no_serial:
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -33,6 +36,9 @@ b_output:
 	push rsi			; Message location
 	push rcx			; Counter of chars left to output
 	push rax			; AL is used for the output function
+
+	bt qword [os_SysConfEn], 1 << 2
+	jnc b_output_done
 
 b_output_nextchar:
 	jrcxz b_output_done		; If RCX is 0 then the function is complete
