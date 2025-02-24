@@ -427,6 +427,16 @@ nvme_id:
 ; -----------------------------------------------------------------------------
 
 
+; NVMe Memory
+os_nvme_asqb:		equ os_nvs_mem + 0x0	; 4K Admin Submission Queue Base Address
+os_nvme_acqb:		equ os_nvs_mem + 0x1000	; 4K Admin Completion Queue Base Address
+os_nvme_iosqb:		equ os_nvs_mem + 0x2000	; 4K I/O Submission Queue Base Address
+os_nvme_iocqb:		equ os_nvs_mem + 0x3000	; 4K I/O Completion Queue Base Address
+os_nvme_CTRLID:		equ os_nvs_mem + 0x4000	; 4K Controller Identify Data
+os_nvme_ANS:		equ os_nvs_mem + 0x5000	; 4K Namespace Data
+os_nvme_NSID:		equ os_nvs_mem + 0x6000	; 4K Namespace Identify Data
+os_nvme_rpr:		equ os_nvs_mem + 0x7000	; 4K RPR2 space for 1024 entries
+
 ; Register list
 NVMe_CAP	equ 0x00	; 8-byte Controller Capabilities
 NVMe_VS		equ 0x08	; 4-byte Version

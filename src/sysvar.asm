@@ -43,28 +43,13 @@ os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Var
 ; System memory
 bus_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K Bus Table
 
-						; 0x130000 -> 0x13FFFF	64K Free
-
 ; Non-volatile Storage memory
-os_nvs_mem:		equ 0x0000000000140000
-ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
-ahci_CLB:		equ 0x0000000000140000	; 0x140000 -> 0x147FFF	32K AHCI Command List Base (1K per port)
-ahci_FB:		equ 0x0000000000148000	; 0x148000 -> 0x167FFF	128K AHCI FIS Base (4K per port)
-ahci_CMD:		equ 0x0000000000168000	; 0x168000 -> 0x16FFFF	32K AHCI Commands
-os_nvme:		equ 0x0000000000170000	; 0x170000 -> 0x17FFFF	64K NVMe Structures
-os_nvme_asqb:		equ 0x0000000000170000	; 0x170000 -> 0x170FFF	4K Admin Submission Queue Base Address
-os_nvme_acqb:		equ 0x0000000000171000	; 0x171000 -> 0x171FFF	4K Admin Completion Queue Base Address
-os_nvme_iosqb:		equ 0x0000000000172000	; 0x172000 -> 0x172FFF	4K I/O Submission Queue Base Address
-os_nvme_iocqb:		equ 0x0000000000173000	; 0x173000 -> 0x173FFF	4K I/O Completion Queue Base Address
-os_nvme_CTRLID:		equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Identify Data
-os_nvme_ANS:		equ 0x0000000000175000	; 0x175000 -> 0x175FFF	4K Namespace Data
-os_nvme_NSID:		equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identify Data
-os_nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
+os_nvs_mem:		equ 0x0000000000130000	; 0x130000 -> 0x15FFFF	192K
 
-						; 0x180000 -> 0x19FFFF	128K Free
+						; 0x160000 -> 0x19FFFF	256K Free
 
 ; Network memory
-os_net_mem:		equ 0x00000000001A0000
+os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1BFFFF	128K
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
 os_PacketBuffers:	equ 0x00000000001B0000	;

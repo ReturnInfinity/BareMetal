@@ -436,6 +436,11 @@ ahci_id_error:
 ; -----------------------------------------------------------------------------
 
 
+; AHCI Memory
+ahci_FB:		equ os_nvs_mem + 0x0		; 128K AHCI FIS Base (4K per port)
+ahci_CLB:		equ os_nvs_mem + 0x20000	; 32K AHCI Command List Base (1K per port)
+ahci_CMD:		equ os_nvs_mem + 0x28000	; 32K AHCI Commands
+
 ; HBA Memory Registers
 ; 0x0000 - 0x002B	Generic Host Control
 ; 0x002C - 0x005F	Reserved
