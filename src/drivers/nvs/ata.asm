@@ -25,6 +25,9 @@ ata_init:
 	stosq
 	mov rax, ata_id
 	stosq
+	add rsi, 15
+	mov byte [rsi], 1		; Mark driver as installed in Bus Table
+	sub rsi, 15
 	ret
 ; -----------------------------------------------------------------------------
 
