@@ -19,12 +19,15 @@
 
 ; -----------------------------------------------------------------------------
 ata_init:
-	bts word [os_StorageVar], 2	; Set the bit flag that ATA has been initialized
-	mov rdi, os_storage_io
+	bts word [os_nvsVar], 2	; Set the bit flag that ATA has been initialized
+	mov rdi, os_nvs_io
 	mov rax, ata_io
 	stosq
 	mov rax, ata_id
 	stosq
+	add rsi, 15
+	mov byte [rsi], 1		; Mark driver as installed in Bus Table
+	sub rsi, 15
 	ret
 ; -----------------------------------------------------------------------------
 

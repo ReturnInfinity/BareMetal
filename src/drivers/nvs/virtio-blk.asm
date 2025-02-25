@@ -165,7 +165,7 @@ virtio_blk_init_reset_wait:
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
 	mov ecx, eax			; Store queue size in ECX
-	mov eax, os_storage_mem
+	mov eax, os_nvs_mem
 	mov [rsi+VIRTIO_QUEUE_DESC], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
@@ -186,7 +186,7 @@ virtio_blk_init_reset_wait:
 	; Populate the Next entries in the description ring
 	; FIXME - Don't expect exactly 256 entries
 	mov eax, 1
-	mov rdi, os_storage_mem
+	mov rdi, os_nvs_mem
 	add rdi, 14
 virtio_blk_init_pop:
 	mov [rdi], al
@@ -200,8 +200,8 @@ virtio_blk_init_pop:
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
 virtio_blk_init_done:
-	bts word [os_StorageVar], 3	; Set the bit flag that Virtio Block has been initialized
-	mov rdi, os_storage_io		; Write over the storage function addresses
+	bts word [os_nvsVar], 3	; Set the bit flag that Virtio Block has been initialized
+	mov rdi, os_nvs_io		; Write over the storage function addresses
 	mov rax, virtio_blk_io
 	stosq
 	mov rax, virtio_blk_id
@@ -244,7 +244,7 @@ virtio_blk_io:
 	push rax			; Save the starting sector
 	mov r9, rdi			; Save the memory address
 
-	mov rdi, os_storage_mem		; This driver always starts at beginning of the Descriptor Table
+	mov rdi, os_nvs_mem		; This driver always starts at beginning of the Descriptor Table
 					; FIXME: Add desc_index offset
 
 	; Add header to Descriptor Entry 0
@@ -295,7 +295,7 @@ virtio_blk_io:
 	stosb
 
 	; Add entry to Avail
-	mov rdi, os_storage_mem+0x1000	; Offset to start of Availability Ring
+	mov rdi, os_nvs_mem+0x1000	; Offset to start of Availability Ring
 	mov ax, 1			; 1 for no interrupts
 	stosw				; 16-bit flags
 	mov ax, [availindex]
@@ -310,7 +310,7 @@ virtio_blk_io:
 	stosw
 
 	; Inspect the used ring
-	mov rdi, os_storage_mem+0x2002	; Offset to start of Used Ring
+	mov rdi, os_nvs_mem+0x2002	; Offset to start of Used Ring
 	mov bx, [availindex]
 virtio_blk_io_wait:
 	mov ax, [rdi]			; Load the index

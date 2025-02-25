@@ -8,11 +8,6 @@
 
 ; -----------------------------------------------------------------------------
 init_64:
-	; Debug output
-	mov rsi, msg_init_64
-	mov rcx, 10
-	call b_output
-
 	; Clear all memory after the kernel up to 2MiB
 	mov edi, os_SystemVariables
 	mov ecx, 122880			; Clear 960 KiB
@@ -62,17 +57,6 @@ init_64:
 	lodsd
 	mov [os_IOAPICAddress], rax
 
-	; Configure the PS/2 keyboard and mouse
-	call ps2_init
-
-	; Configure the serial port
-	call serial_init
-
-	; Mask all PIC interrupts
-	mov al, 0xFF
-	out 0x21, al
-	out 0xA1, al
-
 	; Create exception gate stubs (Pure64 has already set the correct gate markers)
 	xor edi, edi			; 64-bit IDT at linear address 0x0000000000000000
 	mov ecx, 32
@@ -103,21 +87,6 @@ make_interrupt_gate_stubs:
 	dec ecx
 	jnz make_interrupt_gate_stubs
 
-	; Set up the IRQ handlers on enabled PS/2 devices
-	mov rbx, [os_SysConfEn]
-	bt ebx, 0
-	jnc init_64_no_ps2keyboard
-	mov edi, 0x21
-	mov rax, int_keyboard
-	call create_gate
-init_64_no_ps2keyboard:
-	bt ebx, 0
-	jnc init_64_no_ps2mouse
-	mov edi, 0x2C
-	mov rax, int_mouse
-	call create_gate
-init_64_no_ps2mouse:
-
 	; Set up IRQ handlers for CPUs
 	mov edi, 0x80
 	mov rax, ap_wakeup
@@ -128,13 +97,13 @@ init_64_no_ps2mouse:
 
 	; Set device syscalls to stub
 	mov rax, os_stub
-	mov rdi, os_storage_io
+	mov rdi, os_nvs_io
 	stosq
 	stosq
 	mov rdi, os_net_transmit
 	stosq
 	stosq
-	stosq	
+	stosq
 
 	; Configure the Stack base
 	mov rax, 0x200000		; Stacks start at 2MiB
@@ -167,13 +136,21 @@ skip_ap:
 	jmp next_ap
 no_more_aps:
 
-	; Enable specific interrupts
-	mov ecx, 1			; Keyboard IRQ
-	mov eax, 0x21			; Keyboard Interrupt Vector
-	call os_ioapic_mask_clear
-	mov ecx, 12			; Mouse IRQ
-	mov eax, 0x2C			; Mouse Interrupt Vector
-	call os_ioapic_mask_clear
+	; Configure the PS/2 keyboard and mouse
+	call ps2_init
+
+	; Configure the serial port
+	call serial_init
+
+	; Output BareMetal start message
+	mov rsi, msg_start
+	mov rcx, 15
+	call b_output
+
+	; Debug output
+	mov rsi, msg_init_64
+	mov rcx, 6
+	call b_output
 
 	; Output block to screen (1/4)
 	mov ebx, 0

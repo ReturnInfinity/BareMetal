@@ -16,9 +16,9 @@ This document details the API calls built into the BareMetal exokernel.
 2. Network
 	- b\_net\_tx
 	- b\_net\_rx
-3. Storage
-	- b\_storage\_read
-	- b\_storage\_write
+3. Non-volatile Storage
+	- b\_nvs\_read
+	- b\_nvs\_write
 4. Misc
 	- b\_system
 
@@ -128,20 +128,20 @@ Assembly Example:
 Note: BareMetal does not keep a buffer of received packets. This means that the OS will overwrite the last packet as soon as a new one is received. Continuously polling the network by checking `os_net_rx` often, is possible, but this is not ideal. BareMetal allows for a network interrupt callback handler to be run whenever a packet is received. With a callback, a program will always be aware of when a packet is received.
 
 
-## Storage
+## Non-volatile Storage
 
-BareMetal uses 4096 byte sectors for all drive access. Drive sectors start at 0.
+BareMetal uses 4096 byte sectors for all device access. Device sectors start at 0.
 
 
-### b\_storage\_read
+### b\_nvs\_read
 
-Read a number of sectors from a drive to memory.
+Read a number of sectors from a non-volatile storage device to memory.
 
 Assembly Registers:
 
 	 IN:	RAX = Starting sector #
 	 	RCX = Number of sectors to read
-	 	RDX = Drive #
+	 	RDX = Device #
 		RDI = Destination memory address
 	OUT:	RCX = Number of sectors read
 		All other registers preserved
@@ -150,20 +150,20 @@ Assembly Example:
 
 	mov rax, 0			; Read sector 0
 	mov rcx, 1			; Read one sector
-	mov rdx, 0			; Read from drive 0
-	mov rdi, buffer			; Read drive data to this memory address
-	call [b_storage_read]
+	mov rdx, 0			; Read from device 0
+	mov rdi, buffer			; Read device data to this memory address
+	call [b_nvs_read]
 
 
-### b\_storage\_write
+### b\_nvs\_write
 
-Write a number of sectors from memory to a drive.
+Write a number of sectors from memory to a non-volatile storage device.
 
 Assembly Registers:
 
 	 IN:	RAX = Starting sector #
 	 	RCX = Number of sectors to write
-	 	RDX = Drive #
+	 	RDX = Device #
 		RSI = Source memory address
 	OUT:	RCX = Number of sectors written
 		All other registers preserved
@@ -172,9 +172,9 @@ Assembly Example:
 
 	mov rax, 0			; Write to sector 0
 	mov rcx, 1			; Write one sector
-	mov rdx, 0			; Write to drive 0
-	mov rsi, buffer			; Write the contents from this memory address to the drive
-	call [b_storage_write]
+	mov rdx, 0			; Write to device 0
+	mov rsi, buffer			; Write the contents from this memory address to the device
+	call [b_nvs_write]
 
 
 ## Misc

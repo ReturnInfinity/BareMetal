@@ -2,19 +2,19 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2025 Return Infinity -- see LICENSE.TXT
 ;
-; Storage Functions
+; Non-volatile Storage Functions
 ; =============================================================================
 
 
 ; -----------------------------------------------------------------------------
-; b_storage_read -- Read sectors from a drive
+; b_nvs_read -- Read sectors from a drive
 ; IN:	RAX = Starting sector
 ;	RCX = Number of sectors to read
 ;	RDX = Drive
 ;	RDI = Memory address to store data
 ; OUT:	RCX = Number of sectors read (0 on error)
 ;	All other registers preserved
-b_storage_read:
+b_nvs_read:
 	push r8
 	push rdi
 	push rcx
@@ -28,13 +28,13 @@ b_storage_read:
 	call os_virt_to_phys
 	xchg rax, rdi
 
-b_storage_read_sector:
+b_nvs_read_sector:
 	mov rcx, 1
 	mov ebx, 2			; Read opcode for driver
-	call [os_storage_io]		; Call the storage driver IO command
+	call [os_nvs_io]		; Call the non-volatile storage driver IO command
 	add rdi, 4096
 	sub r8, 1
-	jne b_storage_read_sector
+	jne b_nvs_read_sector
 
 	pop rax
 	pop rbx
@@ -46,14 +46,14 @@ b_storage_read_sector:
 
 
 ; -----------------------------------------------------------------------------
-; b_storage_write -- Write sectors to a drive
+; b_nvs_write -- Write sectors to a drive
 ; IN:	RAX = Starting sector
 ;	RCX = Number of sectors to write
 ;	RDX = Drive
 ;	RSI = Memory address of data to store
 ; OUT:	RCX = Number of sectors written (0 on error)
 ;	All other registers preserved
-b_storage_write:
+b_nvs_write:
 	push r8
 	push rdi
 	push rcx
@@ -68,13 +68,13 @@ b_storage_write:
 	call os_virt_to_phys
 	xchg rax, rdi
 
-b_storage_write_sector:
+b_nvs_write_sector:
 	mov rcx, 1
 	mov ebx, 1			; Write opcode for driver
-	call qword [os_storage_io]	; Call the storage driver IO command
+	call qword [os_nvs_io]		; Call the non-volatile driver IO command
 	add rdi, 4096
 	sub r8, 1
-	jne b_storage_write_sector
+	jne b_nvs_write_sector
 
 	pop rax
 	pop rbx

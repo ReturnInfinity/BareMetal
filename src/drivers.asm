@@ -17,10 +17,10 @@
 %include "drivers/virtio.asm"
 
 ; Storage
-%include "drivers/storage/nvme.asm"
-%include "drivers/storage/ahci.asm"
-%include "drivers/storage/virtio-blk.asm"
-%include "drivers/storage/ata.asm"
+%include "drivers/nvs/nvme.asm"
+%include "drivers/nvs/ahci.asm"
+%include "drivers/nvs/virtio-blk.asm"
+%include "drivers/nvs/ata.asm"
 
 ; Network
 %include "drivers/net/i8254x.asm"

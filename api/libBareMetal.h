@@ -24,9 +24,9 @@ void b_output(const char *str, u64 nbr);
 void b_net_tx(void *mem, u64 len, u64 iid);
 u64 b_net_rx(void *mem, u64 iid);
 
-// Storage
-u64 b_storage_read(void *mem, u64 start, u64 num, u64 drivenum);
-u64 b_storage_write(void *mem, u64 start, u64 num, u64 drivenum);
+// Non-volatile Storage
+u64 b_nvs_read(void *mem, u64 start, u64 num, u64 drivenum);
+u64 b_nvs_write(void *mem, u64 start, u64 num, u64 drivenum);
 
 // System
 u64 b_system(u64 function, u64 var1, u64 var2);

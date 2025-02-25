@@ -35,15 +35,15 @@ u64 b_net_rx(void *mem, u64 iid) {
 }
 
 
-// Storage
+// Non-volatile Storage
 
-u64 b_storage_read(void *mem, u64 start, u64 num, u64 drivenum) {
+u64 b_nvs_read(void *mem, u64 start, u64 num, u64 drivenum) {
 	u64 tlong;
 	asm volatile ("call *0x00100030" : "=c"(tlong) : "a"(start), "c"(num), "d"(drivenum), "D"(mem));
 	return tlong;
 }
 
-u64 b_storage_write(void *mem, u64 start, u64 num, u64 drivenum) {
+u64 b_nvs_write(void *mem, u64 start, u64 num, u64 drivenum) {
 	u64 tlong = 0;
 	asm volatile ("call *0x00100038" : "=c"(tlong) : "a"(start), "c"(num), "d"(drivenum), "S"(mem));
 	return tlong;

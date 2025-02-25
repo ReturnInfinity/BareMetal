@@ -11,10 +11,10 @@ newline:		db 13, 10, 0
 space:			db ' ', 0
 system_status_header:	db 'BareMetal v1.0.0', 0
 msg_start:		db 13, 10, '[ BareMetal ]'
-msg_init_64:		db 13, 10, '64      '
-msg_init_bus:		db 13, 10, 'bus     '
-msg_init_sto:		db 13, 10, 'storage '
-msg_init_net:		db 13, 10, 'network '
+msg_init_64:		db 13, 10, '64  '
+msg_init_bus:		db 13, 10, 'bus '
+msg_init_nvs:		db 13, 10, 'nvs '
+msg_init_net:		db 13, 10, 'net '
 msg_ready:		db 13, 10, 'system ready', 13, 10, 13, 10
 
 ; Memory addresses
@@ -43,28 +43,13 @@ os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Var
 ; System memory
 bus_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K Bus Table
 
-						; 0x130000 -> 0x13FFFF	64K Free
+; Non-volatile Storage memory
+os_nvs_mem:		equ 0x0000000000130000	; 0x130000 -> 0x15FFFF	192K
 
-; Storage memory
-os_storage_mem:		equ 0x0000000000140000
-ahci_basemem:		equ 0x0000000000140000	; 0x140000 -> 0x16FFFF	192K AHCI Structures
-ahci_CLB:		equ 0x0000000000140000	; 0x140000 -> 0x147FFF	32K AHCI Command List Base (1K per port)
-ahci_FB:		equ 0x0000000000148000	; 0x148000 -> 0x167FFF	128K AHCI FIS Base (4K per port)
-ahci_CMD:		equ 0x0000000000168000	; 0x168000 -> 0x16FFFF	32K AHCI Commands
-os_nvme:		equ 0x0000000000170000	; 0x170000 -> 0x17FFFF	64K NVMe Structures
-os_nvme_asqb:		equ 0x0000000000170000	; 0x170000 -> 0x170FFF	4K Admin Submission Queue Base Address
-os_nvme_acqb:		equ 0x0000000000171000	; 0x171000 -> 0x171FFF	4K Admin Completion Queue Base Address
-os_nvme_iosqb:		equ 0x0000000000172000	; 0x172000 -> 0x172FFF	4K I/O Submission Queue Base Address
-os_nvme_iocqb:		equ 0x0000000000173000	; 0x173000 -> 0x173FFF	4K I/O Completion Queue Base Address
-os_nvme_CTRLID:		equ 0x0000000000174000	; 0x174000 -> 0x174FFF	4K Controller Identify Data
-os_nvme_ANS:		equ 0x0000000000175000	; 0x175000 -> 0x175FFF	4K Namespace Data
-os_nvme_NSID:		equ 0x0000000000176000	; 0x176000 -> 0x176FFF	4K Namespace Identify Data
-os_nvme_rpr:		equ 0x0000000000177000	; 0x177000 -> 0x177FFF	4K RPR2 space for 1024 entries
-
-						; 0x180000 -> 0x19FFFF	128K Free
+						; 0x160000 -> 0x19FFFF	256K Free
 
 ; Network memory
-os_net_mem:		equ 0x00000000001A0000
+os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1BFFFF	128K
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
 os_PacketBuffers:	equ 0x00000000001B0000	;
@@ -97,8 +82,8 @@ os_net_RXPackets:	equ os_SystemVariables + 0x0090
 os_hdd_BytesRead:	equ os_SystemVariables + 0x0098
 os_hdd_BytesWrite:	equ os_SystemVariables + 0x00A0
 os_NVMe_Base:		equ os_SystemVariables + 0x00A8
-os_storage_io:		equ os_SystemVariables + 0x00B0
-os_storage_id:		equ os_SystemVariables + 0x00B8
+os_nvs_io:		equ os_SystemVariables + 0x00B0
+os_nvs_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
 os_NetIOLength:		equ os_SystemVariables + 0x00D0
@@ -120,7 +105,7 @@ os_NumCores:		equ os_SystemVariables + 0x0200
 os_CoreSpeed:		equ os_SystemVariables + 0x0202
 os_NetIOAddress:	equ os_SystemVariables + 0x0204
 os_NetLock:		equ os_SystemVariables + 0x0206
-os_StorageVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
+os_nvsVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
 os_screen_ppsl:		equ os_SystemVariables + 0x020E
@@ -146,8 +131,8 @@ os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is 
 ;os_NetActivity_RX:	equ os_SystemVariables + 0x0307
 ;os_EthernetBuffer_C1:	equ os_SystemVariables + 0x0308	; Counter 1 for the Ethernet RX Ring Buffer
 ;os_EthernetBuffer_C2:	equ os_SystemVariables + 0x0309	; Counter 2 for the Ethernet RX Ring Buffer
-;os_StorageEnabled:	equ os_SystemVariables + 0x030A
-;os_StorageActivity:	equ os_SystemVariables + 0x030B
+;os_nvsEnabled:		equ os_SystemVariables + 0x030A
+;os_nvsActivity:	equ os_SystemVariables + 0x030B
 os_NVMeIRQ:		equ os_SystemVariables + 0x030C
 os_NVMeMJR:		equ os_SystemVariables + 0x030D
 os_NVMeMNR:		equ os_SystemVariables + 0x030E
