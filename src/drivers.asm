@@ -10,11 +10,13 @@
 %include "drivers/apic.asm"
 %include "drivers/hpet.asm"
 %include "drivers/ioapic.asm"
-%include "drivers/pcie.asm"
-%include "drivers/pci.asm"
 %include "drivers/ps2.asm"
 %include "drivers/serial.asm"
 %include "drivers/virtio.asm"
+
+; Bus
+%include "drivers/bus/pcie.asm"
+%include "drivers/bus/pci.asm"
 
 ; Storage
 %include "drivers/nvs/nvme.asm"
