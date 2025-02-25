@@ -17,6 +17,7 @@
 ; Bus
 %include "drivers/bus/pcie.asm"
 %include "drivers/bus/pci.asm"
+%include "drivers/bus/xhci.asm"
 
 ; Storage
 %include "drivers/nvs/nvme.asm"

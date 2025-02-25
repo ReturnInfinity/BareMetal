@@ -16,8 +16,22 @@
 
 ## Bus
 
+
+### PCI Express (PCIe)
+
 * [PCI Express](https://osdev.org/PCI_Express) - [PCI Express Base Specification Revision 4.0 Version 0.3](https://astralvx.com/storage/2020/11/PCI_Express_Base_4.0_Rev0.3_February19-2014.pdf)
+
+
+### PCI
+
 * [PCI](https://osdev.org/PCI)
+
+
+### XHCI (USB 3)
+
+* [OSDev.org XHCI Article](https://wiki.osdev.org/EXtensible_Host_Controller_Interface)
+* [Requirements Specification](https://www.intel.com/content/dam/www/public/us/en/documents/technical-specifications/extensible-host-controler-interface-usb-xhci.pdf) - Revision 1.2 - May 2019
+* [USB: The Universal Serial Bus](https://www.fysnet.net/the_universal_serial_bus.htm) - Book by Benjamin David Lunt
 
 
 ## Network
@@ -60,7 +74,7 @@
 
 ### NVMe
 
-* [Base Specification](https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-Revision-2.1-2024.08.05-Ratified.pdf) - Revision 2.1 - August 5th, 2024
+* [Base Specification](https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-2.0c-2022.10.04-Ratified.pdf) - Revision 2.0c - October 4th, 2022
 
 
 ### AHCI (Serial ATA)

@@ -88,6 +88,7 @@ os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
 os_NetIOLength:		equ os_SystemVariables + 0x00D0
 os_MouseCallback:	equ os_SystemVariables + 0x00D8
+os_xHCI_Base:		equ os_SystemVariables + 0x00E0
 
 
 ; DD - Starting at offset 256, increments by 4
@@ -98,6 +99,7 @@ os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
 os_ps2_mouse_packet:	equ os_SystemVariables + 0x0118
+os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interrupter 0
 
 
 ; DW - Starting at offset 512, increments by 2

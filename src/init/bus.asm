@@ -60,8 +60,6 @@ init_bus_pcie_probe_next:
 	jmp init_bus_pcie_probe
 
 init_bus_pcie_probe_found:
-;	call os_debug_newline		; DEBUG - Dump PCIe device/vendor ID on boot-up
-;	call os_debug_dump_eax
 	push rax			; Save the result
 	mov rax, rdx			; Move the value used for os_pcie_read to RAX
 	stosd				; Store it to the Bus Table
@@ -99,8 +97,6 @@ init_bus_pci_probe_next:
 	jmp init_bus_pci_probe
 
 init_bus_pci_probe_found:
-;	call os_debug_newline		; DEBUG - Dump PCI device/vendor ID on boot-up
-;	call os_debug_dump_eax
 	push rax			; Save the result
 	mov rax, rdx			; Move the value used for os_pci_read to RAX
 	stosd				; Store it to the Bus Table
@@ -124,6 +120,37 @@ init_bus_end:
 	mov eax, 0xFFFFFFFF
 	mov ecx, 4
 	rep stosd
+
+init_bus_usb_search:
+	; Check Bus Table for a USB Controller
+	mov rsi, bus_table		; Load Bus Table address to RSI
+	sub rsi, 16
+	add rsi, 8			; Add offset to Class Code
+init_bus_usb_check:
+	add rsi, 16			; Increment to next record in memory
+	mov ax, [rsi]			; Load Class Code / Subclass Code
+	cmp ax, 0xFFFF			; Check if at end of list
+	je init_bus_usb_not_found
+	cmp ax, 0x0C03			; Serial Bus Controller (0C) / USB Controller (03)
+	je init_bus_usb_find_driver
+	jmp init_bus_usb_check		; Check Bus Table again
+
+	; Check the USB Controller to see if it is supported
+init_bus_usb_find_driver:
+	sub rsi, 8			; Move RSI back to start of Bus record
+	mov edx, [rsi]			; Load value for os_bus_read/write
+	mov dl, 0x02
+	call os_bus_read
+	shr eax, 8			; Shift Program Interface to AL
+	cmp al, 0x30			; PI for XHCI
+	je init_bus_usb_xhci_start
+	add rsi, 8
+	jmp init_bus_usb_check
+
+init_bus_usb_xhci_start:
+	call xhci_init
+
+init_bus_usb_not_found:
 
 	; Output block to screen (2/4)
 	mov ebx, 2
