@@ -177,7 +177,7 @@ net_i8259x_reset_nextdesc:
 	; Enable Advanced RX descriptors
 	mov eax, [rsi+i8259x_SRRCTL]
 	and eax, 0xF1FFFFFF		; Clear bits 27:25 for DESCTYPE
-	or eax, 0x02000000		; Bits 27:25 = 001 for Advanced desc one buffer
+;	or eax, 0x02000000		; Bits 27:25 = 001 for Advanced desc one buffer
 	bts eax, 28			; i8259x_SRRCTL_DROP_EN
 	mov [rsi+i8259x_SRRCTL], eax
 	; Set up RX descriptor ring 0
