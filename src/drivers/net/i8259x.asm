@@ -189,7 +189,7 @@ net_i8259x_reset_nextdesc:
 	mov [rsi+i8259x_RDLEN], eax
 	xor eax, eax
 	mov [rsi+i8259x_RDH], eax
-	; mov eax, i8259x_MAX_DESC - 1
+;	mov eax, i8259x_MAX_DESC - 1
 	mov [rsi+i8259x_RDT], eax
 	; Set bit 16 of CTRL_EXT (Last line in 4.6.7)
 	mov eax, [rsi+i8259x_CTRL_EXT]
@@ -202,10 +202,11 @@ net_i8259x_reset_nextdesc:
 	; Enable RX
 	mov eax, 1			; RXEN = 1
 	mov [rsi+i8259x_RXCTRL], eax	; Enable receive
-	
+
 	; Enable Multicast
 	mov eax, 0xFFFFFFFF
 	mov [rsi+i8259x_MTA], eax
+
 	; Enable the RX queue
 	mov eax, [rsi+i8259x_RXDCTL]
 	or eax, 0x02000000
