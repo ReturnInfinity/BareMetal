@@ -189,7 +189,6 @@ net_i8259x_reset_nextdesc:
 	mov [rsi+i8259x_RDLEN], eax
 	xor eax, eax
 	mov [rsi+i8259x_RDH], eax
-;	mov eax, i8259x_MAX_DESC - 1
 	mov [rsi+i8259x_RDT], eax
 	; Set bit 16 of CTRL_EXT (Last line in 4.6.7)
 	mov eax, [rsi+i8259x_CTRL_EXT]
@@ -234,7 +233,6 @@ net_i8259x_init_rx_enable_wait:
 ; 	mov eax, [rsi+i8259x_SECRXCTRL]
 ; 	btc eax, i8259x_SECRXCTRL_SECRX_DIS
 ; 	mov [rsi+i8259x_SECRXCTRL], eax
-
 
 	; Initialize transmit (4.6.8)
 	; Enable CRC offload and small packet padding
