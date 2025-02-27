@@ -29,10 +29,8 @@ sys_Pure64:		equ 0x0000000000005000	; 0x005000 -> 0x007FFF	12K Pure64 system dat
 
 						; 0x008000 -> 0x00FFFF	32K Free
 
-sys_pdl:		equ 0x0000000000010000	; 0x010000 -> 0x01FFFF	64K Page directory low (Maps up to 16GB)
-sys_pdh:		equ 0x0000000000020000	; 0x020000 -> 0x05FFFF	256K Page directory high (Maps up to 64GB)
-
-						; 0x060000 -> 0x09FFFF	256K Free
+sys_pdl:		equ 0x0000000000010000	; 0x010000 -> 0x01FFFF	64K Page directory low (Maps up to 16GB of 2MiB pages or 8TB of 1GiB pages)
+sys_pdh:		equ 0x0000000000020000	; 0x020000 -> 0x09FFFF	512K Page directory high (Maps up to 128GB)
 
 sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
 
@@ -44,15 +42,18 @@ os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Var
 bus_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K Bus Table
 
 ; Non-volatile Storage memory
-os_nvs_mem:		equ 0x0000000000130000	; 0x130000 -> 0x15FFFF	192K
+os_nvs_mem:		equ 0x0000000000130000	; 0x130000 -> 0x15FFFF	192K NVS structures/buffers
 
-						; 0x160000 -> 0x19FFFF	256K Free
+; USB memory
+os_usb_mem:		equ 0x0000000000160000	; 0x160000 -> 0x19FFFF	256K USB structures/buffers
 
 ; Network memory
-os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1BFFFF	128K
+os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1BFFFF	128K Network descriptors/buffers
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
-os_PacketBuffers:	equ 0x00000000001B0000	;
+os_PacketBuffers:	equ 0x00000000001B0000	; 0x1B0000 -> 0x1BFFFF	64K Ethernet packet buffers
+
+						; 0x1C0000 -> 0x1EFFFF	192K Free
 
 ; Misc memory
 os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
@@ -88,6 +89,7 @@ os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
 os_NetIOLength:		equ os_SystemVariables + 0x00D0
 os_MouseCallback:	equ os_SystemVariables + 0x00D8
+os_xHCI_Base:		equ os_SystemVariables + 0x00E0
 
 
 ; DD - Starting at offset 256, increments by 4
@@ -98,6 +100,7 @@ os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
 os_ps2_mouse_packet:	equ os_SystemVariables + 0x0118
+os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interrupter 0
 
 
 ; DW - Starting at offset 512, increments by 2
@@ -151,12 +154,6 @@ os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 
 
 ; Misc
-keylayoutlower:
-db 0x00, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0x0e, 0, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0x1c, 0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', 0x27, '`', 0, '\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, 0, 0, ' ', 0
-keylayoutupper:
-db 0x00, 0, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 0x0e, 0, 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', 0x1c, 0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', 0x22, '~', 0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, 0, 0, ' ', 0
-; 0e = backspace
-; 1c = enter
 tchar: db 0, 0
 
 
