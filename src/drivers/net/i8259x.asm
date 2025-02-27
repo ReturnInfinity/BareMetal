@@ -82,6 +82,8 @@ net_i8259x_reset_wait:
 	jnz net_i8259x_reset_wait	; Wait for it to read back as 0x0
 
 	; Wait 10ns
+	mov rax, 10000
+	call b_delay
 
 	; Disable Interrupts again (4.6.3.1)
 	xor eax, eax
@@ -109,12 +111,17 @@ net_i8259x_reset_dma_wait:
 	jnc net_i8259x_reset_dma_wait	; If not equal, keep waiting
 
 	; Set up the PHY and the link (4.6.4)
-;	mov eax, [rsi+i8259x_AUTOC]
-;	or eax, 0x0000E000		; Set LMS (bits 15:13) for KX/KX4/KR auto-negotiation enable
-;	mov [rsi+i8259x_AUTOC], eax
-;	mov eax, [rsi+i8259x_AUTOC]
-;					; Set 10G_PMA_PMD_PARALLEL (bits 8:7)
-;	mov [rsi+i8259x_AUTOC], eax
+	; mov eax, [rsi+i8259x_AUTOC]
+	; and eax, 0x0000E000		; Set LMS (bits 15:13) for KX/KX4/KR auto-negotiation enable
+	; or eax, 0x00006000		; Set KX/KX4/KR auto-negotiation enable
+	; mov [rsi+i8259x_AUTOC], eax
+	; mov eax, [rsi+i8259x_AUTOC]
+	; and eax, 0x00000180		; Set 10G_PMA_PMD_PARALLEL (bits 8:7)
+	; mov [rsi+i8259x_AUTOC], eax
+
+	; mov rax, 20000			; Wait 20ms (20000µs)
+	; call b_delay			; Delay for 20ms
+
 	mov eax, [rsi+i8259x_AUTOC]
 	bts eax, 12			; Restart_AN
 	mov [rsi+i8259x_AUTOC], eax
@@ -171,7 +178,7 @@ net_i8259x_reset_nextdesc:
 	mov eax, [rsi+i8259x_SRRCTL]
 	and eax, 0xF1FFFFFF		; Clear bits 27:25 for DESCTYPE
 ;	or eax, 0x02000000		; Bits 27:25 = 001 for Advanced desc one buffer
-	bts eax, 28	; i8259x_SRRCTL_DROP_EN
+	bts eax, 28			; i8259x_SRRCTL_DROP_EN
 	mov [rsi+i8259x_SRRCTL], eax
 	; Set up RX descriptor ring 0
 	mov rax, os_rx_desc
@@ -182,35 +189,7 @@ net_i8259x_reset_nextdesc:
 	mov [rsi+i8259x_RDLEN], eax
 	xor eax, eax
 	mov [rsi+i8259x_RDH], eax
-	mov eax, i8259x_MAX_DESC / 2
 	mov [rsi+i8259x_RDT], eax
-	; Enable Multicast
-	mov eax, 0xFFFFFFFF
-	mov [rsi+i8259x_MTA], eax
-	; Enable the RX queue
-	mov eax, [rsi+i8259x_RXDCTL]
-	or eax, 0x02000000
-	mov [rsi+i8259x_RXDCTL], eax
-net_i8259x_init_rx_enable_wait:
-	mov eax, [rsi+i8259x_RXDCTL]
-	bt eax, 25
-	jnc net_i8259x_init_rx_enable_wait
-	; Set SECRXCTRL_RX_DIS
-	mov eax, [rsi+i8259x_SECRXCTRL]
-	bts eax, i8259x_SECRXCTRL_RX_DIS
-	mov [rsi+i8259x_SECRXCTRL], eax
-	; Poll SECRXSTAT_SECRX_RDY
-net_i8259x_init_rx_secrx_rdy_wait:
-	mov eax, [rsi+i8259x_SECRXSTAT]
-	bt eax, i8259x_SECRXSTAT_SECRX_RDY
-	jnc net_i8259x_init_rx_secrx_rdy_wait
-	; Enable RX
-	mov eax, 1			; RXEN = 1
-	mov [rsi+i8259x_RXCTRL], eax	; Enable receive
-	; Clear SECRXCTRL.SECRX_DIS
-	mov eax, [rsi+i8259x_SECRXCTRL]
-	btc eax, i8259x_SECRXCTRL_SECRX_DIS
-	mov [rsi+i8259x_SECRXCTRL], eax
 	; Set bit 16 of CTRL_EXT (Last line in 4.6.7)
 	mov eax, [rsi+i8259x_CTRL_EXT]
 	bts eax, 16
@@ -219,6 +198,41 @@ net_i8259x_init_rx_secrx_rdy_wait:
 	mov eax, [rsi+i8259x_DCA_RXCTRL]
 	btc eax, 12
 	mov [rsi+i8259x_DCA_RXCTRL], eax
+	; Enable RX
+	mov eax, 1			; RXEN = 1
+	mov [rsi+i8259x_RXCTRL], eax	; Enable receive
+
+	; Enable Multicast
+	mov eax, 0xFFFFFFFF
+	mov [rsi+i8259x_MTA], eax
+
+	; Enable the RX queue
+	mov eax, [rsi+i8259x_RXDCTL]
+	or eax, 0x02000000
+	mov [rsi+i8259x_RXDCTL], eax
+net_i8259x_init_rx_enable_wait:
+	mov eax, [rsi+i8259x_RXDCTL]
+	bt eax, 25
+	jnc net_i8259x_init_rx_enable_wait
+	xor eax, eax
+	mov [rsi+i8259x_RDH], eax
+	mov eax, i8259x_MAX_DESC - 1
+	mov [rsi+i8259x_RDT], eax
+
+; 	; Set SECRXCTRL_RX_DIS
+; 	mov eax, [rsi+i8259x_SECRXCTRL]
+; 	bts eax, i8259x_SECRXCTRL_RX_DIS
+; 	mov [rsi+i8259x_SECRXCTRL], eax
+; 	; Poll SECRXSTAT_SECRX_RDY
+; net_i8259x_init_rx_secrx_rdy_wait:
+; 	mov eax, [rsi+i8259x_SECRXSTAT]
+; 	bt eax, i8259x_SECRXSTAT_SECRX_RDY
+; 	jnc net_i8259x_init_rx_secrx_rdy_wait
+
+; 	; Clear SECRXCTRL.SECRX_DIS
+; 	mov eax, [rsi+i8259x_SECRXCTRL]
+; 	btc eax, i8259x_SECRXCTRL_SECRX_DIS
+; 	mov [rsi+i8259x_SECRXCTRL], eax
 
 	; Initialize transmit (4.6.8)
 	; Enable CRC offload and small packet padding
@@ -267,9 +281,28 @@ net_i8259x_init_tx_enable_wait:
 	bt eax, 25
 	jnc net_i8259x_init_tx_enable_wait
 
-	; Enable interrupts (4.6.3.1)
-;	mov eax, VALUE_HERE
-;	mov [rsi+i8259x_EIMS], eax
+	; ; Enable interrupts (4.6.3.1)
+	; ; Step 1:-
+	; mov eax, [rsi+0x00898]		; Get Ixgbe_GPIE
+	; or eax, 0x00000010		; GPIE_MSIx_Mode
+	; or eax, 0x80000000		; GPIE_PBA_SUPPORT
+	; or eax, 0x40000000		; GPIE_EIAME
+	; mov [rsi+0x00898], eax		; Set Ixgbe_GPIE
+	
+	; ; Step 2:-	We don't use the minimum threshold interrupt
+	
+	; ; Step 3:-
+	; mov eax, 0x0000FFFF
+	; mov [rsi+i8259x_EIAC], eax
+
+	; ; Step 4:- In our case we prefer to not auto-mask the interrupts
+	; ; TODO- Set EITR
+	
+	; ; Step 5:-
+	; mov eax, [rsi+i8259x_EIMS]
+	; or eax, 0x00000001
+	; mov [rsi+i8259x_EIMS], eax
+	
 
 ; DEBUG - Enable Promiscuous mode
 	mov eax, [rsi+i8259x_FCTRL]
@@ -459,7 +492,7 @@ i8259x_RDH		equ 0x01010 ; Receive Descriptor Head
 i8259x_RDT		equ 0x01018 ; Receive Descriptor Tail
 i8259x_RXDCTL		equ 0x01028 ; Receive Descriptor Control
 i8259x_RDRXCTL		equ 0x02F00 ; Receive DMA Control Register
-i8259x_SRRCTL		equ 0x01014 ; Split Receive Control Registers
+i8259x_SRRCTL		equ 0x02100 ; Split Receive Control Registers
 i8259x_RXCTRL		equ 0x03000 ; Receive Control Register
 i8259x_RXPBSIZE		equ 0x03C00 ; Receive Packet Buffer Size
 
@@ -478,7 +511,7 @@ i8259x_TXPBSIZE		equ 0x0CC00 ; Transmit Packet Buffer Size
 i8259x_RTTDCS		equ 0x04900 ; DCB Transmit Descriptor Plane Control and Status
 
 ; DCA Registers
-i8259x_DCA_RXCTRL	equ 0x0100C ; Rx DCA Control Register
+i8259x_DCA_RXCTRL	equ 0x02200 ; Rx DCA Control Register
 
 ; Security Registers
 i8259x_SECRXCTRL	equ 0x08D00 ; Security Rx Control
@@ -544,7 +577,7 @@ i8259x_STATUS_MASEN	equ 19 ; This is a status bit of the appropriate CTRL.PCIe M
 i8259x_CTRL_EXT_DRV_LOAD	equ 28 ; Driver loaded and the corresponding network interface is enabled
 
 ; RDRXCTL (Receive DMA Control Register, 0x02F00, RW) Bit Masks
-i8259x_RDRXCTL_CRCSTRIP	equ 0 ; Rx CRC Strip indication to the Rx DMA unit. Must be same as HLREG0.RXCRCSTRP
+i8259x_RDRXCTL_CRCSTRIP	equ 1 ; Rx CRC Strip indication to the Rx DMA unit. Must be same as HLREG0.RXCRCSTRP
 i8259x_RDRXCTL_DMAIDONE	equ 3 ; DMA Init Done - 1 when DMA init is done
 
 ; RXCTRL (Receive Control Register, 0x03000, RW) Bit Masks
