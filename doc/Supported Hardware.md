@@ -19,12 +19,12 @@
 
 ### PCI Express (PCIe)
 
-* [PCI Express](https://osdev.org/PCI_Express) - [PCI Express Base Specification Revision 4.0 Version 0.3](https://astralvx.com/storage/2020/11/PCI_Express_Base_4.0_Rev0.3_February19-2014.pdf)
+* [PCI Express](https://wiki.osdev.org/PCI_Express) - [PCI Express Base Specification Revision 4.0 Version 0.3](https://astralvx.com/storage/2020/11/PCI_Express_Base_4.0_Rev0.3_February19-2014.pdf)
 
 
 ### PCI
 
-* [PCI](https://osdev.org/PCI)
+* [PCI](https://wiki.osdev.org/PCI)
 
 
 ### XHCI (USB 3)
