@@ -693,18 +693,17 @@ xhci_search_devices:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001003		; TRB Type 4, CH, ENT, C
+	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-;	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
-;	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-;	; Event Data
-;	add qword [xhci_evtoken], 1
-;	mov rax, [xhci_evtoken]
-;	stosq				; dword 0 & 1 - Data Buffer (63:0)
-;	xor eax, eax
-;	stosd				; dword 2 - Interrupter Target (31:22)
-;	mov eax, 0x00001C01		; TRB Type 7, C
-;	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	; Event Data
+	add qword [xhci_evtoken], 1
+	mov rax, [xhci_evtoken]
+	push rax
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	xor eax, eax
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -712,13 +711,10 @@ xhci_search_devices:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Wait for data
-wait1:
-	mov rax, [os_usb_data0]
-	cmp rax, 0
-	je wait1
-;	mov eax, 100000
-;	call b_delay
+	; Check result in event ring
+	xor eax, eax
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
 
 	; Check first 8 bytes of Device Descriptor
 	; Example from QEMU keyboard
@@ -802,14 +798,28 @@ xhci_skip_update_idc:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001003		; TRB Type 4, ENT, C
+	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
+	; Event Data
+	add qword [xhci_evtoken], 1
+	mov rax, [xhci_evtoken]
+	push rax
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	xor eax, eax
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
 	xor ecx, ecx
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
+
+	; Check result in event ring
+	xor eax, eax
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
 
 	; TODO - Check full Device Descriptor
 	; Example from QEMU keyboard
@@ -838,12 +848,6 @@ xhci_skip_update_idc:
 	; Build a table
 	; Slot / Vendor / Product / Class / Protocol
 
-	; Wait for data
-wait2:
-	mov rax, [os_usb_data0+8]
-	cmp rax, 0
-	je wait2
-
 	; Request 9 bytes from Configuration Descriptor
 
 	; Setup Stage
@@ -867,20 +871,28 @@ wait2:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001003		; TRB Type 4, ENT, C
+	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-
+	; Event Data
+	add qword [xhci_evtoken], 1
+	mov rax, [xhci_evtoken]
+	push rax
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	xor eax, eax
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
 	xor ecx, ecx
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
-
-	; Wait for data
-wait3:
-	mov rax, [os_usb_data0+0x20]
-	cmp rax, 0
-	je wait3
+	
+	; Check result in event ring
+	xor eax, eax
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
 
 	; Check TotalLength
 	xor ebx, ebx
@@ -910,14 +922,28 @@ wait3:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001003		; TRB Type 4, ENT, C
+	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-
+	; Event Data
+	add qword [xhci_evtoken], 1
+	mov rax, [xhci_evtoken]
+	push rax
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	xor eax, eax
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
 	xor ecx, ecx
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
+	
+	; Check result in event ring
+	xor eax, eax
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
 
 	; TODO - Check Configuration Descriptor
 	; Example from QEMU keyboard
@@ -991,12 +1017,6 @@ wait3:
 	; Check Attribute (offset 3) - Should be 0x03 for Interrupt
 	; Check MaxPacketSize (offset 4) - 0x0008 = keyboard (ideally), 0x0004 = mouse (ideally)
 
-	; Wait for data
-wait4:
-	mov rax, [os_usb_data0+0x28]
-	cmp rax, 0
-	je wait4
-
 	; Verify that a keyboard was found
 	mov rax, os_usb_data0
 	add rax, 0x20			; Offset to Configuration Descriptor
@@ -1064,17 +1084,28 @@ foundkeyboard:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00011003		; DIR, TRB Type 4, ENT, C
+	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-
+	; Event Data
+	add qword [xhci_evtoken], 1
+	mov rax, [xhci_evtoken]
+	push rax
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	xor eax, eax
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
 	xor ecx, ecx
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
-
-	mov eax, 100000
-	call b_delay
+	
+	; Check result in event ring
+	xor eax, eax
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
 
 	; Send Set protocol
 
@@ -1091,17 +1122,28 @@ foundkeyboard:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00011001		; DIR, TRB Type 4, C
+	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-
+	; Event Data
+	add qword [xhci_evtoken], 1
+	mov rax, [xhci_evtoken]
+	push rax
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	xor eax, eax
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
 	xor ecx, ecx
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
-
-	mov eax, 100000
-	call b_delay
+	
+	; Check result in event ring
+	xor eax, eax
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
 
 	; Send SET_IDLE
 
@@ -1118,17 +1160,28 @@ foundkeyboard:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00011001		; DIR, TRB Type 4, C
+	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
-
+	; Event Data
+	add qword [xhci_evtoken], 1
+	mov rax, [xhci_evtoken]
+	push rax
+	stosq				; dword 0 & 1 - Data Buffer (63:0)
+	xor eax, eax
+	stosd				; dword 2 - Interrupter Target (31:22)
+	mov eax, 0x00001C21		; TRB Type 7, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
 	xor ecx, ecx
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
-
-	mov eax, 100000
-	call b_delay
+	
+	; Check result in event ring
+	xor eax, eax
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
 
 	; Update Input Context
 	mov rdi, os_usb_IDC
