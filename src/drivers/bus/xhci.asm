@@ -705,7 +705,6 @@ xhci_search_devices:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -811,7 +810,6 @@ xhci_skip_update_idc:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -885,7 +883,6 @@ xhci_skip_update_idc:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -937,7 +934,6 @@ xhci_skip_update_idc:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1100,7 +1096,6 @@ foundkeyboard:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1139,7 +1134,6 @@ foundkeyboard:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1178,7 +1172,6 @@ foundkeyboard:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1295,7 +1288,6 @@ foundkeyboard:
 	; Event Data
 	add qword [os_usb_evtoken], 1
 	mov rax, [os_usb_evtoken]
-	call os_debug_dump_rax
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
 	mov eax, 0x00400000		; Interrupter Target 1
 	stosd				; dword 2 - Interrupter Target (31:22)
