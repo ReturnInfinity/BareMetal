@@ -234,7 +234,11 @@ xhci_init_32bytecsz:
 ;	jmp xhci_xecp_read
 ;xhci_xecp_end:
 
-	call xhci_reset			; Reset the controller
+	; Reset the controller
+	call xhci_reset
+
+	; Enumerate USB devices
+	call xhci_enumerate_devices
 
 xhci_init_done:
 	pop rdx
@@ -398,9 +402,6 @@ xhci_build_scratchpad:
 	mov eax, 0x05			; Set bit 0 (RS) and bit 2 (INTE)
 	mov [rsi+xHCI_USBCMD], eax
 
-	; Enumerate USB devices
-	call xhci_enumerate_devices
-
 xhci_reset_done:
 	pop rax
 	pop rcx
@@ -514,6 +515,12 @@ xhci_search_devices:
 
 	; At this point xhci_portcount contains the number of activated ports
 	; and xhci_portlist is a list of the port numbers
+
+	; Clear Transfer and Event ring (in case this xhci_search_devices is called more than once)
+	mov rdi, os_usb_TR0
+	mov ecx, 512
+	xor eax, eax
+	rep stosq
 
 	; Build a TRB for Enable Slot in the Command Ring
 	mov rdi, os_usb_CR
@@ -696,8 +703,9 @@ xhci_search_devices:
 	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -801,8 +809,9 @@ xhci_skip_update_idc:
 	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -874,8 +883,9 @@ xhci_skip_update_idc:
 	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -925,8 +935,9 @@ xhci_skip_update_idc:
 	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1087,8 +1098,9 @@ foundkeyboard:
 	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1125,8 +1137,9 @@ foundkeyboard:
 	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1163,8 +1176,9 @@ foundkeyboard:
 	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	push rax
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
@@ -1279,8 +1293,9 @@ foundkeyboard:
 	mov eax, 0x00000413		; TRB Type 1, CH, ENT, C
 	stosd				; dword 3 - TRB Type (15:10), CH (4), ENT (1), Cycle (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
+	call os_debug_dump_rax
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
 	mov eax, 0x00400000		; Interrupter Target 1
 	stosd				; dword 2 - Interrupter Target (31:22)
@@ -1433,8 +1448,8 @@ xhci_int1:
 	mov eax, 0x00000413		; TRB Type 1, CH, ENT, C
 	stosd				; dword 3 - TRB Type (15:10), CH (4), ENT (1), Cycle (0)
 	; Event Data
-	add qword [xhci_evtoken], 1
-	mov rax, [xhci_evtoken]
+	add qword [os_usb_evtoken], 1
+	mov rax, [os_usb_evtoken]
 	stosq				; dword 0 & 1 - Data Buffer Pointer (63:0)
 	mov eax, 0x00400000		; Interrupter Target 1
 	stosd				; dword 2 - Interrupter Target (31:22)
@@ -1505,7 +1520,6 @@ xhci_op:	dq 0			; Start of Operational Registers
 xhci_db:	dq 0			; Start of Doorbell Registers
 xhci_rt:	dq 0			; Start of Runtime Registers
 xhci_croff:	dq 0
-xhci_evtoken:	dq 0
 xhci_csz:	dd 32			; Default Context Size
 xhci_portlist:	times 32 db 0x00
 xhci_portcount:	db 0

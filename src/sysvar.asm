@@ -90,6 +90,7 @@ os_virtioblk_base:	equ os_SystemVariables + 0x00C8
 os_NetIOLength:		equ os_SystemVariables + 0x00D0
 os_MouseCallback:	equ os_SystemVariables + 0x00D8
 os_xHCI_Base:		equ os_SystemVariables + 0x00E0
+os_usb_evtoken:		equ os_SystemVariables + 0x00E8
 
 
 ; DD - Starting at offset 256, increments by 4
