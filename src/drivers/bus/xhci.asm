@@ -264,19 +264,19 @@ xhci_reset:
 	push rax
 
 	; Halt the controller
-xhci_init_halt:
+xhci_reset_halt:
 	mov rsi, [xhci_op]		; xHCI Operational Registers Base
 	mov eax, [rsi+xHCI_USBCMD]	; Read current Command Register value
 	bt eax, 0			; Check RS (bit 0)
-	jnc xhci_init_halt_done		; If the bit was clear, proceed onward
+	jnc xhci_reset_halt_done	; If the bit was clear, proceed onward
 	btr eax, 0			; Clear RS (bit 0)
 	mov [rsi+xHCI_USBCMD], eax	; Write updated Command Register value
 	mov rax, 20000			; Wait 20ms (20000µs)
 	call b_delay
 	mov eax, [rsi+xHCI_USBSTS]	; Read Status Register
 	bt eax, 0			; Check HCHalted (bit 0) - it should be 1
-	jnc xhci_init_error		; Bail out if HCHalted wasn't cleared after 20ms
-xhci_init_halt_done:
+	jnc xhci_reset_error		; Bail out if HCHalted wasn't cleared after 20ms
+xhci_reset_halt_done:
 
 	; Clear memory controller will be using
 	mov rdi, os_usb_mem
@@ -285,7 +285,7 @@ xhci_init_halt_done:
 	rep stosq
 
 	; Reset the controller
-xhci_init_reset:
+xhci_reset_reset:
 	mov eax, [rsi+xHCI_USBCMD]	; Read current Command Register value
 	bts eax, 1			; Set HCRST (bit 1)
 	mov [rsi+xHCI_USBCMD], eax	; Write updated Command Register value
@@ -293,10 +293,10 @@ xhci_init_reset:
 	call b_delay
 	mov eax, [rsi+xHCI_USBSTS]	; Read Status Register
 	bt eax, 11			; Check CNR (bit 11)
-	jc xhci_init_error		; Bail out if CNR wasn't cleared after 100ms
+	jc xhci_reset_error		; Bail out if CNR wasn't cleared after 100ms
 	mov eax, [rsi+xHCI_USBCMD]	; Read current Command Register value
 	bt eax, 1			; Check HCRST (bit 1)
-	jc xhci_init_error		; Bail out if HCRST wasn't cleared after 100ms
+	jc xhci_reset_error		; Bail out if HCRST wasn't cleared after 100ms
 
 	; Configure the controller
 	mov rax, os_usb_DCI		; Load the address of the Device Context Index
@@ -319,27 +319,21 @@ xhci_init_reset:
 	stosq				; Store the address of the scratchpad
 	mov rcx, 8
 	mov rax, os_usb_DC0		; Start of the Device Context Entries
-xhci_store_DC:
+xhci_reset_build_DC:
 	stosq
 	add rax, 0x800			; 2KiB
 	dec rcx
-	jnz xhci_store_DC
+	jnz xhci_reset_build_DC
 
 	; Build scratchpad entries
 	mov rdi, os_usb_scratchpad
 	mov rax, os_usb_scratchpad
-	mov rcx, 16
-xhci_build_scratchpad:
+	mov rcx, 4			; Create 4 4KiB scratchpad entries
+xhci_reset_build_scratchpad:
 	add rax, 4096
 	stosq
 	dec rcx
-	jnz xhci_build_scratchpad
-
-	; Build entries in the Command Ring
-	; Each TRB in the Command Ring is 16 bytes
-	; Build 8 entries for now. Last one is a link to the first
-	; mov rdi, os_usb_CR
-	; TODO Create the link TRB
+	jnz xhci_reset_build_scratchpad
 
 	; Configure Segment Tables
 	; ┌──────────────────────────────────────┐
@@ -401,6 +395,12 @@ xhci_build_scratchpad:
 	; Start Controller
 	mov eax, 0x05			; Set bit 0 (RS) and bit 2 (INTE)
 	mov [rsi+xHCI_USBCMD], eax
+
+	; Verify HCHalted is clear
+xhci_reset_check_start:
+	mov eax, [rsi+xHCI_USBSTS]	; Read Status Register
+	bt eax, 0			; Check HCHalted (bit 0) - it should be 0
+	jc xhci_reset_check_start
 
 xhci_reset_done:
 	pop rax
