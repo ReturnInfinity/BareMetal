@@ -262,6 +262,7 @@ xhci_reset:
 	push rdi
 	push rsi
 	push rcx
+	push rbx
 	push rax
 
 	; Halt the controller
@@ -318,11 +319,13 @@ xhci_reset_reset:
 	mov rdi, os_usb_DCI
 	mov rax, os_usb_scratchpad
 	stosq				; Store the address of the scratchpad
+	mov ebx, [xhci_csz]
+	shl ebx, 5
 	mov rcx, 8
-	mov rax, os_usb_DC0		; Start of the Device Context Entries
+	mov rax, os_usb_DC		; Start of the Device Context Entries
 xhci_reset_build_DC:
 	stosq
-	add rax, 0x800			; 2KiB
+	add rax, rbx			; Add size of Context (1024 or 2048 bytes)
 	dec rcx
 	jnz xhci_reset_build_DC
 
@@ -405,6 +408,7 @@ xhci_reset_check_start:
 
 xhci_reset_done:
 	pop rax
+	pop rbx
 	pop rcx
 	pop rsi
 	pop rdi
@@ -610,6 +614,21 @@ xhci_search_devices:
 	mov dword [rdi+16], 0x00000008	; dword 4 - Average TRB Length (15:0)
 	; Skip the rest of Endpoint Context 0 as it is already cleared
 
+	; TRB for Set Address
+	; ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+	; |31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Address of Input Context Lo                                                                   |
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Address of Input Context Hi                                                                   |
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Reserved Zero                                                                                 |
+	; ├───────────────────────┬───────────────────────┬─────────────────┬──┬───────────────────────┬──┤
+	; | Slot ID               | Reserved Zero         | 11              |B | Reserved Zero         |C |
+	; └───────────────────────┴───────────────────────┴─────────────────┴──┴───────────────────────┴──┘
+	; Ex:
+	;	0xXXXXXXXX 0xXXXXXXXX 0x0000000 0xXX002E01 (or 0xXX002C01 depending on B)
+
 	; Build a TRB for Set Address in the Command Ring
 	mov rdi, os_usb_CR
 	add rdi, [xhci_croff]
@@ -622,10 +641,7 @@ xhci_search_devices:
 	shl eax, 24			; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_ADDRD
 	shl ax, 10
-	; TODO - Older devices need the Device Descriptor pulled first
-	; In which case bit 9 needs to be set, then pull the first 8 bytes of the device descriptor,
-	; then set address again with bit 9 clear
-;	bts eax, 9			; B
+	bts eax, 9			; B
 	bts eax, 0			; Cycle
 	stosd				; dword 3
 	add qword [xhci_croff], 16
@@ -707,6 +723,33 @@ xhci_search_devices:
 	xor eax, eax
 	pop rbx				; Restore the Address of the Enable Slot command
 	call xhci_check_command_event
+
+	; Build a TRB for Set Address in the Command Ring (with B cleared this time)
+	push rdi
+	mov rdi, os_usb_CR
+	add rdi, [xhci_croff]
+	push rdi
+	mov rax, os_usb_IDC		; Address of the Input Context
+	stosq				; dword 0 & 1
+	xor eax, eax			; Reserved
+	stosd				; dword 2
+	mov al, [currentslot]
+	shl eax, 24			; Set Slot ID (31:24)
+	mov al, xHCI_CTRB_ADDRD
+	shl ax, 10
+	bts eax, 0			; Cycle
+	stosd				; dword 3
+	add qword [xhci_croff], 16
+
+	; Ring the Doorbell for the Command Ring
+	xor eax, eax
+	xor ecx, ecx
+	call xhci_ring_doorbell
+	
+	; Check result in event ring
+	pop rbx				; Restore the Address of the Enable Slot command
+	call xhci_check_command_event
+	pop rdi
 
 	; Check first 8 bytes of Device Descriptor
 	; Example from QEMU keyboard
@@ -1173,6 +1216,27 @@ foundkeyboard:
 	pop rbx				; Restore the Address of the Enable Slot command
 	call xhci_check_command_event
 
+;	; Clear the Input Device Context (Maximum of 2112 bytes)
+;	mov rdi, os_usb_IDC
+;	xor eax, eax
+;	mov ecx, 264			; 2112 bytes / 8
+;	rep stosq
+;
+;	; Copy Device Context to Input Device Context
+;	mov rsi, os_usb_DC
+;	xor eax, eax
+;	mov al, [currentslot]
+;	dec al
+;	mov ecx, [xhci_csz]
+;	shl ecx, 5
+;	mul ecx				; EDX:EAX = EAX + ECX
+;	add rsi, rax
+;	mov rdi, os_usb_IDC
+;	mov eax, [xhci_csz]
+;	add rdi, rax
+;	mov ecx, 256			; 2048 bytes
+;	rep movsq
+
 	; Update Input Context
 	mov rdi, os_usb_IDC
 	; Set Control Context
@@ -1180,9 +1244,11 @@ foundkeyboard:
 	; Set Slot Context
 	mov eax, [xhci_csz]
 	add rdi, rax
-	mov dword [rdi+0], 0x18200000	; Set Context Entries (31:27) to 1, set Speed (23:20)
-	; TODO - Value above should not be hard-coded
-	; 0xF8 for all entries
+	mov eax, dword [rdi+0]		; Gather dword 0 of the Slot Context
+	rol eax, 8
+	mov al, 0x18
+	ror eax, 8
+	mov dword [rdi+0], eax
 	mov dword [rdi+8], 0x00400000	; Set Interrupter Target to 1 (31:22)
 	; Set Endpoint Context 0
 	mov eax, [xhci_csz]
@@ -1505,16 +1571,15 @@ xhci_maxslots:	db 0
 xhci_maxport:	db 0
 
 ; xHCI Memory (256K = 0x0 - 0x3FFFF)
-os_usb_DCI:		equ os_usb_mem + 0x0		; 2K Device Context Index
-os_usb_DC0:		equ os_usb_mem + 0x800		; 2K Device Context 0
-os_usb_DC1:		equ os_usb_mem + 0x1000		; 2K Device Context 1
-os_usb_CR:		equ os_usb_mem + 0x10000	; 4K Command Ring (16-bytes per entry. 4K in future)
+os_usb_DCI:		equ os_usb_mem + 0x0		; 2K Device Context Index (256 entries)
+os_usb_DC:		equ os_usb_mem + 0x800		; Start of Device Contexts (1024 or 2048 bytes each)
+os_usb_CR:		equ os_usb_mem + 0x10000	; 4K Command Ring (16 bytes per entry)
 os_usb_ERST:		equ os_usb_mem + 0x18000	; Event Ring Segment Tables
 os_usb_ERS:		equ os_usb_mem + 0x20000	; Event Ring Segments
-os_usb_IDC:		equ os_usb_mem + 0x28000	; Input device context (temporary buffer of max 64+2048 bytes)
+os_usb_IDC:		equ os_usb_mem + 0x2F000	; 4K Temporary Input Device Context (temporary buffer of max 64+2048 bytes)
 os_usb_TR0:		equ os_usb_mem + 0x30000	; Temp transfer ring
 os_usb_data0:		equ os_usb_mem + 0x38000	; Temp data
-os_usb_scratchpad:	equ os_usb_mem + 0x3C000	; 16K Scratchpad
+os_usb_scratchpad:	equ os_usb_mem + 0x3B000	; 4K Index and 4x 4K Scratchpad entries
 
 
 ; Register list
