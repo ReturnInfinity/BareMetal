@@ -178,9 +178,10 @@ xhci_init_msix_msi_done:
 	shr eax, 16			; 16-bit version is in bits 31:16, shift to 15:0
 	cmp ax, 0x0100			; Verify it is at least v1.0
 	jl xhci_init_error
-	mov eax, [rsi+xHCI_HCSPARAMS1]	; Gather MaxSlots (bits 7:0)
-	and eax, 0x000000FF		; Keep bits 7:0
+	mov eax, [rsi+xHCI_HCSPARAMS1]	; Gather MaxSlots (bits 7:0) and MaxPort (31:24)
 	mov byte [xhci_maxslots], al
+	rol eax, 8
+	mov byte [xhci_maxport], al
 	xor eax, eax
 	mov al, [xhci_caplen]
 	add rax, rsi			; RAX points to base of Host Controller Operational Registers
@@ -238,7 +239,9 @@ xhci_init_32bytecsz:
 	call xhci_reset
 
 	; Enumerate USB devices
+	sti
 	call xhci_enumerate_devices
+	cli
 
 xhci_init_done:
 	pop rdx
@@ -429,21 +432,24 @@ xhci_enumerate_devices:
 	; Check the available ports and reset them
 	xor ecx, ecx			; Slot counter
 	xor edx, edx			; Max slots
-	mov dl, byte [xhci_maxslots]
+	mov dl, byte [xhci_maxport]
 xhci_check_next:
 	mov ebx, 0x400			; Offset to start of Port Registers
 	shl ecx, 4			; Quick multiply by 16
 	add ebx, ecx			; Add offset to EBX
 	shr ecx, 4			; Quick divide by 16
-	mov eax, [rsi+rbx]		; Load PORTSC
+	mov eax, [rsi+rbx]		; Read PORTSC
 	bt eax, 0			; Current Connect Status
 	jnc xhci_reset_skip
 	bts eax, 4			; Port Reset
-	mov [rsi+rbx], eax
+	mov [rsi+rbx], eax		; Write PORTSC
 xhci_reset_skip:
 	inc ecx
 	cmp ecx, edx
 	jne xhci_check_next
+
+	mov eax, 100000
+	call b_delay			; Wait for USB devices to be ready
 
 	; At this point the event ring should contain some port status change event entries
 	; They should appear as follows:
@@ -453,59 +459,27 @@ xhci_reset_skip:
 	; dword 2 - Completion code (31:24)
 	; dword 3 - Type 34 (15:10), C (0)
 
-	mov eax, 100000
-	call b_delay			; Wait for USB devices to be ready
-
-;	; Check Event ring for xHCI_ETRB_PSC and gather enabled ports
-;	xor ecx, ecx
-;	mov rdi, xhci_portlist
-;	mov rsi, os_usb_ERS
-;	sub rsi, 16
-;xhci_check_port:
-;	add rsi, 16
-;	mov eax, [rsi+12]		; Load dword 3
-;	shr eax, 10			; Shift Type to AL
-;	cmp al, 0			; End of list
-;	je xhci_check_port_end
-;	cmp al, xHCI_ETRB_PSC
-;	je xhci_check_port_store
-;	jmp xhci_check_port	
-;xhci_check_port_store:
-;	inc cl
-;	mov al, [rsi+3]
-;	stosb
-;	jmp xhci_check_port
-;xhci_check_port_end:
-;	mov byte [xhci_portcount], cl
-
-	; Check Port Status registers for enabled devices with a set speed
-	xor ecx, ecx			; Slot counter
-	xor edx, edx			; Max slots
-	mov dl, byte [xhci_maxslots]
+	; Check Event ring for xHCI_ETRB_PSC and gather enabled ports
+	xor ecx, ecx
 	mov rdi, xhci_portlist
-xhci_check_port_next:
-	dec edx
-	cmp edx, 0
-	jz xhci_check_port_done		; Bail out if we've checked all ports
-	mov ebx, 0x400			; Offset to start of Port Registers
-	shl ecx, 4			; Quick multiply by 16
-	add ebx, ecx			; Add offset to EBX
-	shr ecx, 4			; Quick divide by 16
-	mov eax, [rsi+rbx]		; Load PORTSC
-	and eax, 0x00003C00
-	cmp eax, 0
-	je xhci_check_port_skip
-xhci_check_port_found:
-	sub ebx, 0x400			; Subtract Offset
-	shr ebx, 4			; Quick divide by 16
-	add ebx, 1			; Add 1 as ports start at 1
-	mov eax, ebx
+	mov rsi, os_usb_ERS
+	sub rsi, 16
+xhci_check_port:
+	add rsi, 16
+	mov eax, [rsi+12]		; Load dword 3
+	shr eax, 10			; Shift Type to AL
+	cmp al, 0			; End of list
+	je xhci_check_port_end
+	cmp al, xHCI_ETRB_PSC
+	je xhci_check_port_store
+	jmp xhci_check_port
+xhci_check_port_store:
+	inc cl
+	mov al, [rsi+3]
 	stosb
-	add byte [xhci_portcount], 1	; Increment the port count
-xhci_check_port_skip:
-	inc ecx
-	jmp xhci_check_port_next
-xhci_check_port_done:
+	jmp xhci_check_port
+xhci_check_port_end:
+	mov byte [xhci_portcount], cl
 
 xhci_search_devices:
 
@@ -1519,6 +1493,7 @@ currentslot:	db 0
 keyboardslot:	db 0
 xhci_caplen:	db 0
 xhci_maxslots:	db 0
+xhci_maxport:	db 0
 
 ; xHCI Memory (256K = 0x0 - 0x3FFFF)
 os_usb_DCI:		equ os_usb_mem + 0x0		; 2K Device Context Index
