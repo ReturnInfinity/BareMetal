@@ -1,4 +1,5 @@
-# Hardware documentation
+# Supported Hardware
+With links to documentation
 
 
 ## CPU
@@ -63,7 +64,7 @@
 * [Datasheet](http://realtek.info/pdf/rtl8169s.pdf)
 
 
-## Storage
+## Non-volatile Storage
 
 
 ### Virtio-Block
