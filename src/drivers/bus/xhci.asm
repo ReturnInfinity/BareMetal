@@ -1267,31 +1267,31 @@ foundkeyboard:
 	mov qword [rdi+8], rax
 	mov dword [rdi+16], 0x00080008	; Set Max ESIT Payload (31:16) to 8, Average TRB Length (15:0) to 8
 
-	; Build a TRB for Evaluate Context in the Command Ring
-	mov rdi, os_usb_CR
-	add rdi, [xhci_croff]
-	push rdi
-	mov rax, os_usb_IDC		; Address of the Input Context
-	stosq				; dword 0 & 1
-	xor eax, eax
-	stosd				; dword 2
-	mov al, [currentslot]
-	shl eax, 24			; Set Slot ID (31:24)
-	mov al, xHCI_CTRB_EVALC
-	shl ax, 10
-	bts eax, 0			; Cycle
-	stosd				; dword 3
-	add qword [xhci_croff], 16
-	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003401
-
-	; Ring the Doorbell for the Command Ring
-	xor eax, eax
-	xor ecx, ecx
-	call xhci_ring_doorbell
-
-	; Check result in event ring
-	pop rbx				; Restore the Address of the Enable Slot command
-	call xhci_check_command_event
+;	; Build a TRB for Evaluate Context in the Command Ring
+;	mov rdi, os_usb_CR
+;	add rdi, [xhci_croff]
+;	push rdi
+;	mov rax, os_usb_IDC		; Address of the Input Context
+;	stosq				; dword 0 & 1
+;	xor eax, eax
+;	stosd				; dword 2
+;	mov al, [currentslot]
+;	shl eax, 24			; Set Slot ID (31:24)
+;	mov al, xHCI_CTRB_EVALC
+;	shl ax, 10
+;	bts eax, 0			; Cycle
+;	stosd				; dword 3
+;	add qword [xhci_croff], 16
+;	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003401
+;
+;	; Ring the Doorbell for the Command Ring
+;	xor eax, eax
+;	xor ecx, ecx
+;	call xhci_ring_doorbell
+;
+;	; Check result in event ring
+;	pop rbx				; Restore the Address of the Enable Slot command
+;	call xhci_check_command_event
 
 	; Build a TRB for Configure Endpoint in the Command Ring
 	mov rdi, os_usb_CR
