@@ -499,7 +499,7 @@ xhci_search_devices:
 	xor eax, eax
 	rep stosq
 
-	; TRB for Enable Slot
+	; Enable Slot Command TRB
 	; ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
 	; |31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
 	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -533,7 +533,7 @@ xhci_search_devices:
 	xor ecx, ecx
 	call xhci_ring_doorbell
 
-	; Slot Enable Command Event TRB
+	; Enable Slot Event TRB
 	; ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
 	; |31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
 	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -614,7 +614,7 @@ xhci_search_devices:
 	mov dword [rdi+16], 0x00000008	; dword 4 - Average TRB Length (15:0)
 	; Skip the rest of Endpoint Context 0 as it is already cleared
 
-	; TRB for Set Address
+	; Set Address Command TRB
 	; ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
 	; |31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
 	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -651,7 +651,7 @@ xhci_search_devices:
 	xor ecx, ecx
 	call xhci_ring_doorbell
 
-	; Set Address Command Event TRB
+	; Set Address Event TRB
 	; ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
 	; |31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
 	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -667,7 +667,7 @@ xhci_search_devices:
 	;	0x00XXXXXX 0x00000000 0x01000000 0x01008401
 
 	; Check result in event ring
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the Address of the Set Address command
 	call xhci_check_command_event
 
 	; Clear os_usb_data0
@@ -721,7 +721,7 @@ xhci_search_devices:
 
 	; Check result in event ring
 	xor eax, eax
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the token value command
 	call xhci_check_command_event
 
 	; Build a TRB for Set Address in the Command Ring (with B cleared this time)
@@ -745,9 +745,9 @@ xhci_search_devices:
 	xor eax, eax
 	xor ecx, ecx
 	call xhci_ring_doorbell
-	
+
 	; Check result in event ring
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the Address of the Set Address command
 	call xhci_check_command_event
 	pop rdi
 
@@ -851,7 +851,7 @@ xhci_skip_update_idc:
 
 	; Check result in event ring
 	xor eax, eax
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the token value
 	call xhci_check_command_event
 
 	; TODO - Check full Device Descriptor
@@ -924,7 +924,7 @@ xhci_skip_update_idc:
 
 	; Check result in event ring
 	xor eax, eax
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the token value
 	call xhci_check_command_event
 
 	; Check TotalLength
@@ -975,7 +975,7 @@ xhci_skip_update_idc:
 
 	; Check result in event ring
 	xor eax, eax
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the token value
 	call xhci_check_command_event
 
 	; TODO - Check Configuration Descriptor
@@ -1059,7 +1059,7 @@ xhci_skip_update_idc:
 	cmp eax, 0x00010103		; Look for Class Code 0x03, Sub Class 0x01, and Protocol 0x01
 	je foundkeyboard
 
-	; If no keyboard was found at this port then disable the slot and try the next
+	; If no keyboard was found at this port then disable the slot and try the next device
 
 	; Build a TRB for Disable Slot in the Command Ring
 	mov rdi, os_usb_CR
@@ -1083,7 +1083,7 @@ xhci_skip_update_idc:
 	call xhci_ring_doorbell
 
 	; Check result in event ring
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the Address of the Disable Slot command
 	call xhci_check_command_event
 
 	; Shift the port list
@@ -1137,7 +1137,7 @@ foundkeyboard:
 
 	; Check result in event ring
 	xor eax, eax
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the token value
 	call xhci_check_command_event
 
 	; Send Set protocol
@@ -1175,7 +1175,7 @@ foundkeyboard:
 
 	; Check result in event ring
 	xor eax, eax
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the token value
 	call xhci_check_command_event
 
 	; Send SET_IDLE
@@ -1213,7 +1213,7 @@ foundkeyboard:
 
 	; Check result in event ring
 	xor eax, eax
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the token value
 	call xhci_check_command_event
 
 ;	; Clear the Input Device Context (Maximum of 2112 bytes)
@@ -1293,6 +1293,21 @@ foundkeyboard:
 ;	pop rbx				; Restore the Address of the Enable Slot command
 ;	call xhci_check_command_event
 
+	; Configure Endpoint Command TRB
+	; ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+	; |31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Address of Input Context Lo                                                                   |
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Address of Input Context Hi                                                                   |
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Reserved Zero                                                                                 |
+	; ├───────────────────────┬───────────────────────┬─────────────────┬──────────────────────────┬──┤
+	; | Slot ID               | Reserved Zero         | 12              | Reserved Zero            |C |
+	; └───────────────────────┴───────────────────────┴─────────────────┴──────────────────────────┴──┘
+	; Ex:
+	;	0xXXXXXXXX 0xXXXXXXXX 0x0000000 0xXX003001
+
 	; Build a TRB for Configure Endpoint in the Command Ring
 	mov rdi, os_usb_CR
 	add rdi, [xhci_croff]
@@ -1308,16 +1323,29 @@ foundkeyboard:
 	bts eax, 0			; Cycle
 	stosd				; dword 3
 	add qword [xhci_croff], 16
-	; 0xXXXXXXXX 0xXXXXXXXX 0x0000000 0x01003001
 
 	; Ring the Doorbell for the Command Ring
 	xor eax, eax
 	xor ecx, ecx
 	call xhci_ring_doorbell
 
+	; Configure Endpoint Event TRB
+	; ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+	; |31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Address of Configure Endpoint Command TRB Lo                                                  |
+	; ├───────────────────────────────────────────────────────────────────────────────────────────────┤
+	; | Address of Configure Endpoint Command TRB Hi                                                  |
+	; ├───────────────────────┬───────────────────────────────────────────────────────────────────────┤
+	; | CompCode              | Reserved Zero                                                         |
+	; ├───────────────────────┴───────────────────────┬─────────────────┬──────────────────────────┬──┤
+	; | Slot ID               | Reserved Zero         | 33              | Reserved Zero            |C |
+	; └───────────────────────┴───────────────────────┴─────────────────┴──────────────────────────┴──┘
+	; Ex:
+	;	0xXXXXXXXX 0xXXXXXXXX 0x01000000 0xXX008401
+
 	; Check result in event ring
-	; 0xXXXXXXXX 0xXXXXXXXX 0x0100000 0x01008401
-	pop rbx				; Restore the Address of the Enable Slot command
+	pop rbx				; Restore the Address of the Configure Endpoint command
 	call xhci_check_command_event
 
 	mov al, [currentslot]
