@@ -548,13 +548,15 @@ xhci_search_devices:
 	; Ex:
 	;	0x00690000 0x00000000 0x01000000 0x01008401
 
-	; Check result in event ring
+	; Gather result from event ring
 	pop rbx				; Restore the Address of the Enable Slot command
 	call xhci_check_command_event	; Check for the event and return result in RAX
 
-	; Gather Slot ID from event
-	; Todo - check CompCode was 0x01
-	shr rax, 24
+	; Check CompCode and gather Slot ID from event
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
+	rol rax, 32			; Rotate RAX left by 32 bits to put Slot ID in AL
 	mov [currentslot], al
 
 	; Clear the IDC (Maximum of 2112 bytes)
@@ -666,9 +668,14 @@ xhci_search_devices:
 	; Ex:
 	;	0x00XXXXXX 0x00000000 0x01000000 0x01008401
 
-	; Check result in event ring
+	; Gather result from event ring
 	pop rbx				; Restore the Address of the Set Address command
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; Clear os_usb_data0
 	mov rdi, os_usb_data0
@@ -719,16 +726,20 @@ xhci_search_devices:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Check result in event ring
-	xor eax, eax
+	; Gather result from event ring
 	pop rbx				; Restore the token value command
 	call xhci_check_command_event
+	
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; Build a TRB for Set Address in the Command Ring (with B cleared this time)
 	push rdi
 	mov rdi, os_usb_CR
 	add rdi, [xhci_croff]
-	push rdi
+	push rdi			; Save the Address of the Set Address command
 	mov rax, os_usb_IDC		; Address of the Input Context
 	stosq				; dword 0 & 1
 	xor eax, eax			; Reserved
@@ -746,10 +757,15 @@ xhci_search_devices:
 	xor ecx, ecx
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	pop rbx				; Restore the Address of the Set Address command
 	call xhci_check_command_event
 	pop rdi
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; Check first 8 bytes of Device Descriptor
 	; Example from QEMU keyboard
@@ -797,9 +813,14 @@ xhci_search_devices:
 	xor ecx, ecx
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	pop rbx				; Restore the Address of the Evaluate Context command
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 xhci_skip_update_idc:
 
@@ -849,10 +870,15 @@ xhci_skip_update_idc:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	xor eax, eax
 	pop rbx				; Restore the token value
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; TODO - Check full Device Descriptor
 	; Example from QEMU keyboard
@@ -922,10 +948,15 @@ xhci_skip_update_idc:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	xor eax, eax
 	pop rbx				; Restore the token value
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; Check TotalLength
 	xor ebx, ebx
@@ -973,10 +1004,15 @@ xhci_skip_update_idc:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	xor eax, eax
 	pop rbx				; Restore the token value
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; TODO - Check Configuration Descriptor
 	; Example from QEMU keyboard
@@ -1082,9 +1118,14 @@ xhci_skip_update_idc:
 	xor ecx, ecx
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	pop rbx				; Restore the Address of the Disable Slot command
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; Shift the port list
 	push rsi
@@ -1135,10 +1176,15 @@ foundkeyboard:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	xor eax, eax
 	pop rbx				; Restore the token value
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; Send Set protocol
 
@@ -1173,10 +1219,15 @@ foundkeyboard:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	xor eax, eax
 	pop rbx				; Restore the token value
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 	; Send SET_IDLE
 
@@ -1211,10 +1262,15 @@ foundkeyboard:
 	mov cl, [currentslot]
 	call xhci_ring_doorbell
 
-	; Check result in event ring
+	; Gather result from event ring
 	xor eax, eax
 	pop rbx				; Restore the token value
 	call xhci_check_command_event
+
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
 
 ;	; Clear the Input Device Context (Maximum of 2112 bytes)
 ;	mov rdi, os_usb_IDC
@@ -1344,10 +1400,16 @@ foundkeyboard:
 	; Ex:
 	;	0xXXXXXXXX 0xXXXXXXXX 0x01000000 0xXX008401
 
-	; Check result in event ring
+	; Gather result from event ring
 	pop rbx				; Restore the Address of the Configure Endpoint command
 	call xhci_check_command_event
 
+	; Check CompCode
+	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	cmp al, 0x01
+	jne xhci_enumerate_devices_end
+
+	rol rax, 32			; Rotate RAX left by 32 bits to put Slot ID in AL
 	mov al, [currentslot]
 	mov [keyboardslot], al
 
@@ -1408,15 +1470,23 @@ xhci_ring_doorbell:
 
 ; -----------------------------------------------------------------------------
 ; xhci_check_command_event - Gather return data for a command
-; RBX = Address of Command / Token
-; RCX = Event ring
+; IN:	RBX = Address of Command / Token
+;	RCX = Event ring
+; OUT:	RAX = result
 xhci_check_command_event:
 	push rsi
+	push rdx
 	push rcx
+	call b_hpet_get_μs
+	mov rdx, rax
+	add rdx, 20000		; Add 20,000 μs
 	mov rsi, os_usb_ERS	; Event segment for Command Ring
 	shl rcx, 12		; Quick multiply by 4096
 	add rsi, rcx
 load_event:
+	call b_hpet_get_μs
+	cmp rax, rdx
+	jg xhci_check_command_event_timeout
 	mov rax, [rsi]
 	cmp rax, 0
 	jne compare
@@ -1430,6 +1500,13 @@ compare:
 found_event:
 	mov rax, [rsi+8]	; Load the result
 	pop rcx
+	pop rdx
+	pop rsi
+	ret
+xhci_check_command_event_timeout:
+	xor eax, eax
+	pop rcx
+	pop rdx
 	pop rsi
 	ret
 ; -----------------------------------------------------------------------------

@@ -235,6 +235,38 @@ b_delay_end:
 	ret
 ; -----------------------------------------------------------------------------
 
+; -----------------------------------------------------------------------------
+; b_hpet_get_μs -- Get current μs since HPET started
+; IN:	Nothing
+; OUT:	RAX = Time in microseconds since start
+; Note:	There are 1,000,000 microseconds in a second
+;	There are 1,000 milliseconds in a second
+b_hpet_get_μs:
+	push rdx
+	push rcx
+	push rbx
+
+	mov rbx, 1			; 1 μs
+	xor edx, edx
+	mov ecx, HPET_GEN_CAP
+	call os_hpet_read		; Get HPET General Capabilities and ID Register
+	shr rax, 32
+	mov rcx, rax			; RCX = RAX >> 32 (timer period in femtoseconds)
+	mov rax, 1000000000
+	div rcx				; RDX:RAX / RCX (converting from period in femtoseconds to frequency in MHz)
+	mul rbx				; RAX *= RBX, should get number of HPET cycles to wait, save result in RBX
+	mov rbx, rax
+	mov ecx, HPET_MAIN_COUNTER
+	call os_hpet_read		; Get HPET counter in RAX
+	add rax, rbx			; RBX += RAX Until when to wait
+
+	pop rbx
+	pop rcx
+	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
 
 ; -----------------------------------------------------------------------------
 ; b_tsc -- Read the Time-Stamp Counter and store in RAX
