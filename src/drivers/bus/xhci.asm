@@ -679,7 +679,7 @@ xhci_search_devices:
 	; Add TRBs to Transfer ring
 	mov rdi, os_usb_TR0
 
-	; Request 8 bytes from Device Descriptor to get the length
+	; Request 8 bytes from Device Descriptor to get the length and the Max Packet Size
 
 	; Setup Stage
 	mov eax, 0x01000680		; 0x01 Device Descriptor
@@ -710,8 +710,8 @@ xhci_search_devices:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	mov eax, 0x00001E21		; TRB Type 7, BEI, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -840,8 +840,8 @@ xhci_skip_update_idc:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	mov eax, 0x00001E21		; TRB Type 7, BEI, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -913,8 +913,8 @@ xhci_skip_update_idc:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	mov eax, 0x00001E21		; TRB Type 7, BEI, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -964,8 +964,8 @@ xhci_skip_update_idc:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	mov eax, 0x00001E21		; TRB Type 7, BEI, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -1126,8 +1126,8 @@ foundkeyboard:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	mov eax, 0x00001E21		; TRB Type 7, BEI, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -1164,8 +1164,8 @@ foundkeyboard:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	mov eax, 0x00001E21		; TRB Type 7, BEI, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -1202,8 +1202,8 @@ foundkeyboard:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	xor eax, eax
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	mov eax, 0x00001E21		; TRB Type 7, BEI, IOC, C
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 
 	; Ring the doorbell for current slot
 	mov eax, 1			; EPID 1
@@ -1369,8 +1369,7 @@ foundkeyboard:
 	mov eax, 0x00400000		; Interrupter Target 1
 	stosd				; dword 2 - Interrupter Target (31:22)
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
-
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 	; Ring the doorbell for the Keyboard
 	mov eax, 3			; EPID 3
 	xor ecx, ecx
@@ -1523,7 +1522,7 @@ xhci_int1:
 	mov eax, 0x00400000		; Interrupter Target 1
 	stosd				; dword 2 - Interrupter Target (31:22)
 	mov eax, 0x00001C21		; TRB Type 7, IOC, C
-	stosd				; dword 3 - TRB Type (15:10), IOC (5), Cycle (0)
+	stosd				; dword 3 - TRB Type (15:10), BEI (9), IOC (5), CH (4), ENT (1), Cycle (0)
 	add qword [tval], 32
 
 	; Todo - Check if near the end of the transfer ring. If so, create a link TRB
