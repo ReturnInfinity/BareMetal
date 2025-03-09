@@ -136,9 +136,6 @@ skip_ap:
 	jmp next_ap
 no_more_aps:
 
-	; Configure the PS/2 keyboard and mouse
-	call ps2_init
-
 	; Configure the serial port
 	call serial_init
 

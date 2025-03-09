@@ -38,6 +38,7 @@ start:
 	call init_bus			; Initialize system busses
 	call init_nvs			; Initialize non-volatile storage
 	call init_net			; Initialize network
+	call init_hid			; Initialize human interface devices
 
 	; Output system ready message
 	mov rsi, msg_ready

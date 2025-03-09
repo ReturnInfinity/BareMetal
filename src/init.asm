@@ -10,6 +10,7 @@
 %include "init/bus.asm"
 %include "init/nvs.asm"
 %include "init/net.asm"
+%include "init/hid.asm"
 
 
 ; =============================================================================

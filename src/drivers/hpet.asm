@@ -6,6 +6,10 @@
 ; =============================================================================
 
 
+; Note:	There are 1,000,000 microseconds in a second
+;	There are 1,000 milliseconds in a second
+
+
 ; -----------------------------------------------------------------------------
 ; os_hpet_init -- Initialize the High Precision Event Timer
 ;  IN:	Nothing
@@ -18,10 +22,44 @@ os_hpet_init:
 	mov rax, [os_HPET_Address]
 	jz os_hpet_init_error
 
+	; Gather clock period
+	mov ecx, HPET_GEN_CAP
+	call os_hpet_read		; Get HPET General Capabilities and ID Register
+	shr rax, 32			; Shift COUNTER_CLK_PERIOD (femtoseconds per tick) into EAX
+	mov [os_HPET_Frequency], eax
+
 	; Set flag that HPET was enabled
 	or qword [os_SysConfEn], 1 << 4
 
 os_hpet_init_error:
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_hpet_us -- Get current microseconds (us) since HPET started
+; IN:	Nothing
+; OUT:	RAX = Time in microseconds since start
+os_hpet_us:
+	push rdx
+	push rcx
+
+	xor edx, edx
+
+	; Read Main Counter
+	mov ecx, HPET_MAIN_COUNTER
+	call os_hpet_read		; Read HPET Main Counter to RAX
+
+	; Multiply by Main Counter Clock Period
+	mov ecx, [os_HPET_Frequency]
+	mul rcx				; RDX:RAX *= RCX
+
+	; Divide by # of femtoseconds in a microsecond
+	mov rcx, 1000000000
+	div rcx				; RAX = RDX:RAX / RCX	
+
+	pop rcx
+	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
