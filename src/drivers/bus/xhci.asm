@@ -553,10 +553,10 @@ xhci_search_devices:
 	call xhci_check_command_event	; Check for the event and return result in RAX
 
 	; Check CompCode and gather Slot ID from event
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
-	rol rax, 32			; Rotate RAX left by 32 bits to put Slot ID in AL
+	ror rax, 32			; Rotate RAX right by 32 bits to put Slot ID in AL
 	mov [currentslot], al
 
 	; Clear the IDC (Maximum of 2112 bytes)
@@ -673,7 +673,7 @@ xhci_search_devices:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -729,9 +729,9 @@ xhci_search_devices:
 	; Gather result from event ring
 	pop rbx				; Restore the token value command
 	call xhci_check_command_event
-	
+
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -763,7 +763,7 @@ xhci_search_devices:
 	pop rdi
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -818,7 +818,7 @@ xhci_search_devices:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -876,7 +876,7 @@ xhci_skip_update_idc:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -954,7 +954,7 @@ xhci_skip_update_idc:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -1010,7 +1010,7 @@ xhci_skip_update_idc:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -1152,7 +1152,7 @@ xhci_skip_update_idc:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -1211,7 +1211,7 @@ foundkeyboard:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -1254,7 +1254,7 @@ foundkeyboard:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -1297,7 +1297,7 @@ foundkeyboard:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
@@ -1434,11 +1434,11 @@ foundkeyboard:
 	call xhci_check_command_event
 
 	; Check CompCode
-	rol rax, 8			; Rotate RAX left by 8 bits to put CompCode in AL
+	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
-	rol rax, 32			; Rotate RAX left by 32 bits to put Slot ID in AL
+	ror rax, 32			; Rotate RAX right by 32 bits to put Slot ID in AL
 	mov al, [currentslot]
 	mov [keyboardslot], al
 
