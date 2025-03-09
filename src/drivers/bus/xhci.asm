@@ -1473,14 +1473,14 @@ xhci_ring_doorbell:
 ; IN:	RBX = Address of Command / Token
 ;	RCX = Event ring
 ; OUT:	RAX = result
-; Note:	This command times out after 20,000 microseconds
+; Note:	This command times out after 50,000 microseconds
 xhci_check_command_event:
 	push rsi
 	push rdx
 	push rcx
 	call os_hpet_us
 	mov rdx, rax
-	add rdx, 20000		; Add 20,000 μs
+	add rdx, 50000		; Add 50,000 μs
 	mov rsi, os_usb_ERS	; Event segment for Command Ring
 	shl rcx, 12		; Quick multiply by 4096
 	add rsi, rcx
