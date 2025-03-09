@@ -512,7 +512,7 @@ xhci_search_devices:
 	; | Zero                                          | 9               | Reserved Zero            |C |
 	; └───────────────────────────────────────────────┴─────────────────┴──────────────────────────┴──┘
 	; Ex:
-	;	0x00000000 0x00000000 0x0000000 0x00002401
+	;	0x00000000 0x00000000 0x00000000 0x00002401
 
 	; Build a TRB for Enable Slot in the Command Ring
 	mov rdi, os_usb_CR
@@ -546,7 +546,7 @@ xhci_search_devices:
 	; | Slot ID               | Reserved Zero         | 33              | Reserved Zero            |C |
 	; └───────────────────────┴───────────────────────┴─────────────────┴──────────────────────────┴──┘
 	; Ex:
-	;	0x00690000 0x00000000 0x01000000 0x01008401
+	;	0xXXXXXXXX 0xXXXXXXXX 0x01000000 0xXX008401
 
 	; Gather result from event ring
 	pop rbx				; Restore the Address of the Enable Slot command
@@ -629,7 +629,7 @@ xhci_search_devices:
 	; | Slot ID               | Reserved Zero         | 11              |B | Reserved Zero         |C |
 	; └───────────────────────┴───────────────────────┴─────────────────┴──┴───────────────────────┴──┘
 	; Ex:
-	;	0xXXXXXXXX 0xXXXXXXXX 0x0000000 0xXX002E01 (or 0xXX002C01 depending on B)
+	;	0xXXXXXXXX 0xXXXXXXXX 0x00000000 0xXX002E01 (or 0xXX002C01 depending on B)
 
 	; Build a TRB for Set Address in the Command Ring
 	mov rdi, os_usb_CR
@@ -666,7 +666,7 @@ xhci_search_devices:
 	; | Slot ID               | Reserved Zero         | 33              | Reserved Zero            |C |
 	; └───────────────────────┴───────────────────────┴─────────────────┴──────────────────────────┴──┘
 	; Ex:
-	;	0x00XXXXXX 0x00000000 0x01000000 0x01008401
+	;	0xXXXXXXXX 0xXXXXXXXX 0x01000000 0xXX008401
 
 	; Gather result from event ring
 	pop rbx				; Restore the Address of the Set Address command
