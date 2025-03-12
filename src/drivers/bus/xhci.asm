@@ -643,7 +643,7 @@ xhci_search_devices:
 	shl eax, 24			; Set Slot ID (31:24)
 	mov al, xHCI_CTRB_ADDRD
 	shl ax, 10
-	bts eax, 9			; B
+;	bts eax, 9			; B
 	bts eax, 0			; Cycle
 	stosd				; dword 3
 	add qword [xhci_croff], 16
@@ -702,7 +702,7 @@ xhci_search_devices:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	mov eax, 0x00000008		; Request 8 bytes
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00010C13		; DIR, TRB Type 3, CH, ENT, C
+	mov eax, 0x00010C01		; DIR, TRB Type 3, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
 	; Status Stage
 	xor eax, eax
@@ -735,37 +735,37 @@ xhci_search_devices:
 	cmp al, 0x01
 	jne xhci_enumerate_devices_end
 
-	; Build a TRB for Set Address in the Command Ring (with B cleared this time)
-	push rdi
-	mov rdi, os_usb_CR
-	add rdi, [xhci_croff]
-	push rdi			; Save the Address of the Set Address command
-	mov rax, os_usb_IDC		; Address of the Input Context
-	stosq				; dword 0 & 1
-	xor eax, eax			; Reserved
-	stosd				; dword 2
-	mov al, [currentslot]
-	shl eax, 24			; Set Slot ID (31:24)
-	mov al, xHCI_CTRB_ADDRD
-	shl ax, 10
-	bts eax, 0			; Cycle
-	stosd				; dword 3
-	add qword [xhci_croff], 16
-
-	; Ring the Doorbell for the Command Ring
-	xor eax, eax
-	xor ecx, ecx
-	call xhci_ring_doorbell
-
-	; Gather result from event ring
-	pop rbx				; Restore the Address of the Set Address command
-	call xhci_check_command_event
-	pop rdi
-
-	; Check CompCode
-	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
-	cmp al, 0x01
-	jne xhci_enumerate_devices_end
+;	; Build a TRB for Set Address in the Command Ring (with B cleared this time)
+;	push rdi
+;	mov rdi, os_usb_CR
+;	add rdi, [xhci_croff]
+;	push rdi			; Save the Address of the Set Address command
+;	mov rax, os_usb_IDC		; Address of the Input Context
+;	stosq				; dword 0 & 1
+;	xor eax, eax			; Reserved
+;	stosd				; dword 2
+;	mov al, [currentslot]
+;	shl eax, 24			; Set Slot ID (31:24)
+;	mov al, xHCI_CTRB_ADDRD
+;	shl ax, 10
+;	bts eax, 0			; Cycle
+;	stosd				; dword 3
+;	add qword [xhci_croff], 16
+;
+;	; Ring the Doorbell for the Command Ring
+;	xor eax, eax
+;	xor ecx, ecx
+;	call xhci_ring_doorbell
+;
+;	; Gather result from event ring
+;	pop rbx				; Restore the Address of the Set Address command
+;	call xhci_check_command_event
+;	pop rdi
+;
+;	; Check CompCode
+;	ror rax, 24			; Rotate RAX right by 24 bits to put CompCode in AL
+;	cmp al, 0x01
+;	jne xhci_enumerate_devices_end
 
 	; Check first 8 bytes of Device Descriptor
 	; Example from QEMU keyboard
@@ -846,7 +846,7 @@ xhci_skip_update_idc:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	mov eax, ebx			; BL contains length
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00010C13		; DIR, TRB Type 3, CH, ENT, C
+	mov eax, 0x00010C01		; DIR, TRB Type 3, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
 	; Status Stage
 	xor eax, eax
@@ -924,7 +924,7 @@ xhci_skip_update_idc:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	mov eax, 0x00000009
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00010C13		; DIR, TRB Type 3, CH, ENT, C
+	mov eax, 0x00010C01		; DIR, TRB Type 3, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
 	; Status Stage
 	xor eax, eax
@@ -980,7 +980,7 @@ xhci_skip_update_idc:
 	stosq				; dword 0 & 1 - Data Buffer (63:0)
 	mov eax, ebx			; BL contains length
 	stosd				; dword 2 - Interrupter Target (31:22), TD Size (21:17), TRB Transfer Length (16:0)
-	mov eax, 0x00010C13		; DIR, TRB Type 3, CH, ENT, C
+	mov eax, 0x00010C01		; DIR, TRB Type 3, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IDT (6), IOC (5), CH (4), NS (3), ISP (2), ENT (1), C (0)
 	; Status Stage
 	xor eax, eax
@@ -1172,7 +1172,7 @@ xhci_skip_update_idc:
 	jmp xhci_search_devices
 
 foundkeyboard:
-	; Send Set report
+	; Send Set Report
 
 	; Setup Stage
 	mov eax, 0x00010900		; bRequest 0x09 - Set Report, wValue 0x01
@@ -1187,7 +1187,7 @@ foundkeyboard:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
+	mov eax, 0x00011013		; DIR, TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
 	add qword [os_usb_evtoken], 1
@@ -1230,7 +1230,7 @@ foundkeyboard:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
+	mov eax, 0x00011013		; DIR, TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
 	add qword [os_usb_evtoken], 1
@@ -1273,7 +1273,7 @@ foundkeyboard:
 	xor eax, eax
 	stosq				; dword 0 & 1 - Reserved Zero
 	stosd				; dword 2 - Interrupter Target (31:22)
-	mov eax, 0x00001013		; TRB Type 4, CH, ENT, C
+	mov eax, 0x00011013		; DIR, TRB Type 4, CH, ENT, C
 	stosd				; dword 3 - DIR (16), TRB Type (15:10), IOC (5), CH (4), ENT (1), C (0)
 	; Event Data
 	add qword [os_usb_evtoken], 1
