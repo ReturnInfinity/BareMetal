@@ -119,7 +119,10 @@ dw 0x0000
 ; Intel 8259x/X540/X550 10 Gigabit Ethernet
 dw 0x8259		; Driver ID
 dw 0x8086		; Vendor ID
-dw 0x1560		; X540T1
+dw 0x10FB		; 82599ES (SFI/SFP+)
+dw 0x1528		; X540-AT2
+dw 0x1560		; X540
+dw 0x1572		; X710 (SFP+)
 dw 0x0000
 
 ; Realtek 816x/811x Gigabit Ethernet
