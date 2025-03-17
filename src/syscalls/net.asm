@@ -8,7 +8,7 @@
 
 ; -----------------------------------------------------------------------------
 ; b_net_status -- Check if network access is available
-;  IN:	Nothing
+;  IN:	RDX = Interface ID
 ; OUT:	RAX = MAC Address if net is enabled, otherwise 0
 b_net_status:
 	push rsi
@@ -39,6 +39,7 @@ b_net_status_end:
 ; b_net_tx -- Transmit a packet via the network
 ;  IN:	RSI = Memory location where packet is stored
 ;	RCX = Length of packet
+;	RDX = Interface ID
 ; OUT:	Nothing. All registers preserved
 b_net_tx:
 	push rcx
@@ -76,6 +77,7 @@ b_net_tx_fail:
 ; -----------------------------------------------------------------------------
 ; b_net_rx -- Polls the network for received data
 ;  IN:	RDI = Memory location where packet will be stored
+;	RDX = Interface ID
 ; OUT:	RCX = Length of packet, 0 if no data
 ;	All other registers preserved
 b_net_rx:
