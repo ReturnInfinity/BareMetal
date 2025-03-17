@@ -19,7 +19,7 @@
 %include "drivers/bus/pci.asm"
 %include "drivers/bus/xhci.asm"
 
-; Storage
+; Non-volatile Storage
 %include "drivers/nvs/nvme.asm"
 %include "drivers/nvs/ahci.asm"
 %include "drivers/nvs/virtio-blk.asm"
