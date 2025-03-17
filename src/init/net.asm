@@ -14,21 +14,25 @@ init_net:
 	mov rcx, 6
 	call b_output
 
+	; TODO - Add proper address
+	mov rdi, 0x118000
+
 	; Check Bus Table for a Ethernet device
-	mov rsi, bus_table		; Load Bus Table address to RSI
-	sub rsi, 16
-	add rsi, 8			; Add offset to Class Code
+	mov r10, bus_table		; Load Bus Table address to RSI
+	sub r10, 16
+	add r10, 8			; Add offset to Class Code
 init_net_check_bus:
-	add rsi, 16			; Increment to next record in memory
-	mov ax, [rsi]			; Load Class Code / Subclass Code
+	add r10, 16			; Increment to next record in memory
+	mov ax, [r10]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
-	je init_net_probe_not_found
+	je init_net_search_done
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver
 	jmp init_net_check_bus		; Check Bus Table again
 
 	; Check the Ethernet device to see if it has a driver
 init_net_probe_find_driver:
+	mov rsi, r10
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov r9, rsi			; Save start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
@@ -47,10 +51,27 @@ init_net_probe_find_next_device:
 	cmp ax, 0x0000			; Check for end of device list
 	je init_net_probe_find_next_driver	; We found the next driver type
 	cmp eax, r8d
-	je init_net_probe_found		; If Carry is clear then we found a supported NIC
-	jmp init_net_probe_find_next_device	; Check the next device
+	je init_net_probe_found		; If equal then we found a supported NIC
+	jmp init_net_probe_find_next_device	; Check the next device on the bus
 
+	; A supported network interface was found, add it to the info table
 init_net_probe_found:
+	add byte [os_net_icount], 1	; Increment interface counter
+	mov rax, rbx			; Driver ID
+	stosq
+	mov rax, rdx			; Bus ID
+	stosq
+	jmp init_net_check_bus
+
+	; Initialize the supported network interfaces
+init_net_search_done:
+	; TODO - Add proper address
+	mov rsi, 0x118000
+	lodsq
+	mov rbx, rax			; Driver ID
+	lodsq
+	mov rdx, rax			; Bus ID
+
 	cmp bx, 0x1AF4
 	je init_net_probe_found_virtio
 	cmp bx, 0x8254
