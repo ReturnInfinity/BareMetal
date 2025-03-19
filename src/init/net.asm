@@ -15,7 +15,7 @@ init_net:
 	call b_output
 
 	; TODO - Add proper address
-	mov rdi, 0x118000
+	mov rdi, 0x118000		; Temporary info table of supported devices
 
 	; Check Bus Table for a Ethernet device
 	mov r10, bus_table		; Load Bus Table address to RSI
@@ -54,23 +54,33 @@ init_net_probe_find_next_device:
 	je init_net_probe_found		; If equal then we found a supported NIC
 	jmp init_net_probe_find_next_device	; Check the next device on the bus
 
-	; A supported network interface was found, add it to the info table
+	; A supported network interface was found, add it to the temporary info table
 init_net_probe_found:
 	add byte [os_net_icount], 1	; Increment interface counter
 	mov rax, rbx			; Driver ID
 	stosq
 	mov rax, rdx			; Bus ID
 	stosq
-	jmp init_net_check_bus
+	mov rax, r9			; Pointer to entry in Bus table
+	stosq
+	jmp init_net_check_bus		; Check for another network interface
+
+init_net_search_done:
+	xor eax, eax
+	stosq				; Store blank entry to end of table
 
 	; Initialize the supported network interfaces
-init_net_search_done:
 	; TODO - Add proper address
 	mov rsi, 0x118000
+init_net_init_interface:
 	lodsq
+	cmp rax, 0			; End of table?
+	je init_net_end			; If so, bail out
 	mov rbx, rax			; Driver ID
 	lodsq
 	mov rdx, rax			; Bus ID
+	lodsq
+	mov r9, rax			; Bus table pointer
 
 	cmp bx, 0x1AF4
 	je init_net_probe_found_virtio
@@ -130,9 +140,12 @@ init_net_probe_found_r8169:
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_finish:
-	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
 	add r9, 15			; Add offset to driver enabled byte
 	mov byte [r9], 1		; Mark device as having a driver
+	jmp init_net_init_interface
+
+init_net_end:
+	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
 
 init_net_probe_not_found:
 	; Output block to screen (4/4)
