@@ -93,8 +93,8 @@ b_net_rx:
 	call qword [os_net_poll]	; Call the driver
 	cmp cx, 0
 	je b_net_rx_nodata
-	inc qword [os_net_TXPackets]
-	add qword [os_net_TXBytes], rcx
+	inc qword [os_net_RXPackets]
+	add qword [os_net_RXBytes], rcx
 
 	mov rsi, os_PacketBuffers	; Packet exists here
 	push rcx
