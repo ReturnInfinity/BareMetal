@@ -8,6 +8,9 @@
 
 ; -----------------------------------------------------------------------------
 init_hid:
+	; Configure the linear frame buffer output
+	call lfb_init
+
 	; Configure the PS/2 keyboard and mouse (if they exist)
 	call ps2_init
 

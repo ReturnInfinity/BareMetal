@@ -32,6 +32,9 @@
 %include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
 
+; HID
+%include "drivers/hid/lfb.asm"
+
 NIC_DeviceVendor_ID:	; The supported list of NICs
 
 ; Virtio
