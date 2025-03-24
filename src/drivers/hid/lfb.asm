@@ -60,7 +60,7 @@ render_done:
 	mul ecx
 	mov [Screen_Bytes], eax
 
-	call screen_clear
+	call lfb_clear
 
 	; Display A
 	mov rsi, 0x1C0000		; Font pixel data
@@ -398,18 +398,19 @@ pixel:
 
 
 ; -----------------------------------------------------------------------------
-; screen_clear -- Clear the screen
+; lfb_clear -- Clear the Linear Frame Buffer
 ;  IN:	Nothing
 ; OUT:	All registers preserved
-screen_clear:
+lfb_clear:
 	push rdi
 	push rcx
 	push rax
 
+	; Set cursor to top left corner
 	mov word [Screen_Cursor_Col], 0
 	mov word [Screen_Cursor_Row], 0
 
-	; Set the Frame Buffer to the background colour
+	; Fill the Linear Frame Buffer with the background colour
 	mov rdi, [os_screen_lfb]
 	mov eax, [BG_Color]
 	mov ecx, [Screen_Bytes]
