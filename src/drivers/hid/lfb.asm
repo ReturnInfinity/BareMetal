@@ -166,6 +166,8 @@ lfb_output_chars_nextchar:
 	je lfb_output_chars_newline	; If so then we print a new line
 	cmp al, 0x0D			; CR - Check if there was a carriage return character in the string
 	je lfb_output_chars_cr		; If so reset to column 0
+	cmp al, 0x0E			; Backspace
+	je lfb_output_backspace
 	cmp al, 9
 	je lfb_output_chars_tab
 	call output_char
@@ -196,6 +198,13 @@ lfb_output_chars_cr_clearline:
 	xor eax, eax
 	mov [Screen_Cursor_Col], ax
 	pop rcx
+	jmp lfb_output_chars_nextchar
+
+lfb_output_backspace:
+	call dec_cursor			; Decrement the cursor
+	mov al, ' '			; 0x20 is the character for a space
+	call output_char		; Write over the last typed character with the space
+	call dec_cursor			; Decrement the cursor again
 	jmp lfb_output_chars_nextchar
 
 lfb_output_chars_newline_skip_LF:
