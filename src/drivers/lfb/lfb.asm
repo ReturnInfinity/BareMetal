@@ -13,6 +13,7 @@
 lfb_init:
 	push rdx
 	push rcx
+	push rbx
 	push rax
 
 	; Convert font data to pixel data. The default 12x6 font is 72 pixels per glyph. 288 bytes per.
@@ -78,11 +79,21 @@ render_done:
 	div cx				; Divide VideoY by font_height
 	mov [Screen_Rows], ax
 
+	; Calculate lfb_glpyh_bytes
+	xor eax, eax
+	xor ecx, ecx
+	mov al, [font_height]
+	mov cl, [font_width]
+	mul ecx				; EDX:EAX := EAX * ECX
+	shl rax, 2			; Quick multiply by 4
+	mov [lfb_glpyh_bytes], eax
+
 	; Overwrite the kernel b_output function so output goes to the screen instead of the serial port
 	mov rax, lfb_output_chars
 	mov [0x100018], rax
 
 	pop rax
+	pop rbx
 	pop rcx
 	pop rdx
 	ret
@@ -317,15 +328,15 @@ load_char:
 	pop rax				; Restore the character to display
 
 	; Copy glyph data to Linear Frame Buffer
-	; Todo - Remove hardcoded values
 	mov rsi, 0x1C0000		; Font pixel data
-	mov ecx, 288			; Bytes per glyph
+	mov ecx, [lfb_glpyh_bytes]	; Bytes per glyph
 	mul ecx				; EDX:EAX := EAX * ECX
 	xor edx, edx			; Counter for font height
 	add rsi, rax
 glyph_next:
 	mov ecx, font_w
 	rep movsd
+	; Todo - Remove hardcoded values
 	add rdi, (1024 - font_w) * 4	; (Screen X - font width) * bytes per pixel
 	inc edx
 	cmp edx, font_h
@@ -408,8 +419,8 @@ lfb_clear:
 ; Font data - Only 1 font may be used
 ;%include 'drivers/lfb/fonts/smol.fnt' ; 8x4
 %include 'drivers/lfb/fonts/baremetal.fnt' ; 12x6
-;%include 'drivers/lfb/departuremono.fnt' ; 14x7
-;%include 'drivers/lfb/ibm.fnt' ; 16x8
+;%include 'drivers/lfb/fonts/departuremono.fnt' ; 14x7
+;%include 'drivers/lfb/fonts/ibm.fnt' ; 16x8
 
 
 ; Variables
@@ -419,6 +430,7 @@ FG_Color:		dd 0x00FFFFFF	; White
 BG_Color:		dd 0x00404040	; Dark grey
 Screen_Pixels:		dd 0
 Screen_Bytes:		dd 0
+lfb_glpyh_bytes:	dd 0
 Screen_Rows:		dw 0
 Screen_Cols:		dw 0
 Screen_Cursor_Row:	dw 0
