@@ -79,14 +79,36 @@ render_done:
 	div cx				; Divide VideoY by font_height
 	mov [Screen_Rows], ax
 
-	; Calculate lfb_glpyh_bytes
+	; Calculate lfb_glyph_bytes
 	xor eax, eax
 	xor ecx, ecx
 	mov al, [font_height]
 	mov cl, [font_width]
 	mul ecx				; EDX:EAX := EAX * ECX
 	shl rax, 2			; Quick multiply by 4
-	mov [lfb_glpyh_bytes], eax
+	mov [lfb_glyph_bytes], eax
+
+	; Pixels per row = font_h * [os_screen_x] * 4 * [Screen_Cursor_Row]
+	; Todo - [Screen_Cursor_Row] * (font_h * [os_screen_x] * 4)
+	; Calculate lfb_bytes_per_row
+	xor eax, eax
+	xor ecx, ecx
+	mov ax, [os_screen_x]
+	mov cx, font_h			; Font height
+	mul ecx				; EDX:EAX := EAX * ECX
+	shl rax, 2			; Quick multiply by 4
+	mov [lfb_glyph_bytes_per_row], eax
+
+	xor eax, eax
+	mov ax, font_w
+	shl rax, 2
+	mov [lfb_glyph_bytes_per_col], eax
+
+	xor eax, eax
+	mov ax, [os_screen_x]
+	sub ax, font_w
+	shl eax, 2
+	mov [lfb_glyph_next_line], rax
 
 	; Overwrite the kernel b_output function so output goes to the screen instead of the serial port
 	mov rax, lfb_output_chars
@@ -303,41 +325,33 @@ load_char:
 	; Calculate where to put glyph in the Linear Frame Buffer
 	mov rdi, [os_screen_lfb]
 
-	xor edx, edx
-	xor eax, eax
+	; Calculate offset for row into Linear Frame Buffer
 	xor ecx, ecx
-
-	; Pixels per row = font_h * [os_screen_x] * 4 * [Screen_Cursor_Row]
-	; Todo - Calculate pixel per row (font_h * [os_screen_x] * 4) in lfb_init
-	mov ax, [os_screen_x]
-	mov cx, font_h			; Font height
-	mul ecx				; EDX:EAX := EAX * ECX
-	shl rax, 2			; Quick multiply by 4
+	mov eax, [lfb_glyph_bytes_per_row]
 	mov cx, [Screen_Cursor_Row]
 	mul ecx				; EDX:EAX := EAX * ECX
 	add rdi, rax
 
-	; font_w * [Screen_Cursor_Col] * 4
-	xor eax, eax
-	mov ax, font_w
+	; Calculate offset for column into Linear Frame Buffer
+	xor ecx, ecx
+	mov eax, [lfb_glyph_bytes_per_col]
 	mov cx, [Screen_Cursor_Col]
 	mul ecx				; EDX:EAX := EAX * ECX
-	shl rax, 2			; Quick multiply by 4
 	add rdi, rax
 
 	pop rax				; Restore the character to display
 
 	; Copy glyph data to Linear Frame Buffer
 	mov rsi, 0x1C0000		; Font pixel data
-	mov ecx, [lfb_glpyh_bytes]	; Bytes per glyph
+	mov ecx, [lfb_glyph_bytes]	; Bytes per glyph
 	mul ecx				; EDX:EAX := EAX * ECX
 	xor edx, edx			; Counter for font height
-	add rsi, rax
+	add rsi, rax			; RSI points to start of glyph
+	mov rax, [lfb_glyph_next_line]
 glyph_next:
 	mov ecx, font_w
 	rep movsd
-	; Todo - Remove hardcoded values
-	add rdi, (1024 - font_w) * 4	; (Screen X - font width) * bytes per pixel
+	add rdi, rax			; Skip to next line in Linear Frame Buffer
 	inc edx
 	cmp edx, font_h
 	jne glyph_next
@@ -426,11 +440,14 @@ lfb_clear:
 ; Variables
 align 16
 
+lfb_glyph_next_line:	dq 0
 FG_Color:		dd 0x00FFFFFF	; White
 BG_Color:		dd 0x00404040	; Dark grey
 Screen_Pixels:		dd 0
 Screen_Bytes:		dd 0
-lfb_glpyh_bytes:	dd 0
+lfb_glyph_bytes:	dd 0
+lfb_glyph_bytes_per_row:	dd 0
+lfb_glyph_bytes_per_col:	dd 0
 Screen_Rows:		dw 0
 Screen_Cols:		dw 0
 Screen_Cursor_Row:	dw 0
