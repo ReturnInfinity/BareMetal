@@ -62,20 +62,6 @@ render_done:
 
 	call lfb_clear
 
-	; Display A
-	mov rsi, 0x1C0000		; Font pixel data
-	mov eax, 33 * 288		; A = 33, 288 bytes each char
-	mov ebx, 0			; Counter for font height
-	add rsi, rax
-	mov rdi, [os_screen_lfb]
-glyph_next:
-	mov ecx, font_w
-	rep movsd
-	add rdi, (1024 - font_w) * 4	; (Screen X - font width) * bytes per pixel
-	inc ebx
-	cmp ebx, font_h
-	jne glyph_next
-
 	; Calculate display parameters based on font dimensions
 	xor eax, eax
 	xor edx, edx
@@ -283,13 +269,13 @@ output_newline_done:
 ;  IN:	AL  = char to display
 ; OUT:	All registers preserved
 glyph:
+	push rdi
 	push rsi
 	push rdx
 	push rcx
-	push rbx
 	push rax
 
-	and eax, 0x000000FF
+	and eax, 0x000000FF		; Only keep AL
 	cmp al, 0x20
 	jl hidden
 	cmp al, 127
@@ -300,71 +286,53 @@ hidden:
 	mov al, 0
 load_char:
 
-	mov ecx, font_h			; Font height
-	mul ecx
-	mov rsi, font_data
-	add rsi, rax			; add offset to correct glyph
+	push rax
 
-; Calculate pixel co-ordinates for character
-	xor ebx, ebx
+	; Calculate where to put glyph
+	mov rdi, [os_screen_lfb]
+
 	xor edx, edx
 	xor eax, eax
-	mov ax, [Screen_Cursor_Row]
-	mov cx, font_h			; Font height
-	mul cx
-	mov bx, ax
-	shl ebx, 16
-	xor edx, edx
-	xor eax, eax
-	mov ax, [Screen_Cursor_Col]
-	mov cx, font_w			; Font width
-	mul cx
-	mov bx, ax
-
-	xor eax, eax
-	xor ecx, ecx			; x counter
-	xor edx, edx			; y counter
-
-glyph_nextline:
-	lodsb				; Load a line
-
-glyph_nextpixel:
-	cmp ecx, font_w			; Font width
-	je glyph_bailout		; Glyph row complete
-	rol al, 1
-	bt ax, 0
-	jc glyph_pixel
-	push rax
-	mov eax, [BG_Color]
-	call pixel
-	pop rax
-	jmp glyph_skip
-
-glyph_pixel:
-	push rax
-	mov eax, [FG_Color]
-	call pixel
-	pop rax
-
-glyph_skip:
-	inc ebx
-	inc ecx
-	jmp glyph_nextpixel
-
-glyph_bailout:
 	xor ecx, ecx
-	sub ebx, font_w			; column start
-	add ebx, 0x00010000		; next row
+
+	; Pixels per row = font_h * [os_screen_x] * 4 * [Screen_Cursor_Row]
+	mov ax, [os_screen_x]
+	mov cx, font_h			; Font height
+	mul ecx				; DX:AX := AX * CX
+	shl rax, 2
+	mov cx, [Screen_Cursor_Row]
+	mul ecx
+	add rdi, rax
+
+	; font_w * [Screen_Cursor_Col] * 4
+	xor eax, eax
+	mov ax, font_w
+	mov cx, [Screen_Cursor_Col]
+	mul ecx
+	shl rax, 2
+	add rdi, rax
+
+	pop rax
+
+	mov rsi, 0x1C0000		; Font pixel data
+	mov ecx, 288			; Bytes per glyph
+	mul ecx
+	mov edx, 0			; Counter for font height
+	add rsi, rax
+glyph_next:
+	mov ecx, font_w
+	rep movsd
+	add rdi, (1024 - font_w) * 4	; (Screen X - font width) * bytes per pixel
 	inc edx
-	cmp edx, font_h			; Font height
-	jne glyph_nextline
+	cmp edx, font_h
+	jne glyph_next
 
 glyph_done:
 	pop rax
-	pop rbx
 	pop rcx
 	pop rdx
 	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
