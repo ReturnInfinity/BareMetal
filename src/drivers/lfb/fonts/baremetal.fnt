@@ -1,9 +1,11 @@
 ; =============================================================================
-; BareMetal Monitor - Default Font
+; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2024 Return Infinity -- see LICENSE.TXT
 ;
 ; Fonts are defined in HxW (Pixel height x Pixel width)
 ; 12x6 padded to 12x8
+;
+; BareMetal (Default Font)
 ; =============================================================================
 
 

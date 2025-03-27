@@ -33,7 +33,7 @@
 %include "drivers/net/virtio-net.asm"
 
 ; HID
-%include "drivers/hid/lfb.asm"
+%include "drivers/lfb/lfb.asm"
 
 NIC_DeviceVendor_ID:	; The supported list of NICs
 

@@ -1,5 +1,5 @@
 ; =============================================================================
-; BareMetal Monitor UI
+; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2025 Return Infinity -- see LICENSE.TXT
 ;
 ; Linear Frame Buffer Output
@@ -234,7 +234,7 @@ lfb_output_chars_done:
 ;  IN:	AL  = char to display
 ; OUT:	All registers preserved
 output_char:
-	call glyph
+	call lfb_glyph
 	call inc_cursor
 	ret
 ; -----------------------------------------------------------------------------
@@ -265,16 +265,17 @@ output_newline_done:
 
 
 ; -----------------------------------------------------------------------------
-; glyph_put -- Put a glyph on the screen at the cursor location
+; lfb_glyph -- Put a glyph on the screen at the cursor location
 ;  IN:	AL  = char to display
 ; OUT:	All registers preserved
-glyph:
+lfb_glyph:
 	push rdi
 	push rsi
 	push rdx
 	push rcx
 	push rax
 
+	; Filter out characters that can't be displayed
 	and eax, 0x000000FF		; Only keep AL
 	cmp al, 0x20
 	jl hidden
@@ -286,9 +287,9 @@ hidden:
 	mov al, 0
 load_char:
 
-	push rax
+	push rax			; Save the character to display
 
-	; Calculate where to put glyph
+	; Calculate where to put glyph in the Linear Frame Buffer
 	mov rdi, [os_screen_lfb]
 
 	xor edx, edx
@@ -296,28 +297,31 @@ load_char:
 	xor ecx, ecx
 
 	; Pixels per row = font_h * [os_screen_x] * 4 * [Screen_Cursor_Row]
+	; Todo - Calculate pixel per row (font_h * [os_screen_x] * 4) in lfb_init
 	mov ax, [os_screen_x]
 	mov cx, font_h			; Font height
-	mul ecx				; DX:AX := AX * CX
-	shl rax, 2
+	mul ecx				; EDX:EAX := EAX * ECX
+	shl rax, 2			; Quick multiply by 4
 	mov cx, [Screen_Cursor_Row]
-	mul ecx
+	mul ecx				; EDX:EAX := EAX * ECX
 	add rdi, rax
 
 	; font_w * [Screen_Cursor_Col] * 4
 	xor eax, eax
 	mov ax, font_w
 	mov cx, [Screen_Cursor_Col]
-	mul ecx
-	shl rax, 2
+	mul ecx				; EDX:EAX := EAX * ECX
+	shl rax, 2			; Quick multiply by 4
 	add rdi, rax
 
-	pop rax
+	pop rax				; Restore the character to display
 
+	; Copy glyph data to Linear Frame Buffer
+	; Todo - Remove hardcoded values
 	mov rsi, 0x1C0000		; Font pixel data
 	mov ecx, 288			; Bytes per glyph
-	mul ecx
-	mov edx, 0			; Counter for font height
+	mul ecx				; EDX:EAX := EAX * ECX
+	xor edx, edx			; Counter for font height
 	add rsi, rax
 glyph_next:
 	mov ecx, font_w
@@ -359,7 +363,7 @@ pixel:
 	and ebx, 0x0000FFFF		; Isolate X co-ordinate
 	add eax, ebx			; Add X
 	mov rbx, rax			; Save the offset to RBX
-	mov rdi, [os_screen_lfb]		; Store the pixel to video memory
+	mov rdi, [os_screen_lfb]	; Store the pixel to video memory
 	pop rax				; Restore pixel details
 	shl ebx, 2			; Quickly multiply by 4
 	add rdi, rbx			; Add offset in video memory
@@ -401,15 +405,18 @@ lfb_clear:
 ; -----------------------------------------------------------------------------
 
 
-; Font data
-%include 'drivers/hid/lfb-font.fnt' ; 12x6
+; Font data - Only 1 font may be used
+;%include 'drivers/lfb/fonts/smol.fnt' ; 8x4
+%include 'drivers/lfb/fonts/baremetal.fnt' ; 12x6
+;%include 'drivers/lfb/departuremono.fnt' ; 14x7
+;%include 'drivers/lfb/ibm.fnt' ; 16x8
+
 
 ; Variables
 align 16
 
 FG_Color:		dd 0x00FFFFFF	; White
 BG_Color:		dd 0x00404040	; Dark grey
-Line_Color:		dd 0x00F7CA54	; Return Infinity Yellow/Orange
 Screen_Pixels:		dd 0
 Screen_Bytes:		dd 0
 Screen_Rows:		dw 0
