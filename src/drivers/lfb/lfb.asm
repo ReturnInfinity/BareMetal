@@ -110,6 +110,9 @@ render_done:
 	shl eax, 2
 	mov [lfb_glyph_next_line], rax
 
+	mov rax, [os_screen_lfb]
+	mov [LastLine], rax
+
 	; Overwrite the kernel b_output function so output goes to the screen instead of the serial port
 	mov rax, lfb_output_chars
 	mov [0x100018], rax
@@ -313,6 +316,7 @@ output_newline_wrap:
 	mov word [Screen_Cursor_Row], 0
 
 output_newline_done:
+	call draw_line
 	pop rax
 	ret
 ; -----------------------------------------------------------------------------
@@ -451,6 +455,60 @@ lfb_clear:
 ; -----------------------------------------------------------------------------
 
 
+; -----------------------------------------------------------------------------
+; draw_line
+draw_line:
+	push rdi
+	push rdx
+	push rcx
+	push rax
+
+; Clear the previously drawn line
+	mov rdi, [LastLine]
+	mov cx, [os_screen_ppsl]
+	mov eax, [BG_Color]
+	rep stosd
+
+; Display a line under the current cursor row
+	mov rdi, [os_screen_lfb]
+	xor ecx, ecx
+	xor eax, eax
+	mov ax, [Screen_Cursor_Row]
+	add ax, 1
+	mov cx, font_h * 4		; Font height
+	mul cx
+	mov cx, [os_screen_ppsl]
+	mul ecx				; Multiply Y by os_screen_ppsl
+	add rdi, rax
+	mov [LastLine], rdi
+	xor ecx, ecx
+	mov cx, [os_screen_ppsl]
+	mov eax, [Line_Color]
+	rep stosd
+
+; Clear the next row of text
+	mov ax, [Screen_Cursor_Row]	; Get the current cursor row
+	inc ax				; Inc by 1 as it is 0-based
+	cmp ax, [Screen_Rows]		; Compare it to the # of rows for the screen
+	jne draw_line_skip
+	mov rdi, [os_screen_lfb]	; Roll RDI back to the start of video memory
+draw_line_skip:
+	xor eax, eax
+	mov ax, [os_screen_ppsl]
+	mov ecx, font_h
+	mul ecx
+	mov ecx, eax
+	mov eax, [BG_Color]
+	rep stosd
+
+	pop rax
+	pop rcx
+	pop rdx
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
+
 ; Font data - Only 1 font may be used
 ;%include 'drivers/lfb/fonts/smol.fnt' ; 8x4
 %include 'drivers/lfb/fonts/baremetal.fnt' ; 12x6
@@ -461,9 +519,11 @@ lfb_clear:
 ; Variables
 align 16
 
+LastLine:		dq 0
 lfb_glyph_next_line:	dq 0
 FG_Color:		dd 0x00FFFFFF	; White
 BG_Color:		dd 0x00404040	; Dark grey
+Line_Color:		dd 0x00F7CA54	; Return Infinity Yellow/Orange
 Screen_Pixels:		dd 0
 Screen_Bytes:		dd 0
 lfb_glyph_bytes:	dd 0
