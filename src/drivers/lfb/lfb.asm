@@ -123,7 +123,7 @@ render_done:
 
 
 ; -----------------------------------------------------------------------------
-; inc_cursor -- Increment the cursor by one, scroll if needed
+; inc_cursor -- Increment the cursor by one
 ;  IN:	Nothing
 ; OUT:	All registers preserved
 inc_cursor:
@@ -138,7 +138,7 @@ inc_cursor:
 	mov ax, [Screen_Cursor_Row]
 	cmp ax, [Screen_Rows]		; Compare it to the # of rows for the screen
 	jne inc_cursor_done		; If not equal we are done
-	mov word [Screen_Cursor_Row], 0
+	mov word [Screen_Cursor_Row], 0	; Wrap around
 inc_cursor_done:
 	pop rax
 	ret
@@ -155,7 +155,7 @@ dec_cursor:
 	cmp word [Screen_Cursor_Col], 0	; Compare the current cursor column to 0
 	jne dec_cursor_done		; If not equal we are done
 	dec word [Screen_Cursor_Row]	; Otherwise decrement the row
-	mov ax, [Screen_Cols]		; Get the total colums and save it as the current
+	mov ax, [Screen_Cols]		; Get the total columns and save it as the current
 	mov word [Screen_Cursor_Col], ax
 
 dec_cursor_done:
@@ -181,14 +181,23 @@ lfb_output_chars_nextchar:
 	jz lfb_output_chars_done
 	dec rcx
 	lodsb				; Get char from string and store in AL
+	cmp al, 0x20
+	jge lfb_output_chars_nextchar_output
 	cmp al, 0x0A			; LF - Check if there was a newline (aka line feed) character in the string
 	je lfb_output_chars_newline	; If so then we print a new line
 	cmp al, 0x0D			; CR - Check if there was a carriage return character in the string
 	je lfb_output_chars_cr		; If so reset to column 0
 	cmp al, 0x0E			; Backspace
 	je lfb_output_backspace
-	cmp al, 9
+	cmp al, 0x09
 	je lfb_output_chars_tab
+	cmp al, 0x01			; Clear Screen
+	je lfb_output_cls
+	cmp al, 0x02			; Increment Cursor
+	je lfb_output_inc_cursor
+	cmp al, 0x03			; Decrement Cursor
+	je lfb_output_dec_cursor
+lfb_output_chars_nextchar_output:
 	call output_char
 	jmp lfb_output_chars_nextchar
 
@@ -252,6 +261,18 @@ lfb_output_chars_tab_next:
 	dec cx
 	jnz lfb_output_chars_tab_next
 	pop rcx
+	jmp lfb_output_chars_nextchar
+
+lfb_output_cls:
+	call lfb_clear
+	jmp lfb_output_chars_nextchar
+
+lfb_output_inc_cursor:
+	call inc_cursor
+	jmp lfb_output_chars_nextchar
+
+lfb_output_dec_cursor:
+	call dec_cursor
 	jmp lfb_output_chars_nextchar
 
 lfb_output_chars_done:

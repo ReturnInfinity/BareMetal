@@ -32,7 +32,7 @@
 %include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
 
-; HID
+; Video
 %include "drivers/lfb/lfb.asm"
 
 NIC_DeviceVendor_ID:	; The supported list of NICs
