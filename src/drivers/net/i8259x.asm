@@ -152,9 +152,9 @@ net_i8259x_reset_nextdesc:
 	; Set RX to disabled
 	xor eax, eax			; RXEN = 0
 	mov [rsi+i8259x_RXCTRL], eax
-	; Set packet buffer
-	mov eax, 32768
-	mov [rsi+i8259x_RXPBSIZE], eax
+;	; Set packet buffer
+;	mov eax, 32768
+;	mov [rsi+i8259x_RXPBSIZE], eax
 	; Set Max packet size
 	mov eax, 9000			; 9000 bytes
 	shl eax, 16			; Shift to bits 31:16
@@ -426,7 +426,7 @@ i8259x_rx_lasthead: dd 0
 
 ; Constants
 i8259x_MAX_PKT_SIZE	equ 16384
-i8259x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
+i8259x_MAX_DESC		equ 4096	; Must be 16, 32, 64, 128, etc.
 
 ; Register list (All registers should be accessed as 32-bit values)
 
