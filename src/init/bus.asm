@@ -28,11 +28,6 @@
 
 ; -----------------------------------------------------------------------------
 init_bus:
-	; Debug output
-	mov rsi, msg_init_bus
-	mov rcx, 6
-	call b_output
-
 	mov rdi, bus_table		; Address of Bus Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
 
