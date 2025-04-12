@@ -40,11 +40,6 @@ start:
 	call init_net			; Initialize network
 	call init_hid			; Initialize human interface devices
 
-	; Output system ready message
-	mov rsi, msg_ready
-	mov rcx, 18
-	call b_output
-
 	; Copy the payload after the kernel to the proper address
 	mov rsi, 0x100000 + KERNELSIZE	; Payload starts right after the kernel
 	cmp qword [rsi], 0		; Is there a payload after the kernel?

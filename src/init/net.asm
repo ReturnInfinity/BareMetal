@@ -9,11 +9,6 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
-	; Debug output
-	mov rsi, msg_init_net
-	mov rcx, 6
-	call b_output
-
 	; Check Bus Table for a Ethernet device
 	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 16

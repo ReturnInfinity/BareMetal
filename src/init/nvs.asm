@@ -9,11 +9,6 @@
 ; -----------------------------------------------------------------------------
 ; init_nvs -- Configure the first non-volatile storage device it finds
 init_nvs:
-	; Debug output
-	mov rsi, msg_init_nvs
-	mov rcx, 6
-	call b_output
-
 	; Check Bus Table for NVMe
 	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 16

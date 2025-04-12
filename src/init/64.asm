@@ -109,6 +109,9 @@ make_interrupt_gate_stubs:
 	mov rax, 0x200000		; Stacks start at 2MiB
 	mov [os_StackBase], rax
 
+	; Initialize the linear frame buffer output
+	call lfb_init
+
 	; Initialize the APIC
 	call os_apic_init
 
@@ -138,16 +141,6 @@ no_more_aps:
 
 	; Configure the serial port
 	call serial_init
-
-	; Output BareMetal start message
-	mov rsi, msg_start
-	mov rcx, 15
-	call b_output
-
-	; Debug output
-	mov rsi, msg_init_64
-	mov rcx, 6
-	call b_output
 
 	; Output block to screen (1/4)
 	mov ebx, 0

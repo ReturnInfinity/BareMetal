@@ -53,7 +53,7 @@ os_debug_dump_al_l:
 	push rcx
 	mov rsi, tchar
 	mov rcx, 2
-	call [0x00100018]		; b_output
+	call b_output
 	pop rcx
 	pop rsi
 	ret
@@ -132,7 +132,7 @@ os_debug_newline:
 	push rcx
 	mov rsi, newline
 	mov rcx, 2
-	call [0x00100018]		; b_output
+	call b_output
 	pop rcx
 	pop rsi
 	ret
@@ -148,7 +148,7 @@ os_debug_space:
 	push rcx
 	mov rsi, space
 	mov rcx, 1
-	call [0x00100018]		; b_output
+	call b_output
 	pop rcx
 	pop rsi
 	ret

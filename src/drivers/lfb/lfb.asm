@@ -61,7 +61,7 @@ render_done:
 	mul ecx
 	mov [Screen_Bytes], eax
 
-	call lfb_clear
+;	call lfb_clear
 
 	; Calculate display parameters based on font dimensions
 	xor eax, eax
@@ -126,42 +126,42 @@ render_done:
 
 
 ; -----------------------------------------------------------------------------
-; inc_cursor -- Increment the cursor by one
+; lfb_inc_cursor -- Increment the cursor by one
 ;  IN:	Nothing
 ; OUT:	All registers preserved
-inc_cursor:
+lfb_inc_cursor:
 	push rax
 
 	inc word [Screen_Cursor_Col]	; Increment the current cursor column
 	mov ax, [Screen_Cursor_Col]
 	cmp ax, [Screen_Cols]		; Compare it to the # of columns for the screen
-	jne inc_cursor_done		; If not equal we are done
+	jne lfb_inc_cursor_done		; If not equal we are done
 	mov word [Screen_Cursor_Col], 0	; Reset column to 0
 	inc word [Screen_Cursor_Row]	; Increment the current cursor row
 	mov ax, [Screen_Cursor_Row]
 	cmp ax, [Screen_Rows]		; Compare it to the # of rows for the screen
-	jne inc_cursor_done		; If not equal we are done
+	jne lfb_inc_cursor_done		; If not equal we are done
 	mov word [Screen_Cursor_Row], 0	; Wrap around
-inc_cursor_done:
+lfb_inc_cursor_done:
 	pop rax
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; dec_cursor -- Decrement the cursor by one
+; lfb_dec_cursor -- Decrement the cursor by one
 ;  IN:	Nothing
 ; OUT:	All registers preserved
-dec_cursor:
+lfb_dec_cursor:
 	push rax
 
 	cmp word [Screen_Cursor_Col], 0	; Compare the current cursor column to 0
-	jne dec_cursor_done		; If not equal we are done
+	jne lfb_dec_cursor_done		; If not equal we are done
 	dec word [Screen_Cursor_Row]	; Otherwise decrement the row
 	mov ax, [Screen_Cols]		; Get the total columns and save it as the current
 	mov word [Screen_Cursor_Col], ax
 
-dec_cursor_done:
+lfb_dec_cursor_done:
 	dec word [Screen_Cursor_Col]	; Decrement the cursor as usual
 
 	pop rax
@@ -194,6 +194,7 @@ lfb_output_chars_nextchar:
 	je lfb_output_backspace
 	cmp al, 0x09
 	je lfb_output_chars_tab
+	; Check for special characters
 	cmp al, 0x01			; Clear Screen
 	je lfb_output_cls
 	cmp al, 0x02			; Increment Cursor
@@ -201,14 +202,14 @@ lfb_output_chars_nextchar:
 	cmp al, 0x03			; Decrement Cursor
 	je lfb_output_dec_cursor
 lfb_output_chars_nextchar_output:
-	call output_char
+	call lfb_output_char
 	jmp lfb_output_chars_nextchar
 
 lfb_output_chars_newline:
 	mov al, [rsi]
 	cmp al, 0x0A
 	je lfb_output_chars_newline_skip_LF
-	call output_newline
+	call lfb_output_newline
 	jmp lfb_output_chars_nextchar
 
 lfb_output_chars_cr:
@@ -222,7 +223,7 @@ lfb_output_chars_cr:
 	mov cx, [Screen_Cols]
 	mov al, ' '
 lfb_output_chars_cr_clearline:
-	call output_char
+	call lfb_output_char
 	dec cx
 	jnz lfb_output_chars_cr_clearline
 	dec word [Screen_Cursor_Row]
@@ -232,10 +233,10 @@ lfb_output_chars_cr_clearline:
 	jmp lfb_output_chars_nextchar
 
 lfb_output_backspace:
-	call dec_cursor			; Decrement the cursor
+	call lfb_dec_cursor		; Decrement the cursor
 	mov al, ' '			; 0x20 is the character for a space
-	call output_char		; Write over the last typed character with the space
-	call dec_cursor			; Decrement the cursor again
+	call lfb_output_char		; Write over the last typed character with the space
+	call lfb_dec_cursor		; Decrement the cursor again
 	jmp lfb_output_chars_nextchar
 
 lfb_output_chars_newline_skip_LF:
@@ -245,7 +246,7 @@ lfb_output_chars_newline_skip_LF:
 
 lfb_output_chars_newline_skip_LF_nosub:
 	inc rsi
-	call output_newline
+	call lfb_output_newline
 	jmp lfb_output_chars_nextchar
 
 lfb_output_chars_tab:
@@ -260,7 +261,7 @@ lfb_output_chars_tab:
 	mov al, ' '
 
 lfb_output_chars_tab_next:
-	call output_char
+	call lfb_output_char
 	dec cx
 	jnz lfb_output_chars_tab_next
 	pop rcx
@@ -268,14 +269,15 @@ lfb_output_chars_tab_next:
 
 lfb_output_cls:
 	call lfb_clear
+	call lfb_draw_line
 	jmp lfb_output_chars_nextchar
 
 lfb_output_inc_cursor:
-	call inc_cursor
+	call lfb_inc_cursor
 	jmp lfb_output_chars_nextchar
 
 lfb_output_dec_cursor:
-	call dec_cursor
+	call lfb_dec_cursor
 	jmp lfb_output_chars_nextchar
 
 lfb_output_chars_done:
@@ -287,36 +289,36 @@ lfb_output_chars_done:
 
 
 ; -----------------------------------------------------------------------------
-; output_char -- Displays a char
+; lfb_output_char -- Displays a char
 ;  IN:	AL  = char to display
 ; OUT:	All registers preserved
-output_char:
+lfb_output_char:
 	call lfb_glyph
-	call inc_cursor
+	call lfb_inc_cursor
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; output_newline -- Reset cursor to start of next line and wrap if needed
+; lfb_output_newline -- Reset cursor to start of next line and wrap if needed
 ;  IN:	Nothing
 ; OUT:	All registers preserved
-output_newline:
+lfb_output_newline:
 	push rax
 
 	mov word [Screen_Cursor_Col], 0	; Reset column to 0
 	mov ax, [Screen_Rows]		; Grab max rows on screen
 	dec ax				; and subtract 1
 	cmp ax, [Screen_Cursor_Row]	; Is the cursor already on the bottom row?
-	je output_newline_wrap		; If so, then wrap
+	je lfb_output_newline_wrap	; If so, then wrap
 	inc word [Screen_Cursor_Row]	; If not, increment the cursor to next row
-	jmp output_newline_done
+	jmp lfb_output_newline_done
 
-output_newline_wrap:
+lfb_output_newline_wrap:
 	mov word [Screen_Cursor_Row], 0
 
-output_newline_done:
-	call draw_line
+lfb_output_newline_done:
+	call lfb_draw_line
 	pop rax
 	ret
 ; -----------------------------------------------------------------------------
@@ -373,15 +375,15 @@ load_char:
 	xor edx, edx			; Counter for font height
 	add rsi, rax			; RSI points to start of glyph
 	mov rax, [lfb_glyph_next_line]
-glyph_next:
+lfb_glyph_next:
 	mov ecx, font_w
 	rep movsd
 	add rdi, rax			; Skip to next line in Linear Frame Buffer
 	inc edx
 	cmp edx, font_h
-	jne glyph_next
+	jne lfb_glyph_next
 
-glyph_done:
+lfb_glyph_done:
 	pop rax
 	pop rcx
 	pop rdx
@@ -392,11 +394,11 @@ glyph_done:
 
 
 ; -----------------------------------------------------------------------------
-; pixel -- Put a pixel on the screen
+; lfb_pixel -- Put a pixel on the screen
 ;  IN:	EBX = Packed X & Y coordinates (YYYYXXXX)
 ;	EAX = Pixel Details (AARRGGBB)
 ; OUT:	All registers preserved
-pixel:
+lfb_pixel:
 	push rdi
 	push rdx
 	push rcx
@@ -456,8 +458,8 @@ lfb_clear:
 
 
 ; -----------------------------------------------------------------------------
-; draw_line
-draw_line:
+; lfb_draw_line
+lfb_draw_line:
 	push rdi
 	push rdx
 	push rcx
@@ -490,9 +492,9 @@ draw_line:
 	mov ax, [Screen_Cursor_Row]	; Get the current cursor row
 	inc ax				; Inc by 1 as it is 0-based
 	cmp ax, [Screen_Rows]		; Compare it to the # of rows for the screen
-	jne draw_line_skip
+	jne lfb_draw_line_skip
 	mov rdi, [os_screen_lfb]	; Roll RDI back to the start of video memory
-draw_line_skip:
+lfb_draw_line_skip:
 	xor eax, eax
 	mov ax, [os_screen_ppsl]
 	mov ecx, font_h
@@ -510,6 +512,7 @@ draw_line_skip:
 
 
 ; Font data - Only 1 font may be used
+align 16
 ;%include 'drivers/lfb/fonts/smol.fnt' ; 8x4
 %include 'drivers/lfb/fonts/baremetal.fnt' ; 12x6
 ;%include 'drivers/lfb/fonts/departuremono.fnt' ; 14x7

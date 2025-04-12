@@ -37,15 +37,17 @@ b_output:
 	push rcx			; Counter of chars left to output
 	push rax			; AL is used for the output function
 
-	bt qword [os_SysConfEn], 1 << 2
-	jnc b_output_done
+	call [0x00100018]
 
-b_output_nextchar:
-	jrcxz b_output_done		; If RCX is 0 then the function is complete
-	dec rcx
-	lodsb				; Get char from string and store in AL
-	call serial_send
-	jmp b_output_nextchar
+;	bt qword [os_SysConfEn], 1 << 2
+;	jnc b_output_done
+;
+;b_output_nextchar:
+;	jrcxz b_output_done		; If RCX is 0 then the function is complete
+;	dec rcx
+;	lodsb				; Get char from string and store in AL
+;	call serial_send
+;	jmp b_output_nextchar
 
 b_output_done:
 	pop rax

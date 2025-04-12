@@ -357,12 +357,12 @@ exception_gate_main:
 	call os_debug_newline
 	mov rsi, int_string00
 	mov rcx, 6
-	call [0x00100018]		; b_output
+	call b_output
 	call b_smp_get_id		; Get the local CPU ID and print it
 	call os_debug_dump_ax
 	mov rsi, int_string01
 	mov rcx, 15
-	call [0x00100018]		; b_output
+	call b_output
 	mov rsi, exc_string00
 	pop rax
 	and rax, 0x00000000000000FF	; Clear out everything in RAX except for AL
@@ -373,7 +373,7 @@ exception_gate_main:
 	pop rax
 	mov bl, 0x0F
 	mov rcx, 6
-	call [0x00100018]		; b_output
+	call b_output
 	pop rcx
 	pop rsi
 	pop rdi
@@ -403,7 +403,7 @@ exception_gate_main:
 	xor ebx, ebx			; Counter of registers output per line
 	call os_debug_newline
 exception_gate_main_nextreg:
-	call [0x00100018]		; b_output
+	call b_output
 	add rsi, 4
 	pop rax
 	call os_debug_dump_rax
@@ -418,12 +418,12 @@ exception_gate_main_nextreg_space:
 exception_gate_main_nextreg_continue:
 	dec edx
 	jnz exception_gate_main_nextreg
-	call [0x00100018]		; b_output
+	call b_output
 	mov rax, [rsp+8] 		; RIP of caller
 	call os_debug_dump_rax
 	call os_debug_space
 	add rsi, 4
-	call [0x00100018]		; b_output
+	call b_output
 	mov rax, cr2
 	call os_debug_dump_rax
 
