@@ -34,4 +34,17 @@ jobs:
     - name: Build img
       run: ./build.sh
 
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: install nasm
+      run: choco install nasm
+
+    - name: Build img
+      run: ./build.sh
   
