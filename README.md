@@ -1,3 +1,5 @@
+[![CI](https://github.com/ReturnInfinity/BareMetal/actions/workflows/main.yml/badge.svg)](https://github.com/ReturnInfinity/BareMetal/actions/workflows/main.yml)
+
 # BareMetal
 
 _Just enough kernel_
