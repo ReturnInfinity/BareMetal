@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ '*' ]
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: nasm
+      run: brew install nasm
+
+    - name: Build
+      run: ./build.sh
+
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: install nasm
+      run: sudo apt install nasm
+
+    - name: Build img
+      run: ./build.sh
+
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: install nasm
+      run: choco install nasm
+
+    - name: Build img
+      run: ./build.sh
+  
