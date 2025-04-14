@@ -17,7 +17,7 @@ lfb_init:
 	push rax
 
 	; Convert font data to pixel data. The default 12x6 font is 72 pixels per glyph. 288 bytes per.
-	mov rdi, 0x1C0000
+	mov rdi, os_font
 	mov rsi, font_data
 	xor ebx, ebx
 next_char:
@@ -369,7 +369,7 @@ load_char:
 	pop rax				; Restore the character to display
 
 	; Copy glyph data to Linear Frame Buffer
-	mov rsi, 0x1C0000		; Font pixel data
+	mov rsi, os_font		; Font pixel data
 	mov ecx, [lfb_glyph_bytes]	; Bytes per glyph
 	mul ecx				; EDX:EAX := EAX * ECX
 	xor edx, edx			; Counter for font height

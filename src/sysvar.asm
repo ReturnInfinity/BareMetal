@@ -47,7 +47,10 @@ os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive 
 os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
 os_PacketBuffers:	equ 0x00000000001B0000	; 0x1B0000 -> 0x1BFFFF	64K Ethernet packet buffers
 
-						; 0x1C0000 -> 0x1EFFFF	192K Free
+; LFB font data
+os_font:		equ 0x00000000001C0000	; 0x1C0000 -> 0x1CFFFF	64K Font video data
+
+						; 0x1D0000 -> 0x1DFFFF	64K Free
 
 ; Misc memory
 os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
