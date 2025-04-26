@@ -2,17 +2,28 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2025 Return Infinity -- see LICENSE.TXT
 ;
-; APIC Functions
+; APIC/x2APIC Functions
 ; =============================================================================
 
 
 ; -----------------------------------------------------------------------------
-; os_apic_init -- Initialize the APIC
+; os_apic_init -- Initialize the APIC/x2APIC
 ;  IN:	Nothing
 ; OUT:	Nothing
 ;	All other registers preserved
 os_apic_init:
 	mov ecx, APIC_VER
+
+	mov ax, [os_boot_arch]
+	bt ax, 6		; x2APIC
+	jnc os_apic_init_apic
+
+os_apic_init_x2apic:
+	call os_x2apic_read
+	mov [os_apic_ver], eax
+	ret
+
+os_apic_init_apic:
 	call os_apic_read
 	mov [os_apic_ver], eax
 	ret
@@ -45,7 +56,40 @@ os_apic_write:
 ; -----------------------------------------------------------------------------
 
 
+; -----------------------------------------------------------------------------
+; os_x2apic_read -- Read from a register in the x2APIC
+;  IN:	ECX = Register to read
+; OUT:	EAX = Register value (bits 31:0)
+;	EDX = Register value (bits 63:32)
+;	All other registers preserved
+os_x2apic_read:
+	push rcx
+	shr ecx, 4			; Quick divide by 16
+	add ecx, 0x800			; Base MSR for x2APIC
+	rdmsr				; Read MSR to EDX:EAX
+	pop rcx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; os_x2apic_write -- Write to a register in the x2APIC
+;  IN:	ECX = Register to write
+;	EAX = Value to write (bits 31:0)
+;	EDX = Value to write (bits 63:32)
+; OUT:	All registers preserved
+os_x2apic_write:
+	push rcx
+	shr ecx, 4			; Quick divide by 16
+	add ecx, 0x800			; Base MSR for x2APIC
+	wrmsr				; Write EDX:EAX to MSR
+	pop rcx
+	ret
+; -----------------------------------------------------------------------------
+
+
 ; Register list
+; os_x2apic_* functions shift all registers right by 4 bits. ex: APIC_ID is 0x020 and x2APIC_ID is 0x002
 ; 0x000 - 0x010 are Reserved
 APIC_ID		equ 0x020		; ID Register
 APIC_VER	equ 0x030		; Version Register
@@ -63,6 +107,7 @@ APIC_TMR	equ 0x180		; Trigger Mode Register (Starting Address)
 APIC_IRR	equ 0x200		; Interrupt Request Register (Starting Address)
 APIC_ESR	equ 0x280		; Error Status Register
 ; 0x290 - 0x2E0 are Reserved
+APIC_ICR	equ 0x300		; x2APIC Interrupt Command Register
 APIC_ICRL	equ 0x300		; Interrupt Command Register (low 32 bits)
 APIC_ICRH	equ 0x310		; Interrupt Command Register (high 32 bits)
 APIC_LVT_TMR	equ 0x320		; LVT Timer Register

@@ -60,7 +60,7 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
-os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI
+os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI, 6=x2APIC
 os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
 os_net_transmit:	equ os_SystemVariables + 0x0028
