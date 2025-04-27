@@ -14,8 +14,7 @@
 os_apic_init:
 	mov ecx, APIC_VER
 
-	mov ax, [os_boot_arch]
-	bt ax, 6		; x2APIC
+	bt qword [os_SysConfEn], 6
 	jnc os_apic_init_apic
 
 os_apic_init_x2apic:

@@ -50,12 +50,8 @@ start:
 
 	; Set the payload to run
 bsp_run_payload:
-	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
-	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
-	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
-	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
-	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
-	mov [os_BSP], al		; Keep a record of the BSP APIC ID
+	call b_smp_clear_tpr
+	call b_smp_get_id
 	mov ebx, eax			; Save the APIC ID
 	mov rdi, os_SMP			; Clear the entry in the work table
 	shl rax, 3			; Quick multiply by 8 to get to proper record
@@ -76,11 +72,8 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	cli				; Disable interrupts on this core
 
 	; Get local ID of the core
-	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
-	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
-	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
-	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
-	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
+	call b_smp_clear_tpr
+	call b_smp_get_id
 	mov ebx, eax			; Save the APIC ID
 
 	; Clear the entry in the work table

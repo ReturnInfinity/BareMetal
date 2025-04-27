@@ -27,6 +27,37 @@ interrupt_gate:				; handler for all other interrupts
 
 
 ; -----------------------------------------------------------------------------
+; Acknowledge an interrupt
+align 8
+int_ack:
+	push rdx
+	push rcx
+	push rax
+
+	bt qword [os_SysConfEn], 6
+	jnc int_ack_apic
+
+int_ack_x2apic:
+	mov ecx, APIC_EOI
+	xor edx, edx
+	xor eax, eax
+	call os_x2apic_write
+	jmp int_ack_done
+
+int_ack_apic:
+	mov ecx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+int_ack_done:
+	pop rax
+	pop rcx
+	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; Keyboard interrupt. IRQ 0x01, INT 0x21
 ; This IRQ runs whenever there is input on the keyboard
 align 8
@@ -36,10 +67,11 @@ int_keyboard:
 
 	call ps2_keyboard_interrupt	; Call keyboard interrupt code in PS/2 driver
 
-	; Acknowledge the IRQ
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
+;	; Acknowledge the IRQ
+;	mov ecx, APIC_EOI
+;	xor eax, eax
+;	call os_apic_write
+	call int_ack
 
 	call b_smp_wakeup_all		; A terrible hack
 
@@ -101,9 +133,10 @@ int_mouse:
 
 int_mouse_end:
 	; Acknowledge the interrupt
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
+;	mov ecx, APIC_EOI
+;	xor eax, eax
+;	call os_apic_write
+	call int_ack
 
 	pop rax
 	pop rcx
@@ -119,9 +152,10 @@ hpet:
 	push rcx
 	push rax
 
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
+;	mov ecx, APIC_EOI
+;	xor eax, eax
+;	call os_apic_write
+	call int_ack
 
 	pop rax
 	pop rcx
@@ -137,9 +171,10 @@ ap_wakeup:
 	push rax
 
 	; Acknowledge the IPI
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
+;	mov ecx, APIC_EOI
+;	xor eax, eax
+;	call os_apic_write
+	call int_ack
 
 	pop rax
 	pop rcx
@@ -149,9 +184,20 @@ ap_wakeup:
 
 ; -----------------------------------------------------------------------------
 ; Resets a CPU to execute ap_clear
+; Don't use called functions as we can't guarantee the state of the stack
 align 8
 ap_reset:
-	; Don't use 'os_apic_write' as we can't guarantee the state of the stack
+	bt qword [os_SysConfEn], 6
+	jnc ap_reset_apic
+
+ap_reset_x2apic:
+	mov ecx, 0x80B
+	xor eax, eax
+	xor edx, edx
+	wrmsr
+	iretq
+
+ap_reset_apic:
 	mov rax, ap_clear		; Set RAX to the address of ap_clear
 	mov [rsp], rax			; Overwrite the return address on the CPU's stack
 	mov rdi, [os_LocalAPICAddress]	; Acknowledge the IPI

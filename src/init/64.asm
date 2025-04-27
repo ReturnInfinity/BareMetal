@@ -24,6 +24,12 @@ init_64:
 	mov esi, 0x00005012		; CORES_ACTIVE
 	lodsw
 	mov [os_NumCores], ax
+	mov esi, 0x0000501F		; x2APIC
+	lodsb
+	cmp al, 1
+	jne nox2APIC
+	bts qword [os_SysConfEn], 6
+nox2APIC:
 	mov esi, 0x00005020		; RAMAMOUNT
 	lodsd
 	sub eax, 2			; Save 2 MiB for the CPU stacks
@@ -123,15 +129,16 @@ make_interrupt_gate_stubs:
 
 	; Initialize all AP's to run our reset code. Skip the BSP
 	call b_smp_get_id
+	mov [os_BSP], eax		; Keep a record of the BSP APIC ID
 	mov ebx, eax
 	xor eax, eax
-	mov cx, 255
+	mov cx, 64
 	mov esi, 0x00005100		; Location in memory of the Pure64 CPU data
 next_ap:
 	test cx, cx
 	jz no_more_aps
-	lodsb				; Load the CPU APIC ID
-	cmp al, bl
+	lodsd				; Load the CPU APIC ID
+	cmp eax, ebx
 	je skip_ap
 	call b_smp_reset		; Reset the CPU
 skip_ap:

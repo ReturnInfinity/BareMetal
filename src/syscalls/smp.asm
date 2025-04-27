@@ -18,15 +18,10 @@ b_smp_reset:
 
 	cli
 
-	mov ax, [os_boot_arch]
-	bt ax, 6		; x2APIC
+	bt qword [os_SysConfEn], 6
 	jnc b_smp_reset_apic
 
 b_smp_reset_x2apic:
-	mov ecx, APIC_ICR
-	call os_x2apic_read
-	bt eax, 12		; Check if Delivery Status is 0 (Idle)
-	jc b_smp_reset_x2apic	; If not, wait - a send is already pending
 	mov rdx, [rsp]		; Retrieve CPU APIC # from the stack
 	mov ecx, APIC_ICR
 	mov eax, 0x81
@@ -68,8 +63,7 @@ b_smp_wakeup:
 
 	cli
 
-	mov ax, [os_boot_arch]
-	bt ax, 6		; x2APIC
+	bt qword [os_SysConfEn], 6
 	jnc b_smp_wakeup_apic
 
 b_smp_wakeup_x2apic:
@@ -118,8 +112,7 @@ b_smp_wakeup_all:
 
 	cli
 
-	mov ax, [os_boot_arch]
-	bt ax, 6		; x2APIC
+	bt qword [os_SysConfEn], 6
 	jnc b_smp_wakeup_all_apic
 
 b_smp_wakeup_all_x2apic:
@@ -156,6 +149,37 @@ b_smp_wakeup_all_done:
 
 
 ; -----------------------------------------------------------------------------
+; b_smp_clear_tpr - Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
+;  IN:	Nothing
+; OUT:	Nothing
+b_smp_clear_tpr:
+	push rdx
+	push rcx
+	push rax
+
+	mov ecx, APIC_TPR
+	xor eax, eax
+	xor edx, edx
+
+	bt qword [os_SysConfEn], 6
+	jnc b_smp_clear_tpr_apic
+
+b_smp_clear_tp_x2apic:
+	call os_x2apic_write
+	jmp b_smp_clear_tpr_done
+
+b_smp_clear_tpr_apic:
+	call os_apic_write
+
+b_smp_clear_tpr_done:
+	pop rax
+	pop rcx
+	pop rdx
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; b_smp_get_id -- Returns the APIC ID of the CPU that ran this function
 ;  IN:	Nothing
 ; OUT:	EAX = CPU's APIC ID number, All other registers preserved.
@@ -165,8 +189,7 @@ b_smp_get_id:
 
 	mov ecx, APIC_ID
 
-	mov ax, [os_boot_arch]
-	bt ax, 6		; x2APIC
+	bt qword [os_SysConfEn], 6
 	jnc b_smp_get_id_apic
 
 b_smp_get_id_x2apic:
