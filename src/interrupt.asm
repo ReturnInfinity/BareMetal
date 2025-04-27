@@ -34,19 +34,18 @@ int_ack:
 	push rcx
 	push rax
 
+	mov ecx, APIC_EOI
+	xor edx, edx
+	xor eax, eax
+
 	bt qword [os_SysConfEn], 6
 	jnc int_ack_apic
 
 int_ack_x2apic:
-	mov ecx, APIC_EOI
-	xor edx, edx
-	xor eax, eax
 	call os_x2apic_write
 	jmp int_ack_done
 
 int_ack_apic:
-	mov ecx, APIC_EOI
-	xor eax, eax
 	call os_apic_write
 
 int_ack_done:
@@ -67,11 +66,7 @@ int_keyboard:
 
 	call ps2_keyboard_interrupt	; Call keyboard interrupt code in PS/2 driver
 
-;	; Acknowledge the IRQ
-;	mov ecx, APIC_EOI
-;	xor eax, eax
-;	call os_apic_write
-	call int_ack
+	call int_ack			; Acknowledge the IRQ
 
 	call b_smp_wakeup_all		; A terrible hack
 
@@ -132,11 +127,7 @@ int_mouse:
 	pop rdi
 
 int_mouse_end:
-	; Acknowledge the interrupt
-;	mov ecx, APIC_EOI
-;	xor eax, eax
-;	call os_apic_write
-	call int_ack
+	call int_ack			; Acknowledge the IRQ
 
 	pop rax
 	pop rcx
@@ -152,10 +143,7 @@ hpet:
 	push rcx
 	push rax
 
-;	mov ecx, APIC_EOI
-;	xor eax, eax
-;	call os_apic_write
-	call int_ack
+	call int_ack			; Acknowledge the IRQ
 
 	pop rax
 	pop rcx
@@ -170,11 +158,7 @@ ap_wakeup:
 	push rcx
 	push rax
 
-	; Acknowledge the IPI
-;	mov ecx, APIC_EOI
-;	xor eax, eax
-;	call os_apic_write
-	call int_ack
+	call int_ack			; Acknowledge the IRQ
 
 	pop rax
 	pop rcx
@@ -191,19 +175,21 @@ ap_reset:
 	jnc ap_reset_apic
 
 ap_reset_x2apic:
+;	mov rax, ap_clear		; Set RAX to the address of ap_clear
+;	mov [rsp], rax			; Overwrite the return address on the CPU's stack
 	mov ecx, 0x80B
 	xor eax, eax
 	xor edx, edx
-	wrmsr
-	iretq
+	wrmsr				; Acknowledge the IPI
+	iretq				; Return from the IPI. CPU will execute code at ap_clear
 
 ap_reset_apic:
 	mov rax, ap_clear		; Set RAX to the address of ap_clear
 	mov [rsp], rax			; Overwrite the return address on the CPU's stack
-	mov rdi, [os_LocalAPICAddress]	; Acknowledge the IPI
+	mov rdi, [os_LocalAPICAddress]
 	add rdi, 0xB0
 	xor eax, eax
-	stosd
+	stosd				; Acknowledge the IPI
 	iretq				; Return from the IPI. CPU will execute code at ap_clear
 ; -----------------------------------------------------------------------------
 

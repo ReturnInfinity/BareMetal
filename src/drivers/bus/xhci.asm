@@ -1618,9 +1618,7 @@ xhci_int0:
 	mov [rdi+xHCI_IR_ERDP], rax
 
 	; Acknowledge the interrupt
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
+	call int_ack
 
 	pop rax
 	pop rcx
@@ -1709,9 +1707,7 @@ xhci_int1:
 	call xhci_ring_doorbell
 
 	; Acknowledge the interrupt
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
+	call int_ack
 
 	pop rax
 	pop rcx
@@ -1725,9 +1721,7 @@ xhci_int1:
 align 8
 xhci_int_stub:
 	; Acknowledge the interrupt
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
+	call int_ack
 
 	iretq
 ; -----------------------------------------------------------------------------
