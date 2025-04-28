@@ -324,8 +324,8 @@ b_smp_busy_read:
 	cmp bl, cl		; Compare entry to local APIC ID
 	je b_smp_busy_skip	; Skip the entry for the current CPU
 	inc cx
-	cmp al, 0x01		; Bit 0 (Present) can be 0 or 1
-	jg b_smp_busy_yes
+	cmp rax, 0x01		; Bit 0 (Present) can be 0 or 1
+	ja b_smp_busy_yes
 	cmp cx, 0x100		; Only read up to 256 CPU cores
 	jne b_smp_busy_read
 
