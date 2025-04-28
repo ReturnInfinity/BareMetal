@@ -121,6 +121,39 @@ APIC_TMRCURRCNT	equ 0x390		; Current Count Register (for Timer)
 APIC_TMRDIV	equ 0x3E0		; Divide Configuration Register (for Timer)
 ; 0x3F0 is Reserved
 
+; x2APIC Register list for RDMSR/WRMSR
+; 0x000 - 0x001 are Reserved
+x2APIC_ID		equ 0x802	; ID Register (Read Only)
+x2APIC_VER		equ 0x803	; Version Register (Read Only)
+; 0x004 - 0x007 are Reserved
+x2APIC_TPR		equ 0x808	; Task Priority Register
+; 0x809 is Reserved
+x2APIC_PPR		equ 0x80A	; Processor Priority Register (Read Only)
+x2APIC_EOI		equ 0x80B	; End Of Interrupt (Write Only)
+; 0x80C is Reserved
+x2APIC_LDR		equ 0x80D	; Logical Destination Register (Read Only)
+; 0x80E is Reserved
+x2APIC_SPURIOUS		equ 0x80F	; Spurious Interrupt Vector Register
+x2APIC_ISR		equ 0x810	; In-Service Register (Starting Address) (Read Only)
+x2APIC_TMR		equ 0x818	; Trigger Mode Register (Starting Address) (Read Only)
+x2APIC_IRR		equ 0x820	; Interrupt Request Register (Starting Address) (Read Only)
+x2APIC_ESR		equ 0x828	; Error Status Register
+; 0x029 - 0x02F are Reserved
+x2APIC_ICR		equ 0x830	; Interrupt Command Register
+; 0x831 is Reserved
+x2APIC_LVT_TMR		equ 0x832	; LVT Timer Register
+x2APIC_LVT_TSR		equ 0x833	; LVT Thermal Sensor Register
+x2APIC_LVT_PERF		equ 0x834	; LVT Performance Monitoring Counters Register
+x2APIC_LVT_LINT0	equ 0x835	; LVT LINT0 Register
+x2APIC_LVT_LINT1	equ 0x836	; LVT LINT1 Register
+x2APIC_LVT_ERR		equ 0x837	; LVT Error Register
+x2APIC_TMRINITCNT	equ 0x838	; Initial Count Register (for Timer)
+x2APIC_TMRCURRCNT	equ 0x839	; Current Count Register (for Timer) (Read Only)
+; 0x03A - 0x03D are Reserved
+x2APIC_TMRDIV		equ 0x83E	; Divide Configuration Register (for Timer)
+x2APIC_SELFIPI		equ 0x83F	; SELF IPI (Write Only)
+; 0x83F is Reserved
+; 0x840 - 0xBFF are Reserved
 
 ; =============================================================================
 ; EOF
