@@ -175,8 +175,8 @@ ap_reset:
 	jnc ap_reset_apic
 
 ap_reset_x2apic:
-;	mov rax, ap_clear		; Set RAX to the address of ap_clear
-;	mov [rsp], rax			; Overwrite the return address on the CPU's stack
+	mov rax, ap_clear		; Set RAX to the address of ap_clear
+	mov [rsp], rax			; Overwrite the return address on the CPU's stack
 	mov ecx, 0x80B
 	xor eax, eax
 	xor edx, edx

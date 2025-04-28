@@ -194,7 +194,6 @@ b_smp_get_id:
 
 b_smp_get_id_x2apic:
 	call os_x2apic_read
-	mov eax, edx		; EAX now holds the CPU's x2APIC ID (0 - 4294967295)
 	jmp b_smp_get_id_done
 
 b_smp_get_id_apic:
