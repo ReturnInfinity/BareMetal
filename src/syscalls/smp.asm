@@ -67,14 +67,10 @@ b_smp_wakeup:
 	jnc b_smp_wakeup_apic
 
 b_smp_wakeup_x2apic:
-	mov ecx, APIC_ICR
-	call os_x2apic_read
-	bt eax, 12		; Check if Delivery Status is 0 (Idle)
-	jc b_smp_wakeup_x2apic	; If not, wait - a send is already pending
 	mov rdx, [rsp]		; Retrieve CPU APIC # from the stack
 	mov ecx, APIC_ICR
-	mov eax, 0x80
-	call os_apic_write
+	mov eax, 0x80		; Execute interrupt 0x80
+	call os_x2apic_write
 	jmp b_smp_wakeup_done
 
 b_smp_wakeup_apic:
@@ -88,7 +84,7 @@ b_smp_wakeup_apic:
 	call os_apic_write	; Write to the high bits first
 	mov ecx, APIC_ICRL
 	xor eax, eax		; Clear EAX, namely bits 31:24
-	mov al, 0x80		; Execute interrupt 0x81
+	mov al, 0x80		; Execute interrupt 0x80
 	call os_apic_write	; Then write to the low bits
 
 b_smp_wakeup_done:
@@ -117,13 +113,9 @@ b_smp_wakeup_all:
 
 b_smp_wakeup_all_x2apic:
 	mov ecx, APIC_ICR
-	call os_x2apic_read
-	bt eax, 12		; Check if Delivery Status is 0 (Idle)
-	jc b_smp_wakeup_all_x2apic	; If not, wait - a send is already pending
-	mov ecx, APIC_ICR
 	xor edx, edx
-	mov eax, 0x000C0080
-	call os_apic_write	; Execute interrupt 0x80 on All Excluding Self (0xC)
+	mov eax, 0x000C0080	; Execute interrupt 0x80 on All Excluding Self (0xC)
+	call os_x2apic_write
 	jmp b_smp_wakeup_all_done
 
 b_smp_wakeup_all_apic:
