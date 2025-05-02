@@ -39,7 +39,7 @@ ahci_init:
 	mov eax, [rsi+AHCI_VS]
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
-	jl ahci_init_error
+	jb ahci_init_error
 	mov [os_AHCI_MJR], al
 	rol eax, 8			; Rotate EAX so MNR is bits 07:00
 	mov [os_AHCI_MNR], al
@@ -247,7 +247,7 @@ ahci_io_prep_next_drive:
 ahci_io_prep_good_drive_id:
 
 	cmp rcx, 8192			; Are we trying to read more that 4MiB?
-	jge achi_io_error		; If so, bail out
+	jae achi_io_error		; If so, bail out
 
 	push rcx			; Save the sector count
 	push rdi			; Save the destination memory address

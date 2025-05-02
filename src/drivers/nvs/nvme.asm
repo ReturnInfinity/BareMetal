@@ -39,7 +39,7 @@ nvme_init:
 	mov eax, [rsi+NVMe_VS]
 	ror eax, 16			; Rotate EAX so MJR is bits 15:00
 	cmp al, 0x01
-	jl nvme_init_error
+	jb nvme_init_error
 	mov [os_NVMeMJR], al
 	rol eax, 8			; Rotate EAX so MNR is bits 07:00
 	mov [os_NVMeMNR], al
@@ -163,7 +163,7 @@ nvme_init_LBA_next:
 	shr eax, 16			; AL holds the LBADS
 	mov bl, al			; BL holds the highest LBADS so far
 	cmp al, bl
-	jle nvme_init_LBA_skip
+	jbe nvme_init_LBA_skip
 	mov bl, al			; BL holds the highest LBADS so far
 nvme_init_LBA_skip:
 	dec cl
@@ -249,7 +249,7 @@ nvme_admin:
 	mov ecx, eax			; Save the old Admin tail value for reading from the completion ring
 	add al, 1			; Add 1 to it
 	cmp al, 64			; Is it 64 or greater?
-	jl nvme_admin_savetail
+	jb nvme_admin_savetail
 	xor eax, eax			; Is so, wrap around to 0
 nvme_admin_savetail:
 	mov [os_NVMe_atail], al		; Save the tail for the next command
@@ -343,7 +343,7 @@ nvme_io_setup:
 	; For 8193+ bytes PRP2 points to a list of more PRPs
 	push rcx			; Save the requested sector count for later
 	cmp rcx, 2
-	jle nvme_io_calc_rpr2_skip
+	jbe nvme_io_calc_rpr2_skip
 	sub rcx, 1			; Subtract one as PTR1 covers one 4K load
 	push rdi
 	mov rdi, os_nvme_rpr		; Space to build the RPR2 structure
@@ -381,7 +381,7 @@ nvme_io_calc_rpr2_end:
 	mov ecx, eax			; Save the old I/O tail value for reading from the completion ring
 	add al, 1			; Add 1 to it
 	cmp al, 64			; Is it 64 or greater?
-	jl nvme_io_savetail
+	jb nvme_io_savetail
 	xor eax, eax			; Is so, wrap around to 0
 nvme_io_savetail:
 	mov [os_NVMe_iotail], al	; Save the tail for the next command

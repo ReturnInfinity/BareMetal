@@ -55,7 +55,7 @@ ata_io:
 
 ; A single request can read 128KiB
 	cmp rcx, 256
-	jg ata_io_fail	; Over 256? Fail!
+	ja ata_io_fail	; Over 256? Fail!
 ; TODO - Don't fail. Break the read into multiple requests
 	jne ata_io_skip	; Not 256? No need to modify CL
 	xor rcx, rcx		; 0 translates to 256
@@ -92,7 +92,7 @@ ata_io_wait:
 	jne ata_io_dataready
 ata_io_retry:
 	dec rcx
-	jg ata_io_wait
+	ja ata_io_wait
 ata_io_nextsector:
 	in al, dx		; Read status from 0x01F7
 	test al, 0x80		; BSY flag set?

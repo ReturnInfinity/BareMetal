@@ -50,7 +50,7 @@ b_net_tx:
 
 b_net_tx_maxcheck:
 	cmp rcx, 1522			; Fail if more than 1522 bytes
-	jg b_net_tx_fail
+	ja b_net_tx_fail
 
 	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
 	call b_smp_lock

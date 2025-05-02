@@ -82,7 +82,7 @@ os_ioapic_redirection:
 	and eax, 0x000000FF		; Clear the top 24 bits of EAX just in case
 	mov cl, [os_ioapic_mde]		; Get the Maximum amount of Redirection Entries
 	cmp al, cl			; Compare the Interrupt Vector to the MDE
-	jg os_ioapic_redirection_error	; If it is greater then bail out
+	ja os_ioapic_redirection_error	; If it is greater then bail out
 	mov ecx, eax
 	add eax, 0x20			; Offset to start of Interrupts
 	push rcx
