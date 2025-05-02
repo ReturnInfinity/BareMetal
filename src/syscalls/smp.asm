@@ -189,7 +189,7 @@ b_smp_setflag:
 	push rax
 
 	cmp rcx, 4		; If a value higher than 3 was chosen then bail out
-	jge b_smp_setflag_done
+	jae b_smp_setflag_done
 
 	call b_smp_get_id	; Return APIC ID in RAX
 

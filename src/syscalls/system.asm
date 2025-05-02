@@ -15,7 +15,7 @@
 ;	All other registers preserved
 b_system:
 	cmp rcx, 0x80
-	jge b_system_end
+	jae b_system_end
 
 ; Use CX register as an index to the function table
 ; To save memory, the functions are placed in 16-bit frames

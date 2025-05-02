@@ -177,7 +177,7 @@ xhci_init_msix_msi_done:
 	; Check for a valid version number
 	shr eax, 16			; 16-bit version is in bits 31:16, shift to 15:0
 	cmp ax, 0x0100			; Verify it is at least v1.0
-	jl xhci_init_error
+	jb xhci_init_error
 	mov eax, [rsi+xHCI_HCSPARAMS1]	; Gather MaxSlots (bits 7:0) and MaxPort (31:24)
 	mov byte [xhci_maxslots], al
 	rol eax, 8
@@ -1561,7 +1561,7 @@ xhci_check_command_event:
 load_event:
 	call os_hpet_us
 	cmp rax, rdx
-	jg xhci_check_command_event_timeout
+	ja xhci_check_command_event_timeout
 	mov rax, [rsi]
 	cmp rax, 0
 	jne compare

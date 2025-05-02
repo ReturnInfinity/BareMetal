@@ -185,7 +185,7 @@ lfb_output_chars_nextchar:
 	dec rcx
 	lodsb				; Get char from string and store in AL
 	cmp al, 0x20
-	jge lfb_output_chars_nextchar_output
+	jae lfb_output_chars_nextchar_output
 	cmp al, 0x0A			; LF - Check if there was a newline (aka line feed) character in the string
 	je lfb_output_chars_newline	; If so then we print a new line
 	cmp al, 0x0D			; CR - Check if there was a carriage return character in the string
@@ -338,9 +338,9 @@ lfb_glyph:
 	; Filter out characters that can't be displayed
 	and eax, 0x000000FF		; Only keep AL
 	cmp al, 0x20
-	jl hidden
+	jb hidden
 	cmp al, 127
-	jg hidden
+	ja hidden
 	sub rax, 0x20
 	jmp load_char
 hidden:

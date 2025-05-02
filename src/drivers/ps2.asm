@@ -240,7 +240,7 @@ mouse_skip_y_movement:
 	cmp ax, 0xF000			; Check if it wrapped around below 0
 	ja checkx_min			; If so jump to min
 	cmp ax, bx			; Check X value against valid max pixel location
-	jle checkx_end			; If less or equal then mouse cursor is on screen
+	jbe checkx_end			; If less or equal then mouse cursor is on screen
 checkx_max:				; If greater then mouse cursor has moved off the right edge
 	mov [os_ps2_mouse_x], bx	; Set the mouse X location to Screen X-1
 	jmp checkx_end
@@ -255,7 +255,7 @@ checkx_end:
 	cmp ax, 0xF000			; Check if it wrapped around below 0
 	ja checky_min			; If so jump to min
 	cmp ax, bx			; Check Y value against valid max pixel location
-	jle checky_end			; If less or equal then mouse cursor is on screen
+	jbe checky_end			; If less or equal then mouse cursor is on screen
 checky_max:				; If greater then mouse cursor has moved off the bottom edge
 	mov [os_ps2_mouse_y], bx	; Set the mouse Y location to Screen Y-1
 	jmp checky_end
