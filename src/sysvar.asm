@@ -32,8 +32,9 @@ sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
 os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 
+						; 0x012000 -> 0x012FFF	64K Free
+
 ; System memory
-bus_table:		equ 0x0000000000120000	; 0x120000 -> 0x12FFFF	64K Bus Table
 
 ; Non-volatile Storage memory
 os_nvs_mem:		equ 0x0000000000130000	; 0x130000 -> 0x15FFFF	192K NVS structures/buffers
@@ -77,8 +78,8 @@ os_net_TXBytes:		equ os_SystemVariables + 0x0078
 os_net_TXPackets:	equ os_SystemVariables + 0x0080
 os_net_RXBytes:		equ os_SystemVariables + 0x0088
 os_net_RXPackets:	equ os_SystemVariables + 0x0090
-os_hdd_BytesRead:	equ os_SystemVariables + 0x0098
-os_hdd_BytesWrite:	equ os_SystemVariables + 0x00A0
+;os_hdd_BytesRead:	equ os_SystemVariables + 0x0098
+;os_hdd_BytesWrite:	equ os_SystemVariables + 0x00A0
 os_NVMe_Base:		equ os_SystemVariables + 0x00A8
 os_nvs_io:		equ os_SystemVariables + 0x00B0
 os_nvs_id:		equ os_SystemVariables + 0x00B8
@@ -149,7 +150,22 @@ os_ioapic_mde:		equ os_SystemVariables + 0x0317
 key_control:		equ os_SystemVariables + 0x0318
 os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
+os_net_icount:		equ os_SystemVariables + 0x031B
 
+; Network Device Table Base
+os_net_table:		equ os_SystemVariables + 0x2000
+
+; Network Devices Entries - each entry is 64 bytes
+os_net_entry_base:	equ os_SystemVariables + 0x2000
+os_net_entry_transmit:	equ os_SystemVariables + 0x2008
+os_net_entry_poll:	equ os_SystemVariables + 0x2010
+os_net_entry_stats:	equ os_SystemVariables + 0x2018
+os_net_entry_MAC:	equ os_SystemVariables + 0x2020
+os_net_entry_tx_tail:	equ os_SystemVariables + 0x2028
+os_net_entry_rx_tail:	equ os_SystemVariables + 0x202C
+; Next Device starts at 0x8040
+
+bus_table:		equ os_SystemVariables + 0x8000
 
 ; Misc
 tchar: db 0, 0

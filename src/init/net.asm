@@ -104,6 +104,7 @@ init_net_probe_found_r8169:
 	jmp init_net_probe_found_finish
 
 init_net_probe_found_finish:
+	add byte [os_net_icount], 1
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
 	add r9, 15			; Add offset to driver enabled byte
 	mov byte [r9], 1		; Mark device as having a driver
