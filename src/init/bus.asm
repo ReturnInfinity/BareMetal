@@ -45,14 +45,6 @@ init_bus_pcie_probe:
 	call os_pcie_read		; Read a Device ID/Vendor ID
 	cmp eax, 0xFFFFFFFF		; 0xFFFFFFFF is returned for an non-existent device
 	je init_bus_pcie_probe_next	; Skip to next device
-	cmp eax, 0x00000000		; TODO - Fix this. Should check for end bus number
-	je init_bus_end
-	jmp init_bus_pcie_probe_found
-init_bus_pcie_probe_next:
-	add rdx, 0x00010000		; Skip to next PCIe device/function
-	cmp edx, 0			; Overflow EDX for a maximum of 65536 devices per segment
-	je init_bus_end
-	jmp init_bus_pcie_probe
 
 init_bus_pcie_probe_found:
 	push rax			; Save the result
@@ -69,7 +61,12 @@ init_bus_pcie_probe_found:
 	stosw
 	bts ax, 1			; Set bit for PCIe
 	stosw
-	jmp init_bus_pcie_probe_next
+
+init_bus_pcie_probe_next:
+	add rdx, 0x00010000		; Skip to next PCIe device/function
+	cmp edx, 0			; Overflow EDX for a maximum of 65536 devices per segment
+	je init_bus_end
+	jmp init_bus_pcie_probe
 
 init_bus_pci:
 	mov eax, 0x80000000
