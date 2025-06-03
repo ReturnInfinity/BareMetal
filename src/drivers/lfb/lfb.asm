@@ -138,6 +138,7 @@ lfb_inc_cursor:
 	jne lfb_inc_cursor_done		; If not equal we are done
 	mov word [Screen_Cursor_Col], 0	; Reset column to 0
 	inc word [Screen_Cursor_Row]	; Increment the current cursor row
+	call lfb_draw_line
 	mov ax, [Screen_Cursor_Row]
 	cmp ax, [Screen_Rows]		; Compare it to the # of rows for the screen
 	jne lfb_inc_cursor_done		; If not equal we are done
