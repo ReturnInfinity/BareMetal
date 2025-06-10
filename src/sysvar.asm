@@ -166,6 +166,7 @@ os_net_entry_rx_tail:	equ os_SystemVariables + 0x202C
 ; Next Device starts at 0x8040
 
 bus_table:		equ os_SystemVariables + 0x8000
+net_table:		equ os_SystemVariables + 0xA000
 
 ; Misc
 tchar: db 0, 0
