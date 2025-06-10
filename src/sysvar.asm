@@ -32,7 +32,7 @@ sys_ROM:		equ 0x00000000000A0000	; 0x0A0000 -> 0x0FFFFF	384K System ROM
 os_KernelStart:		equ 0x0000000000100000	; 0x100000 -> 0x10FFFF	64K Kernel
 os_SystemVariables:	equ 0x0000000000110000	; 0x110000 -> 0x11FFFF	64K System Variables
 
-						; 0x012000 -> 0x012FFF	64K Free
+						; 0x120000 -> 0x12FFFF	64K Free
 
 ; System memory
 
@@ -43,15 +43,15 @@ os_nvs_mem:		equ 0x0000000000130000	; 0x130000 -> 0x15FFFF	192K NVS structures/b
 os_usb_mem:		equ 0x0000000000160000	; 0x160000 -> 0x19FFFF	256K USB structures/buffers
 
 ; Network memory
-os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1BFFFF	128K Network descriptors/buffers
-os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1A7FFF	32K Ethernet receive descriptors
-os_tx_desc:		equ 0x00000000001A8000	; 0x1A8000 -> 0x1AFFFF	32K Ethernet transmit descriptors
-os_PacketBuffers:	equ 0x00000000001B0000	; 0x1B0000 -> 0x1BFFFF	64K Ethernet packet buffers
+os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1CFFFF	192K Network descriptors/buffers
+os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1AFFFF	64K Ethernet receive descriptors
+os_tx_desc:		equ 0x00000000001B0000	; 0x1B0000 -> 0x1BFFFF	64K Ethernet transmit descriptors
+os_PacketBuffers:	equ 0x00000000001C0000	; 0x1C0000 -> 0x1CFFFF	64K Ethernet packet buffers
 
 ; LFB font data
-os_font:		equ 0x00000000001C0000	; 0x1C0000 -> 0x1CFFFF	64K Font video data
+os_font:		equ 0x00000000001D0000	; 0x1D0000 -> 0x1DFFFF	64K Font video data
 
-						; 0x1D0000 -> 0x1DFFFF	64K Free
+						; 0x1E0000 -> 0x1EFFFF	64K Monitor (free if not used)
 
 ; Misc memory
 os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before the 2MiB mark, Room for 256 entries)
