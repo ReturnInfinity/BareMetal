@@ -64,9 +64,9 @@ os_IOAPICAddress:	equ os_SystemVariables + 0x0008
 os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI
 os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
-os_net_transmit:	equ os_SystemVariables + 0x0028
-os_net_poll:		equ os_SystemVariables + 0x0030
-os_net_ackint:		equ os_SystemVariables + 0x0038
+;os_net_transmit:	equ os_SystemVariables + 0x0028
+;os_net_poll:		equ os_SystemVariables + 0x0030
+;os_net_ackint:		equ os_SystemVariables + 0x0038
 os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
 os_NetMAC:		equ os_SystemVariables + 0x0048
 os_HPET_Address:	equ os_SystemVariables + 0x0050

@@ -19,6 +19,7 @@ b_net_status:
 	cmp byte [os_NetEnabled], 0
 	je b_net_status_end
 
+; TODO - Read MAC from the network interface table
 	mov ecx, 6
 	mov rsi, os_NetMAC
 b_net_status_loadMAC:
@@ -52,6 +53,7 @@ b_net_tx_maxcheck:
 	cmp rcx, 1522			; Fail if more than 1522 bytes
 	ja b_net_tx_fail
 
+; TODO - This should be per interface
 	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
 	call b_smp_lock
 
@@ -60,10 +62,13 @@ b_net_tx_maxcheck:
 	call os_virt_to_phys
 	xchg rax, rsi
 
-	inc qword [os_net_TXPackets]
-	add qword [os_net_TXBytes], rcx
-	call qword [os_net_transmit]	; Call the driver
+; TODO - This should be per interface
+;	inc qword [os_net_TXPackets]
+;	add qword [os_net_TXBytes], rcx
+; TODO - Call driver via interface table
+;	call qword [os_net_transmit]	; Call the driver
 
+; TODO - This should be per interface
 	mov rax, os_NetLock
 	call b_smp_unlock
 
@@ -90,11 +95,13 @@ b_net_rx:
 	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
 	jne b_net_rx_nodata
 
-	call qword [os_net_poll]	; Call the driver
+; TODO - Call driver via interface table
+;	call qword [os_net_poll]	; Call the driver
 	cmp cx, 0
 	je b_net_rx_nodata
-	inc qword [os_net_RXPackets]
-	add qword [os_net_RXBytes], rcx
+; TODO - This should be per interface
+;	inc qword [os_net_RXPackets]
+;	add qword [os_net_RXBytes], rcx
 
 	mov rsi, os_PacketBuffers	; Packet exists here
 	push rcx
