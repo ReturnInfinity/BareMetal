@@ -43,6 +43,7 @@ b_net_status_end:
 ;	RDX = Interface ID
 ; OUT:	Nothing. All registers preserved
 b_net_tx:
+	push rdx
 	push rcx
 	push rax
 
@@ -65,8 +66,11 @@ b_net_tx_maxcheck:
 ; TODO - This should be per interface
 ;	inc qword [os_net_TXPackets]
 ;	add qword [os_net_TXBytes], rcx
-; TODO - Call driver via interface table
-;	call qword [os_net_transmit]	; Call the driver
+
+	; Call the driver transmit function
+	shl edx, 7			; Quick multiply by 128
+	add edx, net_table		; Add offset to net_table
+	call [rdx+0x20]			; Call driver transmit function passing RDX as interface
 
 ; TODO - This should be per interface
 	mov rax, os_NetLock
@@ -75,6 +79,7 @@ b_net_tx_maxcheck:
 b_net_tx_fail:
 	pop rax
 	pop rcx
+	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -88,6 +93,7 @@ b_net_tx_fail:
 b_net_rx:
 	push rdi
 	push rsi
+	push rdx
 	push rax
 
 	xor ecx, ecx
@@ -95,8 +101,11 @@ b_net_rx:
 	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
 	jne b_net_rx_nodata
 
-; TODO - Call driver via interface table
-;	call qword [os_net_poll]	; Call the driver
+	; Call the driver poll function
+	shl edx, 7			; Quick multiply by 128
+	add edx, net_table		; Add offset to net_table
+	call [rdx+0x28]			; Call driver poll function passing RDX as interface
+
 	cmp cx, 0
 	je b_net_rx_nodata
 ; TODO - This should be per interface
@@ -109,6 +118,7 @@ b_net_rx:
 	pop rcx
 
 	pop rax
+	pop rdx
 	pop rsi
 	pop rdi
 	ret
@@ -116,6 +126,7 @@ b_net_rx:
 b_net_rx_nodata:
 	xor ecx, ecx
 	pop rax
+	pop rdx
 	pop rsi
 	pop rdi
 	ret

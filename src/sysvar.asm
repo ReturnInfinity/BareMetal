@@ -168,6 +168,23 @@ os_net_entry_rx_tail:	equ os_SystemVariables + 0x202C
 bus_table:		equ os_SystemVariables + 0x8000
 net_table:		equ os_SystemVariables + 0xA000
 
+; net_table layout - each entry is 128 bytes
+; 0x00
+; 16-bit driver ID
+; 6 bytes of padding
+; 48-bit MAC address
+; 2 bytes of padding
+; 0x10
+; 64-bit device base
+; 64-bit device length
+; 0x20
+; 64-bit transmit
+; 64-bit poll
+; 0x30
+; 32-bit tx_last_head
+; 32-bit rx_last_head
+
+
 ; Misc
 tchar: db 0, 0
 

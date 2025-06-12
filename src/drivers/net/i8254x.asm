@@ -10,16 +10,29 @@
 ; Initialize an Intel 8254x NIC
 ;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_i8254x_init:
+	push rdi
 	push rsi
 	push rdx
 	push rcx
 	push rax
 
+	mov rdi, net_table
+	xor eax, eax
+	mov al, [os_net_icount]
+	shl eax, 7			; Quick multiply by 128
+	add rdi, rax
+
+	mov ax, 0x8254
+	stosw
+	add rdi, 14
+
 	; Get the Base Memory Address of the device
 	mov al, 0			; Read BAR0
 	call os_bus_read_bar
-	mov [os_NetIOBaseMem], rax	; Save it as the base
-	mov [os_NetIOLength], rcx	; Save the length
+	stosq				; Save the base
+	push rax			; Save the base for gathering the MAC later
+	mov rax, rcx
+	stosq				; Save the length
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
@@ -30,22 +43,32 @@ net_i8254x_init:
 	call os_bus_write		; Write updated Status/Command
 
 	; Get the MAC address
-	mov rsi, [os_NetIOBaseMem]
+	pop rsi				; Restore the base
+	sub rdi, 24			; 8 bytes into net table entry
 	mov eax, [rsi+i8254x_RAL]	; RAL
-	mov [os_NetMAC], al
+	stosb
 	shr eax, 8
-	mov [os_NetMAC+1], al
+	stosb
 	shr eax, 8
-	mov [os_NetMAC+2], al
+	stosb
 	shr eax, 8
-	mov [os_NetMAC+3], al
+	stosb
 	mov eax, [rsi+i8254x_RAH]	; RAH
-	mov [os_NetMAC+4], al
+	stosb
 	shr eax, 8
-	mov [os_NetMAC+5], al
+	stosb
 
 	; Reset the device
+	xor edx, edx
+	mov dl, [os_net_icount]
 	call net_i8254x_reset
+
+	; Store call addresses
+	add rdi, 18
+	mov rax, net_i8254x_transmit
+	stosq
+	mov rax, net_i8254x_poll
+	stosq
 
 net_i8254x_init_error:
 
@@ -53,20 +76,29 @@ net_i8254x_init_error:
 	pop rcx
 	pop rdx
 	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
 ; net_i8254x_reset - Reset an Intel 8254x NIC
-;  IN:	Nothing
+;  IN:	RDX = Interface ID
 ; OUT:	Nothing, all registers preserved
 net_i8254x_reset:
 	push rdi
 	push rsi
 	push rax
 
-	mov rsi, [os_NetIOBaseMem]
+	; Gather Base Address from net_table
+	mov rsi, net_table
+	xor eax, eax
+	mov al, [os_net_icount]
+	shl eax, 7			; Quick multiply by 128
+	add rsi, rax
+	add rsi, 16
+	mov rsi, [rsi]
+;	mov rsi, [os_NetIOBaseMem]
 	mov rdi, rsi
 
 	; Disable Interrupts
@@ -110,6 +142,7 @@ net_i8254x_reset:
 	; Create RX descriptors
 	push rdi
 	mov ecx, i8254x_MAX_DESC
+; TODO - Adjust value based on iid
 	mov rdi, os_rx_desc
 net_i8254x_reset_nextdesc:	
 	mov rax, os_PacketBuffers	; Default packet will go here
@@ -121,6 +154,7 @@ net_i8254x_reset_nextdesc:
 	pop rdi
 
 	; Initialize receive
+; TODO - Adjust value based on iid
 	mov rax, os_rx_desc
 	mov [rsi+i8254x_RDBAL], eax	; Receive Descriptor Base Address Low
 	shr rax, 32
@@ -135,6 +169,7 @@ net_i8254x_reset_nextdesc:
 	mov [rsi+i8254x_RCTL], eax	; Receive Control Register
 
 	; Initialize transmit
+; TODO - Adjust value based on iid
 	mov rax, os_tx_desc
 	mov [rsi+i8254x_TDBAL], eax	; Transmit Descriptor Base Address Low
 	shr rax, 32
@@ -164,6 +199,7 @@ net_i8254x_reset_nextdesc:
 ; -----------------------------------------------------------------------------
 ; net_i8254x_transmit - Transmit a packet via an Intel 8254x NIC
 ;  IN:	RSI = Location of packet
+;	RDX = Interface ID
 ;	RCX = Length of packet
 ; OUT:	Nothing
 ; Note:	This driver uses the "legacy format" so TDESC.CMD.DEXT (5) is cleared to 0
@@ -185,7 +221,8 @@ net_i8254x_transmit:
 	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
 
 	; Calculate the descriptor to write to
-	mov eax, [i8254x_tx_lasttail]
+;	mov eax, [i8254x_tx_lasttail]
+	mov eax, [rdx+0x30]		; Get tx_lasttail
 	push rax			; Save lasttail
 	shl eax, 4			; Quick multiply by 16
 	add rdi, rax			; Add offset to RDI
@@ -203,8 +240,10 @@ net_i8254x_transmit:
 	pop rax				; Restore lasttail
 	add eax, 1
 	and eax, i8254x_MAX_DESC - 1
-	mov [i8254x_tx_lasttail], eax
-	mov rdi, [os_NetIOBaseMem]
+;	mov [i8254x_tx_lasttail], eax
+	mov [rdx+0x30], eax		; Set tx_lasttail
+;	mov rdi, [os_NetIOBaseMem]
+	mov rdi, [rdx+0x10]		; Load the base MMIO of the NIC
 	mov [rdi+i8254x_TDT], eax	; TDL - Transmit Descriptor Tail
 
 	pop rax
@@ -216,6 +255,7 @@ net_i8254x_transmit:
 ; -----------------------------------------------------------------------------
 ; net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
 ;  IN:	RDI = Location to store packet
+;	RDX = Interface ID
 ; OUT:	RCX = Length of packet
 ; Note:	RDESC Descriptor Format:
 ;	First Qword:
@@ -232,10 +272,12 @@ net_i8254x_poll:
 	push rax
 
 	mov rdi, os_rx_desc
-	mov rsi, [os_NetIOBaseMem]	; Load the base MMIO of the NIC
+;	mov rsi, [os_NetIOBaseMem]	; Load the base MMIO of the NIC
+	mov rsi, [rdx+0x10]		; Load the base MMIO of the NIC
 
 	; Calculate the descriptor to read from
-	mov eax, [i8254x_rx_lasthead]
+;	mov eax, [i8254x_rx_lasthead]
+	mov eax, [rdx+0x34]		; Get rx_lasthead
 	shl eax, 4			; Quick multiply by 16
 	add eax, 8			; Offset to bytes received
 	add rdi, rax			; Add offset to RDI
@@ -249,10 +291,13 @@ net_i8254x_poll:
 	stosq				; Clear the descriptor length and status
 
 	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
-	mov eax, [i8254x_rx_lasthead]
+;	mov eax, [i8254x_rx_lasthead]
+	mov eax, [rdx+0x34]		; Get rx_lasthead
 	add eax, 1
 	and eax, i8254x_MAX_DESC - 1
-	mov [i8254x_rx_lasthead], eax
+;	mov [i8254x_rx_lasthead], eax
+	mov [rdx+0x34], eax		; Set rx_lasthead
+
 	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
 	and eax, i8254x_MAX_DESC - 1
@@ -289,8 +334,8 @@ net_i8254x_poll_end:
 
 
 ; Variables
-i8254x_tx_lasttail: dd 0
-i8254x_rx_lasthead: dd 0
+;i8254x_tx_lasttail: dd 0
+;i8254x_rx_lasthead: dd 0
 
 ; Constants
 i8254x_MAX_PKT_SIZE	equ 16384
