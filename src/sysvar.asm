@@ -183,6 +183,13 @@ net_table:		equ os_SystemVariables + 0xA000
 ; 0x30
 ; 32-bit tx_last_head
 ; 32-bit rx_last_head
+; 8 bytes of padding
+; 0x40
+; 64-bit TXPackets
+; 64-bit TXBytes
+; 0x50
+; 64-bit RXPackets
+; 64-bit RXBytes
 
 
 ; Misc

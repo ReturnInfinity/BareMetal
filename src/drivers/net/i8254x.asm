@@ -22,7 +22,7 @@ net_i8254x_init:
 	shl eax, 7			; Quick multiply by 128
 	add rdi, rax
 
-	mov ax, 0x8254
+	mov ax, 0x8254			; Driver tag for i8254x
 	stosw
 	add rdi, 14
 
@@ -98,7 +98,6 @@ net_i8254x_reset:
 	add rsi, rax
 	add rsi, 16
 	mov rsi, [rsi]
-;	mov rsi, [os_NetIOBaseMem]
 	mov rdi, rsi
 
 	; Disable Interrupts
@@ -144,7 +143,7 @@ net_i8254x_reset:
 	mov ecx, i8254x_MAX_DESC
 ; TODO - Adjust value based on iid
 	mov rdi, os_rx_desc
-net_i8254x_reset_nextdesc:	
+net_i8254x_reset_nextdesc:
 	mov rax, os_PacketBuffers	; Default packet will go here
 	stosq
 	xor eax, eax
@@ -221,7 +220,6 @@ net_i8254x_transmit:
 	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
 
 	; Calculate the descriptor to write to
-;	mov eax, [i8254x_tx_lasttail]
 	mov eax, [rdx+0x30]		; Get tx_lasttail
 	push rax			; Save lasttail
 	shl eax, 4			; Quick multiply by 16
@@ -240,9 +238,7 @@ net_i8254x_transmit:
 	pop rax				; Restore lasttail
 	add eax, 1
 	and eax, i8254x_MAX_DESC - 1
-;	mov [i8254x_tx_lasttail], eax
 	mov [rdx+0x30], eax		; Set tx_lasttail
-;	mov rdi, [os_NetIOBaseMem]
 	mov rdi, [rdx+0x10]		; Load the base MMIO of the NIC
 	mov [rdi+i8254x_TDT], eax	; TDL - Transmit Descriptor Tail
 
@@ -272,11 +268,9 @@ net_i8254x_poll:
 	push rax
 
 	mov rdi, os_rx_desc
-;	mov rsi, [os_NetIOBaseMem]	; Load the base MMIO of the NIC
 	mov rsi, [rdx+0x10]		; Load the base MMIO of the NIC
 
 	; Calculate the descriptor to read from
-;	mov eax, [i8254x_rx_lasthead]
 	mov eax, [rdx+0x34]		; Get rx_lasthead
 	shl eax, 4			; Quick multiply by 16
 	add eax, 8			; Offset to bytes received
@@ -291,11 +285,9 @@ net_i8254x_poll:
 	stosq				; Clear the descriptor length and status
 
 	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
-;	mov eax, [i8254x_rx_lasthead]
 	mov eax, [rdx+0x34]		; Get rx_lasthead
 	add eax, 1
 	and eax, i8254x_MAX_DESC - 1
-;	mov [i8254x_rx_lasthead], eax
 	mov [rdx+0x34], eax		; Set rx_lasthead
 
 	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
@@ -332,10 +324,6 @@ net_i8254x_poll_end:
 ;	ret
 ; -----------------------------------------------------------------------------
 
-
-; Variables
-;i8254x_tx_lasttail: dd 0
-;i8254x_rx_lasthead: dd 0
 
 ; Constants
 i8254x_MAX_PKT_SIZE	equ 16384
