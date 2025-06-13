@@ -220,7 +220,7 @@ net_i8254x_transmit:
 	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
 
 	; Calculate the descriptor to write to
-	mov eax, [rdx+0x30]		; Get tx_lasttail
+	mov eax, [rdx+nt_tx_head]	; Get tx_lasttail
 	push rax			; Save lasttail
 	shl eax, 4			; Quick multiply by 16
 	add rdi, rax			; Add offset to RDI
@@ -238,8 +238,8 @@ net_i8254x_transmit:
 	pop rax				; Restore lasttail
 	add eax, 1
 	and eax, i8254x_MAX_DESC - 1
-	mov [rdx+0x30], eax		; Set tx_lasttail
-	mov rdi, [rdx+0x10]		; Load the base MMIO of the NIC
+	mov [rdx+nt_tx_head], eax	; Set tx_lasttail
+	mov rdi, [rdx+nt_base]		; Load the base MMIO of the NIC
 	mov [rdi+i8254x_TDT], eax	; TDL - Transmit Descriptor Tail
 
 	pop rax
@@ -268,10 +268,10 @@ net_i8254x_poll:
 	push rax
 
 	mov rdi, os_rx_desc
-	mov rsi, [rdx+0x10]		; Load the base MMIO of the NIC
+	mov rsi, [rdx+nt_base]		; Load the base MMIO of the NIC
 
 	; Calculate the descriptor to read from
-	mov eax, [rdx+0x34]		; Get rx_lasthead
+	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
 	shl eax, 4			; Quick multiply by 16
 	add eax, 8			; Offset to bytes received
 	add rdi, rax			; Add offset to RDI
@@ -285,10 +285,10 @@ net_i8254x_poll:
 	stosq				; Clear the descriptor length and status
 
 	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
-	mov eax, [rdx+0x34]		; Get rx_lasthead
+	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
 	add eax, 1
 	and eax, i8254x_MAX_DESC - 1
-	mov [rdx+0x34], eax		; Set rx_lasthead
+	mov [rdx+nt_rx_head], eax	; Set rx_lasthead
 
 	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
