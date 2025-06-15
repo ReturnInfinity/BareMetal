@@ -62,11 +62,7 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
 os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI
-os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
-;os_net_transmit:	equ os_SystemVariables + 0x0028
-;os_net_poll:		equ os_SystemVariables + 0x0030
-;os_net_ackint:		equ os_SystemVariables + 0x0038
 os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
 os_NetMAC:		equ os_SystemVariables + 0x0048
 os_HPET_Address:	equ os_SystemVariables + 0x0050
@@ -74,12 +70,6 @@ os_AHCI_Base:		equ os_SystemVariables + 0x0058
 os_NetworkCallback:	equ os_SystemVariables + 0x0060
 os_KeyboardCallback:	equ os_SystemVariables + 0x0068
 os_ClockCallback:	equ os_SystemVariables + 0x0070
-os_net_TXBytes:		equ os_SystemVariables + 0x0078
-os_net_TXPackets:	equ os_SystemVariables + 0x0080
-os_net_RXBytes:		equ os_SystemVariables + 0x0088
-os_net_RXPackets:	equ os_SystemVariables + 0x0090
-;os_hdd_BytesRead:	equ os_SystemVariables + 0x0098
-;os_hdd_BytesWrite:	equ os_SystemVariables + 0x00A0
 os_NVMe_Base:		equ os_SystemVariables + 0x00A8
 os_nvs_io:		equ os_SystemVariables + 0x00B0
 os_nvs_id:		equ os_SystemVariables + 0x00B8
