@@ -220,6 +220,7 @@ net_i8257x_reset_nextdesc:
 ; -----------------------------------------------------------------------------
 ; net_i8257x_transmit - Transmit a packet via an Intel 8257x NIC
 ;  IN:	RSI = Location of packet
+;	RDX = Interface ID
 ;	RCX = Length of packet
 ; OUT:	Nothing
 ; Note:	This driver uses the "legacy format" so TDESC.CMD.DEXT (5) is cleared to 0
@@ -272,6 +273,7 @@ net_i8257x_transmit:
 ; -----------------------------------------------------------------------------
 ; net_i8257x_poll - Polls the Intel 8257x NIC for a received packet
 ;  IN:	RDI = Location to store packet
+;	RDX = Interface ID
 ; OUT:	RCX = Length of packet
 ; Note:	RDESC Descriptor Format:
 ;	First Qword:
