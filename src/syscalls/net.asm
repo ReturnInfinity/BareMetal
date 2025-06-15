@@ -19,9 +19,13 @@ b_net_status:
 	cmp byte [os_NetEnabled], 0
 	je b_net_status_end
 
-; TODO - Read MAC from the network interface table
 	mov ecx, 6
-	mov rsi, os_NetMAC
+
+	mov rsi, rdx
+	shl esi, 7			; Quick multiply by 128
+	add esi, net_table		; Add offset to net_table
+	add esi, 8
+
 b_net_status_loadMAC:
 	shl rax, 8
 	lodsb
