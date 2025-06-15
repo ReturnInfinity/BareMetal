@@ -77,7 +77,7 @@ net_i8254x_init:
 	call net_i8254x_reset
 
 	; Store call addresses
-	add rdi, 18
+	sub rdi, 0x20
 	mov rax, net_i8254x_transmit
 	stosq
 	mov rax, net_i8254x_poll

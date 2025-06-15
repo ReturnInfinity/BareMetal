@@ -71,11 +71,11 @@ b_net_tx_maxcheck:
 	xchg rax, rsi
 
 	; Call the driver transmit function
-	call [rdx+0x20]			; Call driver transmit function passing RDX as interface
+	call [rdx+nt_transmit]		; Call driver transmit function passing RDX as interface
 
 	; Increment interface counters
-	inc qword [rdx+0x40]		; Increment TXPackets
-	add qword [rdx+0x48], rcx	; Increment TXBytes
+	inc qword [rdx+nt_tx_packets]		; Increment TXPackets
+	add qword [rdx+nt_tx_bytes], rcx	; Increment TXBytes
 
 ; TODO - This should be per interface
 	mov rax, os_NetLock
@@ -110,14 +110,14 @@ b_net_rx:
 	add edx, net_table		; Add offset to net_table
 
 	; Call the driver poll function
-	call [rdx+0x28]			; Call driver poll function passing RDX as interface
+	call [rdx+nt_poll]			; Call driver poll function passing RDX as interface
 
 	cmp cx, 0
 	je b_net_rx_nodata
 
 	; Increment interface counters
-	inc qword [rdx+0x50]		; Increment RXPackets
-	add qword [rdx+0x58], rcx	; Increment RXBytes
+	inc qword [rdx+nt_rx_packets]		; Increment RXPackets
+	add qword [rdx+nt_rx_bytes], rcx	; Increment RXBytes
 
 	mov rsi, os_PacketBuffers	; Packet exists here
 	push rcx
