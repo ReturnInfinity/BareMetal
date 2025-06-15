@@ -175,12 +175,15 @@ nt_base:		equ 0x10 ; 64-bit
 nt_len:			equ 0x18 ; 64-bit
 nt_transmit:		equ 0x20 ; 64-bit
 nt_poll:		equ 0x28 ; 64-bit
-nt_tx_head:		equ 0x30 ; 64-bit
-nt_rx_head:		equ 0x34 ; 64-bit
-nt_tx_packets:		equ 0x40 ; 64-bit
-nt_tx_bytes:		equ 0x48 ; 64-bit
-nt_rx_packets:		equ 0x50 ; 64-bit
-nt_rx_bytes:		equ 0x58 ; 64-bit
+nt_tx_desc:		equ 0x30 ; 64-bit
+nt_rx_desc:		equ 0x38 ; 64-bit
+nt_tx_head:		equ 0x40 ; 64-bit
+nt_rx_head:		equ 0x44 ; 64-bit
+nt_tx_packets:		equ 0x50 ; 64-bit
+nt_tx_bytes:		equ 0x58 ; 64-bit
+nt_rx_packets:		equ 0x60 ; 64-bit
+nt_rx_bytes:		equ 0x68 ; 64-bit
+; bytes 70-7F for future use
 
 
 ; Misc

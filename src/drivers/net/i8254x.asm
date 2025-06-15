@@ -58,6 +58,19 @@ net_i8254x_init:
 	shr eax, 8
 	stosb
 
+	; Set base addresses for TX and RX descriptors
+	xor ecx, ecx
+	mov cl, byte [os_net_icount]
+	shl ecx, 15
+
+	add rdi, 0x22
+	mov rax, os_tx_desc
+	add rax, rcx
+	stosq
+	mov rax, os_rx_desc
+	add rax, rcx
+	stosq
+
 	; Reset the device
 	xor edx, edx
 	mov dl, [os_net_icount]
@@ -141,8 +154,11 @@ net_i8254x_reset:
 	; Create RX descriptors
 	push rdi
 	mov ecx, i8254x_MAX_DESC
-; TODO - Adjust value based on iid
+	xor eax, eax
+	mov al, byte [os_net_icount]
+	shl eax, 15
 	mov rdi, os_rx_desc
+	add rdi, rax
 net_i8254x_reset_nextdesc:
 	mov rax, os_PacketBuffers	; Default packet will go here
 	stosq
@@ -153,8 +169,10 @@ net_i8254x_reset_nextdesc:
 	pop rdi
 
 	; Initialize receive
-; TODO - Adjust value based on iid
-	mov rax, os_rx_desc
+	xor eax, eax
+	mov al, byte [os_net_icount]
+	shl eax, 15
+	add rax, os_rx_desc
 	mov [rsi+i8254x_RDBAL], eax	; Receive Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8254x_RDBAH], eax	; Receive Descriptor Base Address High
@@ -168,8 +186,10 @@ net_i8254x_reset_nextdesc:
 	mov [rsi+i8254x_RCTL], eax	; Receive Control Register
 
 	; Initialize transmit
-; TODO - Adjust value based on iid
-	mov rax, os_tx_desc
+	xor eax, eax
+	mov al, byte [os_net_icount]
+	shl eax, 15
+	add rax, os_tx_desc
 	mov [rsi+i8254x_TDBAL], eax	; Transmit Descriptor Base Address Low
 	shr rax, 32
 	mov [rsi+i8254x_TDBAH], eax	; Transmit Descriptor Base Address High
@@ -217,7 +237,7 @@ net_i8254x_transmit:
 	push rdi
 	push rax
 
-	mov rdi, os_tx_desc		; Transmit Descriptor Base Address
+	mov rdi, [rdx+nt_tx_desc]	; Transmit Descriptor Base Address
 
 	; Calculate the descriptor to write to
 	mov eax, [rdx+nt_tx_head]	; Get tx_lasttail
@@ -267,7 +287,7 @@ net_i8254x_poll:
 	push rsi			; Used for the base MMIO of the NIC
 	push rax
 
-	mov rdi, os_rx_desc
+	mov rdi, [rdx+nt_rx_desc]
 	mov rsi, [rdx+nt_base]		; Load the base MMIO of the NIC
 
 	; Calculate the descriptor to read from
