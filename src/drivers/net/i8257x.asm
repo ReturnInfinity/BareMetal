@@ -242,7 +242,7 @@ net_i8257x_transmit:
 	mov rdi, [rdx+nt_tx_desc]	; Transmit Descriptor Base Address
 
 	; Calculate the descriptor to write to
-	mov eax, [rdx+nt_tx_head]	; Get tx_lasttail
+	mov eax, [rdx+nt_tx_tail]	; Get tx_lasttail
 	push rax			; Save lasttail
 	shl eax, 4			; Quick multiply by 16
 	add rdi, rax			; Add offset to RDI
@@ -260,7 +260,7 @@ net_i8257x_transmit:
 	pop rax				; Restore lasttail
 	add eax, 1
 	and eax, i8257x_MAX_DESC - 1
-	mov [rdx+nt_tx_head], eax	; Set tx_lasttail
+	mov [rdx+nt_tx_tail], eax	; Set tx_lasttail
 	mov rdi, [rdx+nt_base]		; Load the base MMIO of the NIC
 	mov [rdi+i8257x_TDT], eax	; TDL - Transmit Descriptor Tail
 
