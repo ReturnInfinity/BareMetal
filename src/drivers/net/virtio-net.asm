@@ -10,17 +10,31 @@
 ; Initialize a Virtio NIC
 ;  IN:	RDX = Packed Bus address (as per syscalls/bus.asm)
 net_virtio_init:
+	push rdi
 	push rsi
 	push rdx
 	push rcx
 	push rbx
 	push rax
 
+	mov rdi, net_table
+	xor eax, eax
+	mov al, [os_net_icount]
+	shl eax, 7			; Quick multiply by 128
+	add rdi, rax
+
+	mov ax, 0x1AF4			; Driver tag for virtio-net
+	stosw
+	push rdi			; Used in msi-x init
+	add rdi, 14
+
 	; Get the Base Memory Address of the device
 	mov al, 4			; Read BAR4
 	call os_bus_read_bar
-	mov [os_NetIOBaseMem], rax	; Save it as the base
-	mov [os_NetIOLength], rcx	; Save the length
+	stosq				; Save the base
+	push rax			; Save the base for gathering the MAC later
+	mov rax, rcx
+	stosq				; Save the length
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
@@ -159,22 +173,36 @@ virtio_net_init_cap_next_offset:
 virtio_net_init_cap_end:
 
 	; Get the MAC address
-	mov rsi, [os_NetIOBaseMem]
+	pop rsi				; Pushed as RAX
+	pop rdi
+	add rdi, 6			; nt_MAC
 	add rsi, [virtio_net_device_offset]
-	lodsb
-	mov [os_NetMAC], al
-	lodsb
-	mov [os_NetMAC+1], al
-	lodsb
-	mov [os_NetMAC+2], al
-	lodsb
-	mov [os_NetMAC+3], al
-	lodsb
-	mov [os_NetMAC+4], al
-	lodsb
-	mov [os_NetMAC+5], al
+	mov ecx, 6
+	rep movsb
 
+	; Set base addresses for TX and RX descriptors
+	xor ecx, ecx
+	mov cl, byte [os_net_icount]
+	shl ecx, 15
+	add rdi, 0x22
+	mov rax, os_tx_desc
+	add rax, rcx
+	stosq
+	mov rax, os_rx_desc
+	add rax, rcx
+	stosq
+
+	; Reset the device
+	xor edx, edx
+	mov dl, [os_net_icount]
 	call net_virtio_reset
+
+	; Store call addresses
+	sub rdi, 0x20
+	mov rax, net_virtio_transmit
+	stosq
+	mov rax, net_virtio_poll
+	stosq
 
 virtio_net_init_error:
 	pop rax
@@ -182,13 +210,14 @@ virtio_net_init_error:
 	pop rcx
 	pop rdx
 	pop rsi
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
 ; net_virtio_reset - Reset a Virtio NIC
-;  IN:	Nothing
+;  IN:	RDX = Interface ID
 ; OUT:	Nothing, all registers preserved
 net_virtio_reset:
 	push rdi
@@ -198,7 +227,15 @@ net_virtio_reset:
 
 	; Device Initialization (section 3.1)
 
-	mov rsi, [os_NetIOBaseMem]
+	; Gather Base Address from net_table
+	mov rsi, net_table
+	xor eax, eax
+	mov al, [os_net_icount]
+	shl eax, 7			; Quick multiply by 128
+	add rsi, rax
+	add rsi, 16
+	mov rsi, [rsi]
+	mov rdi, rsi
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
 	mov al, 0x00			
@@ -211,7 +248,7 @@ virtio_net_init_reset_wait:
 	; 3.1.1 - Step 2 - Tell the device we see it
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
-	
+
 	; 3.1.1 - Step 3 - Tell the device we support it
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
@@ -244,7 +281,7 @@ virtio_net_init_reset_wait:
 	; 3.1.1 - Step 5
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_FEATURES_OK
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
-	
+
 	; 3.1.1 - Step 6 - Re-read device status to make sure FEATURES_OK is still set
 	mov al, [rsi+VIRTIO_DEVICE_STATUS]
 	bt ax, 3			; VIRTIO_STATUS_FEATURES_OK
@@ -260,7 +297,7 @@ virtio_net_init_reset_wait:
 	mov ax, 0x0000
 	mov [rsi+VIRTIO_CONFIG_MSIX_VECTOR], ax
 
-	; Set up Queue 0
+	; Set up Queue 0 (Receive)
 	xor eax, eax
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
@@ -286,7 +323,7 @@ virtio_net_init_reset_wait:
 	mov ax, 1
 	mov [rsi+VIRTIO_QUEUE_ENABLE], ax
 
-	; Set up Queue 1
+	; Set up Queue 1 (Transmit)
 	mov eax, 1
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
@@ -360,6 +397,7 @@ virtio_net_init_pop:
 ; -----------------------------------------------------------------------------
 ; net_virtio_transmit - Transmit a packet via a Virtio NIC
 ;  IN:	RSI = Location of packet
+;	RDX = Interface ID
 ;	RCX = Length of packet
 ; OUT:	Nothing
 net_virtio_transmit:
@@ -394,7 +432,7 @@ net_virtio_transmit:
 	stosw				; 16-bit ring
 
 	; Notify the queue
-	mov rdi, [os_NetIOBaseMem]
+	mov rdi, [rdx+nt_base]	; Transmit Descriptor Base Address
 	add rdi, [virtio_net_notify_offset]
 	add rdi, 4
 	xor eax, eax
@@ -422,6 +460,7 @@ net_virtio_transmit_wait:
 ; -----------------------------------------------------------------------------
 ; net_virtio_poll - Polls the Virtio NIC for a received packet
 ;  IN:	RDI = Location to store packet
+;	RDX = Interface ID
 ; OUT:	RCX = Length of packet
 net_virtio_poll:
 	push rdi

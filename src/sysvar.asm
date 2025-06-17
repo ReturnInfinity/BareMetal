@@ -43,10 +43,11 @@ os_nvs_mem:		equ 0x0000000000130000	; 0x130000 -> 0x15FFFF	192K NVS structures/b
 os_usb_mem:		equ 0x0000000000160000	; 0x160000 -> 0x19FFFF	256K USB structures/buffers
 
 ; Network memory
-os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1CFFFF	192K Network descriptors/buffers
+os_net_mem:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1BFFFF	128K Network descriptors/buffers
 os_rx_desc:		equ 0x00000000001A0000	; 0x1A0000 -> 0x1AFFFF	64K Ethernet receive descriptors
 os_tx_desc:		equ 0x00000000001B0000	; 0x1B0000 -> 0x1BFFFF	64K Ethernet transmit descriptors
-os_PacketBuffers:	equ 0x00000000001C0000	; 0x1C0000 -> 0x1CFFFF	64K Ethernet packet buffers
+
+						; 0x1C0000 -> 0x1CFFFF	64K Free
 
 ; LFB font data
 os_font:		equ 0x00000000001D0000	; 0x1D0000 -> 0x1DFFFF	64K Font video data
@@ -58,34 +59,23 @@ os_SMP:			equ 0x00000000001FF800	; SMP table. Each item is 8 bytes. (2KiB before
 app_start:		equ 0xFFFF800000000000	; Location of application memory
 
 
+; System Variables
+
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
 os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI
-os_PacketAddress:	equ os_SystemVariables + 0x0018
 os_StackBase:		equ os_SystemVariables + 0x0020
-os_net_transmit:	equ os_SystemVariables + 0x0028
-os_net_poll:		equ os_SystemVariables + 0x0030
-os_net_ackint:		equ os_SystemVariables + 0x0038
-os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
-os_NetMAC:		equ os_SystemVariables + 0x0048
 os_HPET_Address:	equ os_SystemVariables + 0x0050
 os_AHCI_Base:		equ os_SystemVariables + 0x0058
 os_NetworkCallback:	equ os_SystemVariables + 0x0060
 os_KeyboardCallback:	equ os_SystemVariables + 0x0068
 os_ClockCallback:	equ os_SystemVariables + 0x0070
-os_net_TXBytes:		equ os_SystemVariables + 0x0078
-os_net_TXPackets:	equ os_SystemVariables + 0x0080
-os_net_RXBytes:		equ os_SystemVariables + 0x0088
-os_net_RXPackets:	equ os_SystemVariables + 0x0090
-;os_hdd_BytesRead:	equ os_SystemVariables + 0x0098
-;os_hdd_BytesWrite:	equ os_SystemVariables + 0x00A0
 os_NVMe_Base:		equ os_SystemVariables + 0x00A8
 os_nvs_io:		equ os_SystemVariables + 0x00B0
 os_nvs_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
-os_NetIOLength:		equ os_SystemVariables + 0x00D0
 os_MouseCallback:	equ os_SystemVariables + 0x00D8
 os_xHCI_Base:		equ os_SystemVariables + 0x00E0
 os_usb_evtoken:		equ os_SystemVariables + 0x00E8
@@ -105,8 +95,6 @@ os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interr
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 0x0200
 os_CoreSpeed:		equ os_SystemVariables + 0x0202
-os_NetIOAddress:	equ os_SystemVariables + 0x0204
-os_NetLock:		equ os_SystemVariables + 0x0206
 os_nvsVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
@@ -128,7 +116,7 @@ key:			equ os_SystemVariables + 0x0301
 key_shift:		equ os_SystemVariables + 0x0302
 os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe is enabled
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
-os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is connected to
+;os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is connected to
 ;os_NetActivity_TX:	equ os_SystemVariables + 0x0306
 ;os_NetActivity_RX:	equ os_SystemVariables + 0x0307
 ;os_EthernetBuffer_C1:	equ os_SystemVariables + 0x0308	; Counter 1 for the Ethernet RX Ring Buffer
@@ -152,20 +140,32 @@ os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 os_net_icount:		equ os_SystemVariables + 0x031B
 
-; Network Device Table Base
-os_net_table:		equ os_SystemVariables + 0x2000
 
-; Network Devices Entries - each entry is 64 bytes
-os_net_entry_base:	equ os_SystemVariables + 0x2000
-os_net_entry_transmit:	equ os_SystemVariables + 0x2008
-os_net_entry_poll:	equ os_SystemVariables + 0x2010
-os_net_entry_stats:	equ os_SystemVariables + 0x2018
-os_net_entry_MAC:	equ os_SystemVariables + 0x2020
-os_net_entry_tx_tail:	equ os_SystemVariables + 0x2028
-os_net_entry_rx_tail:	equ os_SystemVariables + 0x202C
-; Next Device starts at 0x8040
-
+; System tables
 bus_table:		equ os_SystemVariables + 0x8000
+net_table:		equ os_SystemVariables + 0xA000
+
+; Buffers
+os_PacketBuffers:	equ os_SystemVariables + 0xC000	; 16KiB
+
+; net_table values (per device - 128 bytes)
+nt_ID:			equ 0x00 ; 16-bit
+nt_lock:		equ 0x02 ; 16-bit
+nt_MAC:			equ 0x08 ; 48-bit
+nt_base:		equ 0x10 ; 64-bit
+nt_len:			equ 0x18 ; 64-bit
+nt_transmit:		equ 0x20 ; 64-bit
+nt_poll:		equ 0x28 ; 64-bit
+nt_tx_desc:		equ 0x30 ; 64-bit
+nt_rx_desc:		equ 0x38 ; 64-bit
+nt_tx_tail:		equ 0x40 ; 64-bit
+nt_rx_head:		equ 0x44 ; 64-bit
+nt_tx_packets:		equ 0x50 ; 64-bit
+nt_tx_bytes:		equ 0x58 ; 64-bit
+nt_rx_packets:		equ 0x60 ; 64-bit
+nt_rx_bytes:		equ 0x68 ; 64-bit
+; bytes 70-7F for future use
+
 
 ; Misc
 tchar: db 0, 0

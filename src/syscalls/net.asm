@@ -20,7 +20,12 @@ b_net_status:
 	je b_net_status_end
 
 	mov ecx, 6
-	mov rsi, os_NetMAC
+
+	mov rsi, rdx
+	shl esi, 7			; Quick multiply by 128
+	add esi, net_table		; Add offset to net_table
+	add esi, 8
+
 b_net_status_loadMAC:
 	shl rax, 8
 	lodsb
@@ -42,17 +47,23 @@ b_net_status_end:
 ;	RDX = Interface ID
 ; OUT:	Nothing. All registers preserved
 b_net_tx:
+	push rdx
 	push rcx
 	push rax
 
 	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
 	jne b_net_tx_fail
 
+	shl edx, 7			; Quick multiply by 128
+	add edx, net_table		; Add offset to net_table
+
 b_net_tx_maxcheck:
 	cmp rcx, 1522			; Fail if more than 1522 bytes
 	ja b_net_tx_fail
 
-	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
+	; Lock the network interface so only one send can happen at a time
+	mov rax, rdx
+	add rax, nt_lock
 	call b_smp_lock
 
 	; Calculate where in physical memory the data should be read from
@@ -60,16 +71,22 @@ b_net_tx_maxcheck:
 	call os_virt_to_phys
 	xchg rax, rsi
 
-	inc qword [os_net_TXPackets]
-	add qword [os_net_TXBytes], rcx
-	call qword [os_net_transmit]	; Call the driver
+	; Call the driver transmit function
+	call [rdx+nt_transmit]		; Call driver transmit function passing RDX as interface
 
-	mov rax, os_NetLock
+	; Increment interface counters
+	inc qword [rdx+nt_tx_packets]		; Increment TXPackets
+	add qword [rdx+nt_tx_bytes], rcx	; Increment TXBytes
+
+	; Unlock the network interface
+	mov rax, rdx
+	add rax, nt_lock
 	call b_smp_unlock
 
 b_net_tx_fail:
 	pop rax
 	pop rcx
+	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -83,6 +100,7 @@ b_net_tx_fail:
 b_net_rx:
 	push rdi
 	push rsi
+	push rdx
 	push rax
 
 	xor ecx, ecx
@@ -90,18 +108,28 @@ b_net_rx:
 	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
 	jne b_net_rx_nodata
 
-	call qword [os_net_poll]	; Call the driver
+	shl edx, 7			; Quick multiply by 128
+	add edx, net_table		; Add offset to net_table
+
+	; Call the driver poll function
+	call [rdx+nt_poll]			; Call driver poll function passing RDX as interface
+
 	cmp cx, 0
 	je b_net_rx_nodata
-	inc qword [os_net_RXPackets]
-	add qword [os_net_RXBytes], rcx
+
+	; Increment interface counters
+	inc qword [rdx+nt_rx_packets]		; Increment RXPackets
+	add qword [rdx+nt_rx_bytes], rcx	; Increment RXBytes
 
 	mov rsi, os_PacketBuffers	; Packet exists here
 	push rcx
 	rep movsb			; Copy packet to requested address
 	pop rcx
 
+; TODO is b_net_rx_nodata needed if CX is already set
+b_net_rx_end:
 	pop rax
+	pop rdx
 	pop rsi
 	pop rdi
 	ret
@@ -109,6 +137,7 @@ b_net_rx:
 b_net_rx_nodata:
 	xor ecx, ecx
 	pop rax
+	pop rdx
 	pop rsi
 	pop rdi
 	ret

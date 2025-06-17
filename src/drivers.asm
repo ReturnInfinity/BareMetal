@@ -29,7 +29,7 @@
 %include "drivers/net/i8254x.asm"
 %include "drivers/net/i8257x.asm"
 %include "drivers/net/i8259x.asm"
-%include "drivers/net/r8169.asm"
+; %include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
 
 ; Video
@@ -129,13 +129,13 @@ dw 0x1572		; X710 (SFP+)
 dw 0x0000
 
 ; Realtek 816x/811x Gigabit Ethernet
-dw 0x8169		; Driver ID
-dw 0x10EC		; Vendor ID
-dw 0x8161		; 8111/8168/8411 PCI Express
-dw 0x8167		; 8110SC/8169SC
-dw 0x8168		; 8111/8168/8211/8411 PCI Express
-dw 0x8169		; 8169
-dw 0x0000
+;dw 0x8169		; Driver ID
+;dw 0x10EC		; Vendor ID
+;dw 0x8161		; 8111/8168/8411 PCI Express
+;dw 0x8167		; 8110SC/8169SC
+;dw 0x8168		; 8111/8168/8211/8411 PCI Express
+;dw 0x8169		; 8169
+;dw 0x0000
 
 ; End of list
 dw 0x0000
