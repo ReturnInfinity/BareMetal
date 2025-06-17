@@ -66,8 +66,6 @@ os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
 os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI
 os_StackBase:		equ os_SystemVariables + 0x0020
-os_NetIOBaseMem:	equ os_SystemVariables + 0x0040
-os_NetMAC:		equ os_SystemVariables + 0x0048
 os_HPET_Address:	equ os_SystemVariables + 0x0050
 os_AHCI_Base:		equ os_SystemVariables + 0x0058
 os_NetworkCallback:	equ os_SystemVariables + 0x0060
@@ -78,7 +76,6 @@ os_nvs_io:		equ os_SystemVariables + 0x00B0
 os_nvs_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
-os_NetIOLength:		equ os_SystemVariables + 0x00D0
 os_MouseCallback:	equ os_SystemVariables + 0x00D8
 os_xHCI_Base:		equ os_SystemVariables + 0x00E0
 os_usb_evtoken:		equ os_SystemVariables + 0x00E8
@@ -98,8 +95,6 @@ os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interr
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 0x0200
 os_CoreSpeed:		equ os_SystemVariables + 0x0202
-os_NetIOAddress:	equ os_SystemVariables + 0x0204
-os_NetLock:		equ os_SystemVariables + 0x0206
 os_nvsVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
@@ -155,6 +150,7 @@ os_PacketBuffers:	equ os_SystemVariables + 0xC000	; 16KiB
 
 ; net_table values (per device - 128 bytes)
 nt_ID:			equ 0x00 ; 16-bit
+nt_lock:		equ 0x02 ; 16-bit
 nt_MAC:			equ 0x08 ; 48-bit
 nt_base:		equ 0x10 ; 64-bit
 nt_len:			equ 0x18 ; 64-bit

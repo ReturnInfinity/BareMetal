@@ -61,8 +61,9 @@ b_net_tx_maxcheck:
 	cmp rcx, 1522			; Fail if more than 1522 bytes
 	ja b_net_tx_fail
 
-; TODO - This should be per interface
-	mov rax, os_NetLock		; Lock the net so only one send can happen at a time
+	; Lock the network interface so only one send can happen at a time
+	mov rax, rdx
+	add rax, nt_lock
 	call b_smp_lock
 
 	; Calculate where in physical memory the data should be read from
@@ -77,8 +78,9 @@ b_net_tx_maxcheck:
 	inc qword [rdx+nt_tx_packets]		; Increment TXPackets
 	add qword [rdx+nt_tx_bytes], rcx	; Increment TXBytes
 
-; TODO - This should be per interface
-	mov rax, os_NetLock
+	; Unlock the network interface
+	mov rax, rdx
+	add rax, nt_lock
 	call b_smp_unlock
 
 b_net_tx_fail:

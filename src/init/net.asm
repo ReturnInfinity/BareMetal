@@ -55,8 +55,8 @@ init_net_probe_found:
 	je init_net_probe_found_i8257x
 	cmp bx, 0x8259
 	je init_net_probe_found_i8259x
-	cmp bx, 0x8169
-	je init_net_probe_found_r8169
+;	cmp bx, 0x8169
+;	je init_net_probe_found_r8169
 	jmp init_net_probe_not_found
 
 init_net_probe_found_virtio:
@@ -75,9 +75,9 @@ init_net_probe_found_i8259x:
 	call net_i8259x_init
 	jmp init_net_probe_found_finish
 
-init_net_probe_found_r8169:
-	call net_r8169_init
-	jmp init_net_probe_found_finish
+;init_net_probe_found_r8169:
+;	call net_r8169_init
+;	jmp init_net_probe_found_finish
 
 init_net_probe_found_finish:
 	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled

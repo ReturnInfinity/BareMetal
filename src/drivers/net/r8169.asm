@@ -15,11 +15,22 @@ net_r8169_init:
 	push rcx
 	push rax
 
+	mov rdi, net_table
+	xor eax, eax
+	mov al, [os_net_icount]
+	shl eax, 7			; Quick multiply by 128
+	add rdi, rax
+
+	mov ax, 0x8169			; Driver tag for r8169
+	stosw
+	add rdi, 14
+
 	; Get the Base I/O Address of the device
 	mov dl, 0x04			; BAR0
 	call os_bus_read
 	and eax, 0xFFFFFFFC		; EAX now holds the Base IO Address (clear the low 2 bits)
-	mov word [os_NetIOAddress], ax
+	stosq				; Save the base
+	push rdx
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
@@ -30,27 +41,50 @@ net_r8169_init:
 	call os_bus_write		; Write updated Status/Command
 
 	; Get the MAC address
-	mov dx, word [os_NetIOAddress]
+	pop rdx
+	sub rdi, 16
 	in al, dx
-	mov [os_NetMAC], al
+	stosb
 	inc dx
 	in al, dx
-	mov [os_NetMAC+1], al
+	stosb
 	inc dx
 	in al, dx
-	mov [os_NetMAC+2], al
+	stosb
 	inc dx
 	in al, dx
-	mov [os_NetMAC+3], al
+	stosb
 	inc dx
 	in al, dx
-	mov [os_NetMAC+4], al
+	stosb
 	inc dx
 	in al, dx
-	mov [os_NetMAC+5], al
+	stosb
+
+	; Set base addresses for TX and RX descriptors
+	xor ecx, ecx
+	mov cl, byte [os_net_icount]
+	shl ecx, 15
+
+	add rdi, 0x22
+	mov rax, os_tx_desc
+	add rax, rcx
+	stosq
+	mov rax, os_rx_desc
+	add rax, rcx
+	stosq
 
 	; Reset the device
+	xor edx, edx
+	mov dl, [os_net_icount]
 	call net_r8169_reset
+
+	; Store call addresses
+	sub rdi, 0x20
+	mov rax, net_r8169_transmit
+	stosq
+	mov rax, net_r8169_poll
+	stosq
 
 	pop rax
 	pop rcx
@@ -61,7 +95,7 @@ net_r8169_init:
 
 
 ; -----------------------------------------------------------------------------
-; os_net_rtl8136_reset - Reset a Realtek 8169 NIC
+; os_net_r8169_reset - Reset a Realtek 8169 NIC
 ;  IN:	Nothing
 ; OUT:	Nothing, all registers preserved
 net_r8169_reset:
