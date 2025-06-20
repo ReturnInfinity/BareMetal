@@ -116,13 +116,6 @@ key:			equ os_SystemVariables + 0x0301
 key_shift:		equ os_SystemVariables + 0x0302
 os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe is enabled
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
-;os_NetIRQ:		equ os_SystemVariables + 0x0305	; Set to Interrupt line that NIC is connected to
-;os_NetActivity_TX:	equ os_SystemVariables + 0x0306
-;os_NetActivity_RX:	equ os_SystemVariables + 0x0307
-;os_EthernetBuffer_C1:	equ os_SystemVariables + 0x0308	; Counter 1 for the Ethernet RX Ring Buffer
-;os_EthernetBuffer_C2:	equ os_SystemVariables + 0x0309	; Counter 2 for the Ethernet RX Ring Buffer
-;os_nvsEnabled:		equ os_SystemVariables + 0x030A
-;os_nvsActivity:	equ os_SystemVariables + 0x030B
 os_NVMeIRQ:		equ os_SystemVariables + 0x030C
 os_NVMeMJR:		equ os_SystemVariables + 0x030D
 os_NVMeMNR:		equ os_SystemVariables + 0x030E
@@ -149,21 +142,22 @@ net_table:		equ os_SystemVariables + 0xA000
 os_PacketBuffers:	equ os_SystemVariables + 0xC000	; 16KiB
 
 ; net_table values (per device - 128 bytes)
-nt_ID:			equ 0x00 ; 16-bit
-nt_lock:		equ 0x02 ; 16-bit
-nt_MAC:			equ 0x08 ; 48-bit
-nt_base:		equ 0x10 ; 64-bit
-nt_len:			equ 0x18 ; 64-bit
-nt_transmit:		equ 0x20 ; 64-bit
-nt_poll:		equ 0x28 ; 64-bit
-nt_tx_desc:		equ 0x30 ; 64-bit
-nt_rx_desc:		equ 0x38 ; 64-bit
-nt_tx_tail:		equ 0x40 ; 64-bit
-nt_rx_head:		equ 0x44 ; 64-bit
-nt_tx_packets:		equ 0x50 ; 64-bit
-nt_tx_bytes:		equ 0x58 ; 64-bit
-nt_rx_packets:		equ 0x60 ; 64-bit
-nt_rx_bytes:		equ 0x68 ; 64-bit
+nt_ID:			equ 0x00 ; 16-bit Driver ID
+nt_lock:		equ 0x02 ; 16-bit Lock for b_net_tx
+nt_MAC:			equ 0x08 ; 48-bit MAC Address
+nt_base:		equ 0x10 ; 64-bit Base MMIO
+nt_len:			equ 0x18 ; 64-bit Length of MMIO
+nt_transmit:		equ 0x20 ; 64-bit Transmit function address
+nt_poll:		equ 0x28 ; 64-bit Poll function address
+; nt_desc:		equ 0xXX ; 64-bit Address of TX/RX descriptors
+nt_tx_desc:		equ 0x30 ; 64-bit Address of TX descriptors
+nt_rx_desc:		equ 0x38 ; 64-bit Address of RX descriptors
+nt_tx_tail:		equ 0x40 ; 64-bit TX Tail
+nt_rx_head:		equ 0x44 ; 64-bit RX Head
+nt_tx_packets:		equ 0x50 ; 64-bit Number of packets transmitted
+nt_tx_bytes:		equ 0x58 ; 64-bit Number of bytes transmitted
+nt_rx_packets:		equ 0x60 ; 64-bit Number of packets received
+nt_rx_bytes:		equ 0x68 ; 64-bit Number of bytes received
 ; bytes 70-7F for future use
 
 
