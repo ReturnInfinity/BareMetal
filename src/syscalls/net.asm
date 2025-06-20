@@ -100,10 +100,13 @@ b_net_tx_fail:
 b_net_rx:
 	push rdx
 
+	mov cl, byte [os_net_icount]	; Get interface count
+	cmp cl, 0
+	je b_net_rx_end			; Bail out if there are no valid interfaces
+	dec cl				; Interfaces start at 0
+	cmp cl, dl
 	xor ecx, ecx
-
-	cmp byte [os_net_icount], dl	; Check if interface is valid
-	ja b_net_rx_end
+	ja b_net_rx_end			; Bail out if it was an invalid interface
 
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
