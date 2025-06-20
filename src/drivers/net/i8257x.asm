@@ -328,8 +328,7 @@ net_i8257x_poll_end:
 
 
 ; Constants
-i8257x_MAX_PKT_SIZE	equ 16384
-i8257x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
+i8257x_MAX_DESC		equ 2048	; Must be 16, 32, 64, 128, etc. Each descriptor is 16 bytes
 
 ; Register list (13.3) (All registers should be accessed as 32-bit values)
 

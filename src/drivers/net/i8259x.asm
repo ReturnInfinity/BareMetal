@@ -477,8 +477,7 @@ net_i8259x_poll_end:
 
 
 ; Constants
-i8259x_MAX_PKT_SIZE	equ 16384
-i8259x_MAX_DESC		equ 4096	; Must be 16, 32, 64, 128, etc.
+i8259x_MAX_DESC		equ 2048	; Must be 16, 32, 64, 128, etc. Each descriptor is 16 bytes
 
 ; Register list (All registers should be accessed as 32-bit values)
 
