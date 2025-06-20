@@ -29,7 +29,7 @@ b_input_no_serial:
 
 ; -----------------------------------------------------------------------------
 ; b_output -- Outputs characters
-;  IN:	RSI = message location (non zero-terminated)
+;  IN:	RSI = Memory address of message (non zero-terminated)
 ;	RCX = number of chars to output
 ; OUT:	All registers preserved
 b_output:
