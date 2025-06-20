@@ -285,8 +285,8 @@ net_i8257x_transmit:
 ;	Bits 47:40 - Errors
 ;	Bits 63:48 - VLAN
 net_i8257x_poll:
-	push rdi
 	push rsi			; Used for the base MMIO of the NIC
+	push rbx
 	push rax
 
 	mov rdi, [rdx+nt_rx_desc]
@@ -295,8 +295,9 @@ net_i8257x_poll:
 	; Calculate the descriptor to read from
 	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
 	shl eax, 4			; Quick multiply by 16
-	add eax, 8			; Offset to bytes received
 	add rdi, rax			; Add offset to RDI
+	mov rbx, [rdi]
+	add rdi, 8			; Offset to bytes received
 	; Todo: read all 64 bits. check status bit for DD
 	xor ecx, ecx			; Clear RCX
 	mov cx, [rdi]			; Get the packet length
@@ -305,6 +306,7 @@ net_i8257x_poll:
 
 	xor eax, eax
 	stosq				; Clear the descriptor length and status
+	mov rdi, rbx
 
 	; Increment i8257x_rx_lasthead and the Receive Descriptor Tail
 	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
@@ -317,16 +319,10 @@ net_i8257x_poll:
 	and eax, i8257x_MAX_DESC - 1
 	mov [rsi+i8257x_RDT], eax	; Write the updated Receive Descriptor Tail
 
-	pop rax
-	pop rsi
-	pop rdi
-	ret
-
 net_i8257x_poll_end:
-	xor ecx, ecx
 	pop rax
+	pop rbx
 	pop rsi
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
