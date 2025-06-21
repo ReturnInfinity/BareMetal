@@ -227,13 +227,13 @@ net_i8254x_config:
 	mov rdi, [rdx+nt_rx_desc]
 	mov ecx, i8254x_MAX_DESC
 	call os_virt_to_phys
-next_record:
+net_i8254x_config_next_record:
 	stosq
 	add rdi, 8
 	add rax, 2048
 	dec ecx
 	cmp ecx, 0
-	jnz next_record
+	jnz net_i8254x_config_next_record
 
 	pop rax
 	pop rcx

@@ -78,6 +78,8 @@ net_i8257x_init:
 	call net_i8257x_reset
 
 	; Store call addresses
+	mov rax, net_i8257x_config
+	mov [rdi+nt_config], rax
 	mov rax, net_i8257x_transmit
 	mov [rdi+nt_transmit], rax
 	mov rax, net_i8257x_poll
@@ -209,6 +211,34 @@ net_i8257x_reset_nextdesc:
 
 	pop rax
 	pop rsi
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; net_i8257x_config - 
+;  IN:	RAX = Base address to store packets
+;	RDX = Interface ID
+; OUT:	Nothing
+net_i8257x_config:
+	push rdi
+	push rcx
+	push rax
+
+	mov rdi, [rdx+nt_rx_desc]
+	mov ecx, i8257x_MAX_DESC
+	call os_virt_to_phys
+net_i8257x_config_next_record:
+	stosq
+	add rdi, 8
+	add rax, 2048
+	dec ecx
+	cmp ecx, 0
+	jnz net_i8257x_config_next_record
+
+	pop rax
+	pop rcx
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
