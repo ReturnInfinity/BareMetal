@@ -221,25 +221,22 @@ net_i8254x_reset_nextdesc:
 ; OUT:	Nothing
 net_i8254x_config:
 	push rdi
-	push rsi
 	push rcx
 	push rax
 
-;	mov rsi, [rdx+nt_base]
-;	mov rdi, [rdx+nt_rx_desc]
-;	mov ecx, i8254x_MAX_DESC
-;
-;next_record:
-;	stosq
-;	add rdi, 8
-;	add rax, 2048
-;	dec ecx
-;	cmp ecx, 0
-;	jnz next_record
+	mov rdi, [rdx+nt_rx_desc]
+	mov ecx, i8254x_MAX_DESC
+	call os_virt_to_phys
+next_record:
+	stosq
+	add rdi, 8
+	add rax, 2048
+	dec ecx
+	cmp ecx, 0
+	jnz next_record
 
 	pop rax
 	pop rcx
-	pop rsi
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
