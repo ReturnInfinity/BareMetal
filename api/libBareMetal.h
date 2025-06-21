@@ -48,7 +48,8 @@ u64 b_system(u64 function, u64 var1, u64 var2);
 #define SCREEN_Y_GET		0x22
 #define SCREEN_PPSL_GET		0x23
 #define SCREEN_BPP_GET		0x24
-#define MAC_GET			0x30
+#define NET_STATUS		0x30
+#define NET_CONFIG		0x31
 #define BUS_READ		0x50
 #define BUS_WRITE		0x51
 #define STDOUT_SET		0x52

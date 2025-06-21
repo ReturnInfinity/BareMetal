@@ -75,6 +75,8 @@ net_i8254x_init:
 	call net_i8254x_reset
 
 	; Store call addresses
+	mov rax, net_i8254x_config
+	mov [rdi+nt_config], rax
 	mov rax, net_i8254x_transmit
 	mov [rdi+nt_transmit], rax
 	mov rax, net_i8254x_poll
@@ -206,6 +208,37 @@ net_i8254x_reset_nextdesc:
 	mov [rsi+i8254x_RSRPD], eax	; Clear the Receive Small Packet Detect Interrupt
 
 	pop rax
+	pop rsi
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; net_i8254x_config - 
+;  IN:	RAX = Base address to store packets
+;	RDX = Interface ID
+; OUT:	Nothing
+net_i8254x_config:
+	push rdi
+	push rsi
+	push rcx
+	push rax
+
+;	mov rsi, [rdx+nt_base]
+;	mov rdi, [rdx+nt_rx_desc]
+;	mov ecx, i8254x_MAX_DESC
+;
+;next_record:
+;	stosq
+;	add rdi, 8
+;	add rax, 2048
+;	dec ecx
+;	cmp ecx, 0
+;	jnz next_record
+
+	pop rax
+	pop rcx
 	pop rsi
 	pop rdi
 	ret

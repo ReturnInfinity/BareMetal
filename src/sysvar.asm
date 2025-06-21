@@ -146,7 +146,7 @@ nt_ID:			equ 0x00 ; 16-bit Driver ID
 nt_lock:		equ 0x02 ; 16-bit Lock for b_net_tx
 nt_MAC:			equ 0x08 ; 48-bit MAC Address
 nt_base:		equ 0x10 ; 64-bit Base MMIO
-nt_len:			equ 0x18 ; 64-bit Length of MMIO
+nt_config:		equ 0x18 ; 64-bit Config function address
 nt_transmit:		equ 0x20 ; 64-bit Transmit function address
 nt_poll:		equ 0x28 ; 64-bit Poll function address
 ; nt_desc:		equ 0xXX ; 64-bit Address of TX/RX descriptors

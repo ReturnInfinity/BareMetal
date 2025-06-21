@@ -41,6 +41,30 @@ b_net_status_end:
 
 
 ; -----------------------------------------------------------------------------
+; b_net_config -- Check if network access is available
+;  IN:	RDX = Interface ID
+;	RAX = Base for receive descriptors
+; OUT:	Nothing
+b_net_config:
+	push rsi
+	push rdx
+	push rcx
+
+	shl edx, 7			; Quick multiply by 128
+	add edx, net_table		; Add offset to net_table
+
+	; Call the driver config function
+	call [rdx+nt_config]		; Call driver transmit function passing RDX as interface
+
+b_net_config_end:
+	pop rcx
+	pop rdx
+	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; b_net_tx -- Transmit a packet via the network
 ;  IN:	RSI = Memory address of where packet is stored
 ;	RCX = Length of packet
