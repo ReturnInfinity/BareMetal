@@ -23,16 +23,13 @@ net_i8254x_init:
 	add rdi, rax
 
 	mov ax, 0x8254			; Driver tag for i8254x
-	stosw
-	add rdi, 14
+	mov [rdi+nt_ID], ax
 
 	; Get the Base Memory Address of the device
 	mov al, 0			; Read BAR0
 	call os_bus_read_bar
-	stosq				; Save the base
+	mov [rdi+nt_base], rax		; Save the base
 	push rax			; Save the base for gathering the MAC later
-	mov rax, rcx
-	stosq				; Save the length
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
@@ -44,7 +41,8 @@ net_i8254x_init:
 
 	; Get the MAC address
 	pop rsi				; Restore the base
-	sub rdi, 24			; 8 bytes into net table entry
+	push rdi
+	add rdi, 8
 	mov eax, [rsi+i8254x_RAL]	; RAL
 	stosb
 	shr eax, 8
@@ -57,19 +55,19 @@ net_i8254x_init:
 	stosb
 	shr eax, 8
 	stosb
+	pop rdi
 
 	; Set base addresses for TX and RX descriptors
 	xor ecx, ecx
 	mov cl, byte [os_net_icount]
 	shl ecx, 15
 
-	add rdi, 0x22
 	mov rax, os_tx_desc
 	add rax, rcx
-	stosq
+	mov [rdi+nt_tx_desc], rax
 	mov rax, os_rx_desc
 	add rax, rcx
-	stosq
+	mov [rdi+nt_rx_desc], rax
 
 	; Reset the device
 	xor edx, edx
@@ -77,11 +75,10 @@ net_i8254x_init:
 	call net_i8254x_reset
 
 	; Store call addresses
-	sub rdi, 0x20
 	mov rax, net_i8254x_transmit
-	stosq
+	mov [rdi+nt_transmit], rax
 	mov rax, net_i8254x_poll
-	stosq
+	mov [rdi+nt_poll], rax
 
 net_i8254x_init_error:
 
