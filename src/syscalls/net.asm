@@ -41,8 +41,32 @@ b_net_status_end:
 
 
 ; -----------------------------------------------------------------------------
+; b_net_config -- Check if network access is available
+;  IN:	RDX = Interface ID
+;	RAX = Base for receive descriptors
+; OUT:	Nothing
+b_net_config:
+	push rsi
+	push rdx
+	push rcx
+
+	shl edx, 7			; Quick multiply by 128
+	add edx, net_table		; Add offset to net_table
+
+	; Call the driver config function
+	call [rdx+nt_config]		; Call driver transmit function passing RDX as interface
+
+b_net_config_end:
+	pop rcx
+	pop rdx
+	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; b_net_tx -- Transmit a packet via the network
-;  IN:	RSI = Memory location where packet is stored
+;  IN:	RSI = Memory address of where packet is stored
 ;	RCX = Length of packet
 ;	RDX = Interface ID
 ; OUT:	Nothing. All registers preserved
@@ -75,8 +99,8 @@ b_net_tx_maxcheck:
 	call [rdx+nt_transmit]		; Call driver transmit function passing RDX as interface
 
 	; Increment interface counters
-	inc qword [rdx+nt_tx_packets]		; Increment TXPackets
-	add qword [rdx+nt_tx_bytes], rcx	; Increment TXBytes
+	inc qword [rdx+nt_tx_packets]
+	add qword [rdx+nt_tx_bytes], rcx
 
 	; Unlock the network interface
 	mov rax, rdx
@@ -93,53 +117,36 @@ b_net_tx_fail:
 
 ; -----------------------------------------------------------------------------
 ; b_net_rx -- Polls the network for received data
-;  IN:	RDI = Memory location where packet will be stored
-;	RDX = Interface ID
-; OUT:	RCX = Length of packet, 0 if no data
+;  IN:	RDX = Interface ID
+; OUT:	RDI = Memory address of where packet was stored
+;	RCX = Length of packet, 0 if no data
 ;	All other registers preserved
 b_net_rx:
-	push rdi
-	push rsi
 	push rdx
-	push rax
 
+	mov cl, byte [os_net_icount]	; Get interface count
+	cmp cl, 0
+	je b_net_rx_end			; Bail out if there are no valid interfaces
+	dec cl				; Interfaces start at 0
+	cmp cl, dl
 	xor ecx, ecx
-
-	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
-	jne b_net_rx_nodata
+	ja b_net_rx_end			; Bail out if it was an invalid interface
 
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
 
 	; Call the driver poll function
-	call [rdx+nt_poll]			; Call driver poll function passing RDX as interface
+	call [rdx+nt_poll]		; Call driver poll function passing RDX as interface
 
 	cmp cx, 0
-	je b_net_rx_nodata
+	je b_net_rx_end
 
 	; Increment interface counters
-	inc qword [rdx+nt_rx_packets]		; Increment RXPackets
-	add qword [rdx+nt_rx_bytes], rcx	; Increment RXBytes
+	inc qword [rdx+nt_rx_packets]
+	add qword [rdx+nt_rx_bytes], rcx
 
-	mov rsi, os_PacketBuffers	; Packet exists here
-	push rcx
-	rep movsb			; Copy packet to requested address
-	pop rcx
-
-; TODO is b_net_rx_nodata needed if CX is already set
 b_net_rx_end:
-	pop rax
 	pop rdx
-	pop rsi
-	pop rdi
-	ret
-
-b_net_rx_nodata:
-	xor ecx, ecx
-	pop rax
-	pop rdx
-	pop rsi
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 

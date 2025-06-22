@@ -30,7 +30,7 @@ void b_net_tx(void *mem, u64 len, u64 iid) {
 
 u64 b_net_rx(void *mem, u64 iid) {
 	u64 tlong;
-	asm volatile ("call *0x00100028" : "=c"(tlong) : "D"(mem), "d"(iid));
+	asm volatile ("call *0x00100028" : "=D"(mem), "=c"(tlong) : "d"(iid));
 	return tlong;
 }
 

@@ -23,16 +23,13 @@ net_i8254x_init:
 	add rdi, rax
 
 	mov ax, 0x8254			; Driver tag for i8254x
-	stosw
-	add rdi, 14
+	mov [rdi+nt_ID], ax
 
 	; Get the Base Memory Address of the device
 	mov al, 0			; Read BAR0
 	call os_bus_read_bar
-	stosq				; Save the base
+	mov [rdi+nt_base], rax		; Save the base
 	push rax			; Save the base for gathering the MAC later
-	mov rax, rcx
-	stosq				; Save the length
 
 	; Set PCI Status/Command values
 	mov dl, 0x01			; Read Status/Command
@@ -44,7 +41,8 @@ net_i8254x_init:
 
 	; Get the MAC address
 	pop rsi				; Restore the base
-	sub rdi, 24			; 8 bytes into net table entry
+	push rdi
+	add rdi, 8
 	mov eax, [rsi+i8254x_RAL]	; RAL
 	stosb
 	shr eax, 8
@@ -57,19 +55,19 @@ net_i8254x_init:
 	stosb
 	shr eax, 8
 	stosb
+	pop rdi
 
 	; Set base addresses for TX and RX descriptors
 	xor ecx, ecx
 	mov cl, byte [os_net_icount]
 	shl ecx, 15
 
-	add rdi, 0x22
 	mov rax, os_tx_desc
 	add rax, rcx
-	stosq
+	mov [rdi+nt_tx_desc], rax
 	mov rax, os_rx_desc
 	add rax, rcx
-	stosq
+	mov [rdi+nt_rx_desc], rax
 
 	; Reset the device
 	xor edx, edx
@@ -77,11 +75,12 @@ net_i8254x_init:
 	call net_i8254x_reset
 
 	; Store call addresses
-	sub rdi, 0x20
+	mov rax, net_i8254x_config
+	mov [rdi+nt_config], rax
 	mov rax, net_i8254x_transmit
-	stosq
+	mov [rdi+nt_transmit], rax
 	mov rax, net_i8254x_poll
-	stosq
+	mov [rdi+nt_poll], rax
 
 net_i8254x_init_error:
 
@@ -216,6 +215,34 @@ net_i8254x_reset_nextdesc:
 
 
 ; -----------------------------------------------------------------------------
+; net_i8254x_config - 
+;  IN:	RAX = Base address to store packets
+;	RDX = Interface ID
+; OUT:	Nothing
+net_i8254x_config:
+	push rdi
+	push rcx
+	push rax
+
+	mov rdi, [rdx+nt_rx_desc]
+	mov ecx, i8254x_MAX_DESC
+	call os_virt_to_phys
+net_i8254x_config_next_record:
+	stosq
+	add rdi, 8
+	add rax, 2048
+	dec ecx
+	cmp ecx, 0
+	jnz net_i8254x_config_next_record
+
+	pop rax
+	pop rcx
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; net_i8254x_transmit - Transmit a packet via an Intel 8254x NIC
 ;  IN:	RSI = Location of packet
 ;	RDX = Interface ID
@@ -270,9 +297,9 @@ net_i8254x_transmit:
 
 ; -----------------------------------------------------------------------------
 ; net_i8254x_poll - Polls the Intel 8254x NIC for a received packet
-;  IN:	RDI = Location to store packet
-;	RDX = Interface ID
-; OUT:	RCX = Length of packet
+;  IN:	RDX = Interface ID
+; OUT:	RDI = Location of stored packet
+;	RCX = Length of packet
 ; Note:	RDESC Descriptor Format:
 ;	First Qword:
 ;	Bits 63:0 - Buffer Address
@@ -283,8 +310,8 @@ net_i8254x_transmit:
 ;	Bits 47:40 - Errors
 ;	Bits 63:48 - Special
 net_i8254x_poll:
-	push rdi
 	push rsi			; Used for the base MMIO of the NIC
+	push rbx
 	push rax
 
 	mov rdi, [rdx+nt_rx_desc]
@@ -293,8 +320,9 @@ net_i8254x_poll:
 	; Calculate the descriptor to read from
 	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
 	shl eax, 4			; Quick multiply by 16
-	add eax, 8			; Offset to bytes received
 	add rdi, rax			; Add offset to RDI
+	mov rbx, [rdi]
+	add rdi, 8			; Offset to bytes received
 	; Todo: read all 64 bits. check status bit for DD
 	xor ecx, ecx			; Clear RCX
 	mov cx, [rdi]			; Get the packet length
@@ -303,6 +331,7 @@ net_i8254x_poll:
 
 	xor eax, eax
 	stosq				; Clear the descriptor length and status
+	mov rdi, rbx
 
 	; Increment i8254x_rx_lasthead and the Receive Descriptor Tail
 	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
@@ -315,16 +344,10 @@ net_i8254x_poll:
 	and eax, i8254x_MAX_DESC - 1
 	mov [rsi+i8254x_RDT], eax	; Write the updated Receive Descriptor Tail
 
-	pop rax
-	pop rsi
-	pop rdi
-	ret
-
 net_i8254x_poll_end:
-	xor ecx, ecx
 	pop rax
+	pop rbx
 	pop rsi
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -346,8 +369,7 @@ net_i8254x_poll_end:
 
 
 ; Constants
-i8254x_MAX_PKT_SIZE	equ 16384
-i8254x_MAX_DESC		equ 16		; Must be 16, 32, 64, 128, etc.
+i8254x_MAX_DESC		equ 2048	; Must be 16, 32, 64, 128, etc. Each descriptor is 16 bytes
 
 ; Register list (13.2) (All registers should be accessed as 32-bit values)
 

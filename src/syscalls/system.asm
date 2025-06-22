@@ -107,8 +107,12 @@ b_system_screen_bpp_get:
 
 ; Network
 
-b_system_mac_get:
+b_system_net_status:
 	call b_net_status
+	ret
+
+b_system_net_config:
+	call b_net_config
 	ret
 
 ; Bus
@@ -359,8 +363,8 @@ b_system_table:
 	dw none				; 0x2F
 
 ; Network
-	dw b_system_mac_get		; 0x30
-	dw none				; 0x31
+	dw b_system_net_status		; 0x30
+	dw b_system_net_config		; 0x31
 	dw none				; 0x32
 	dw none				; 0x33
 	dw none				; 0x34
