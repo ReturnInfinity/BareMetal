@@ -29,8 +29,8 @@
 %include "drivers/net/i8254x.asm"
 %include "drivers/net/i8257x.asm"
 %include "drivers/net/i8259x.asm"
-; %include "drivers/net/r8169.asm"
 %include "drivers/net/virtio-net.asm"
+; %include "drivers/net/r8169.asm"
 
 ; Video
 %include "drivers/lfb/lfb.asm"

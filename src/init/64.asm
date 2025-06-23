@@ -100,10 +100,6 @@ make_interrupt_gate_stubs:
 	mov rdi, os_nvs_io
 	stosq
 	stosq
-;	mov rdi, os_net_transmit
-;	stosq
-;	stosq
-;	stosq
 
 	; Configure the Stack base
 	mov rax, 0x200000		; Stacks start at 2MiB
