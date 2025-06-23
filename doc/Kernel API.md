@@ -316,12 +316,21 @@ Return the number of bits per pixel. This should return 32.
 	OUT:	RAX = Bits per pixel
 		All other registers preserved
 
-#### MAC_GET
+#### NET_STATUS
 
 Return the MAC address of the network device.
 
-	 IN:	Nothing
-	OUT:	RAX = MAC address (bits 0-47)
+	 IN:	RDX = Interface ID
+	OUT:	RAX = MAC Address (bits 0-47) if net is enabled, otherwise 0
+		All other registers preserved
+
+#### NET_CONFIG
+
+Configure an interface
+
+	 IN:	RDX = Interface ID
+		RAX = Base for receive descriptors
+	OUT:	Nothing
 		All other registers preserved
 
 #### BUS_READ

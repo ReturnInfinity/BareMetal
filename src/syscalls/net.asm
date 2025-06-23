@@ -9,7 +9,7 @@
 ; -----------------------------------------------------------------------------
 ; b_net_status -- Check if network access is available
 ;  IN:	RDX = Interface ID
-; OUT:	RAX = MAC Address if net is enabled, otherwise 0
+; OUT:	RAX = MAC Address (bits 0-47) if net is enabled, otherwise 0
 b_net_status:
 	push rsi
 	push rcx
@@ -41,7 +41,7 @@ b_net_status_end:
 
 
 ; -----------------------------------------------------------------------------
-; b_net_config -- Check if network access is available
+; b_net_config -- Configure an interface
 ;  IN:	RDX = Interface ID
 ;	RAX = Base for receive descriptors
 ; OUT:	Nothing
