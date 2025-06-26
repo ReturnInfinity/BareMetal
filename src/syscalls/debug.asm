@@ -186,11 +186,12 @@ os_debug_block:
 	shl edx, 2			; Quick multiply by 4 for line offset
 	xor ecx, ecx
 	mov cx, [0x00005F00 + 0x10]	; Screen X
-	shr cx, 4			; CX = total amount of 8-pixel wide blocks
-	sub cx, 4
+	shr cx, 4			; Quick divide by 16 (box width plus blank width)
+	sub cx, 8			; CX = total amount of 8-pixel wide blocks
 	add ebx, ecx
 	shl ebx, 5			; Quick multiply by 32 (8 pixels by 4 bytes each)
 	add rdi, rbx
+	sub rdi, 16			; Move left by half a box width (4 pixels by 4 bytes each)
 
 	; Draw the 8x8 pixel block
 	mov ebx, 8			; 8 pixels tall
@@ -199,7 +200,7 @@ os_debug_block_nextline:
 	mov ecx, 8			; 8 pixels wide
 	rep stosd
 	add rdi, rdx			; Add line offset
-	sub rdi, 8*4
+	sub rdi, 8*4			; 8 pixels by 4 bytes each
 	dec ebx
 	jnz os_debug_block_nextline
 

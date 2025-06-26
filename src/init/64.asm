@@ -138,7 +138,7 @@ no_more_aps:
 	; Configure the serial port
 	call serial_init
 
-	; Output block to screen (1/4)
+	; Output block to screen (1/8)
 	mov ebx, 0
 	call os_debug_block
 

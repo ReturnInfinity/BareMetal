@@ -91,8 +91,8 @@ init_net_probe_found_finish:
 init_net_probe_not_found:
 
 init_net_end:
-	; Output block to screen (4/4)
-	mov ebx, 6
+	; Output block to screen (5/8)
+	mov ebx, 8
 	call os_debug_block
 
 	ret
