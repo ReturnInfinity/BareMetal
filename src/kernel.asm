@@ -47,7 +47,7 @@ start:
 	mov rdi, 0x1E0000
 	mov rcx, 2048
 	rep movsq			; Copy 16384 bytes
-jmp $
+
 	; Set the payload to run
 bsp_run_payload:
 	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
