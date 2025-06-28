@@ -39,10 +39,10 @@ start:
 	call init_nvs			; Initialize non-volatile storage
 	call init_net			; Initialize network
 	call init_hid			; Initialize human interface devices
-	cmp qword [0x100000 + KERNELSIZE], 0	; Is there a payload after the kernel?
-	je ap_clear			; If not, skip to ap_clear
-	call init_sys
-	jmp bsp				; Skip past some of the ap_clear code we have already executed
+	cmp qword [0x100000 + KERNELSIZE], 0
+	je ap_clear			; If no payload was present then skip to ap_clear
+	call init_sys			; If payload present then prep it for execution
+	jmp bsp				; Skip to bsp as payload was prepped
 
 align 16
 ap_clear:				; All cores start here on first start-up and after an exception
