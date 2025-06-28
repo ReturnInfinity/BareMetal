@@ -35,8 +35,11 @@ bsp_run_payload:
 
 init_sys_done:
 	; Output block to screen (8/8)
+	push rbx			; RBX is used in bsp:
 	mov ebx, 14
 	call os_debug_block
+	pop rbx
+
 	ret
 ; -----------------------------------------------------------------------------
 
