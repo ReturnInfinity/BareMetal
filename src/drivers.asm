@@ -10,8 +10,6 @@
 %include "drivers/apic.asm"
 %include "drivers/hpet.asm"
 %include "drivers/ioapic.asm"
-%include "drivers/ps2.asm"
-%include "drivers/serial.asm"
 %include "drivers/virtio.asm"
 
 ; Bus
@@ -34,6 +32,11 @@
 
 ; Video
 %include "drivers/lfb/lfb.asm"
+
+; HID
+%include "drivers/hid/ps2.asm"
+%include "drivers/hid/serial.asm"
+%include "drivers/hid/virtio-input.asm"
 
 NIC_DeviceVendor_ID:	; The supported list of NICs
 
