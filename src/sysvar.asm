@@ -116,6 +116,7 @@ key:			equ os_SystemVariables + 0x0301
 key_shift:		equ os_SystemVariables + 0x0302
 os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe is enabled
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
+os_payload:		equ os_SystemVariables + 0x0305
 os_NVMeIRQ:		equ os_SystemVariables + 0x030C
 os_NVMeMJR:		equ os_SystemVariables + 0x030D
 os_NVMeMNR:		equ os_SystemVariables + 0x030E

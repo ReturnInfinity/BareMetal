@@ -39,9 +39,28 @@ start:
 	call init_nvs			; Initialize non-volatile storage
 	call init_net			; Initialize network
 	call init_hid			; Initialize human interface devices
-	cmp qword [0x100000 + KERNELSIZE], 0
+	call init_sys			; Initialize system
+
+	; Set the payload to run
+start_payload:
+	cmp byte [os_payload], 0
 	je ap_clear			; If no payload was present then skip to ap_clear
-	call init_sys			; If payload present then prep it for execution
+	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
+	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
+	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
+	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
+	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
+	mov [os_BSP], al		; Keep a record of the BSP APIC ID
+	mov ebx, eax			; Save the APIC ID
+	mov rdi, os_SMP			; Clear the entry in the work table
+	shl rax, 3			; Quick multiply by 8 to get to proper record
+	add rdi, rax
+	xor eax, eax
+	or al, 1			; Set bit 0 for "present"
+	stosq				; Clear the code address
+	mov rcx, rbx			; Copy the APIC ID for b_smp_set
+	mov rax, 0x1E0000		; Payload was copied here
+	call b_smp_set
 	jmp bsp				; Skip to bsp as payload was prepped
 
 align 16

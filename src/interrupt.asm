@@ -430,7 +430,7 @@ exception_gate_main_nextreg_continue:
 	; Check if the exception was on the BSP. Rerun the payload if so
 	call b_smp_get_id		; Get the local CPU ID
 	cmp [os_BSP], al
-	je bsp_run_payload
+	je start_payload
 	jmp ap_clear			; jump to AP clear code
 ; -----------------------------------------------------------------------------
 
