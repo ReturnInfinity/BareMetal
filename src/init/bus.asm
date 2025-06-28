@@ -113,6 +113,10 @@ init_bus_end:
 	mov ecx, 4
 	rep stosd
 
+	; Output block to screen (2/8)
+	mov ebx, 2
+	call os_debug_block
+
 init_bus_usb_search:
 	; Check Bus Table for a USB Controller
 	mov rsi, bus_table		; Load Bus Table address to RSI
@@ -144,8 +148,8 @@ init_bus_usb_xhci_start:
 
 init_bus_usb_not_found:
 
-	; Output block to screen (2/4)
-	mov ebx, 2
+	; Output block to screen (4/8)
+	mov ebx, 6
 	call os_debug_block
 
 	ret

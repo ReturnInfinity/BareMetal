@@ -65,8 +65,8 @@ init_nvs_ata:
 	jmp init_nvs_done
 
 init_nvs_done:
-	; Output block to screen (3/4)
-	mov ebx, 4
+	; Output block to screen (5/8)
+	mov ebx, 8
 	call os_debug_block
 
 	ret

@@ -108,6 +108,10 @@ make_interrupt_gate_stubs:
 	; Initialize the linear frame buffer output
 	call lfb_init
 
+	; Output block to screen (1/8)
+	mov ebx, 0
+	call os_debug_block
+
 	; Initialize the APIC
 	call os_apic_init
 
@@ -116,6 +120,10 @@ make_interrupt_gate_stubs:
 
 	; Initialize the HPET
 	call os_hpet_init
+
+	; Output block to screen (2/8)
+	mov ebx, 2
+	call os_debug_block
 
 	; Initialize all AP's to run our reset code. Skip the BSP
 	call b_smp_get_id
@@ -138,8 +146,8 @@ no_more_aps:
 	; Configure the serial port
 	call serial_init
 
-	; Output block to screen (1/4)
-	mov ebx, 0
+	; Output block to screen (3/8)
+	mov ebx, 4
 	call os_debug_block
 
 	ret
