@@ -11,6 +11,9 @@ init_hid:
 	; Configure the PS/2 keyboard and mouse (if they exist)
 	call ps2_init
 
+	; Configure Virtio Input (if it is present)
+	call virtio_input_init
+
 	; Enumerate USB devices
 	bt qword [os_SysConfEn], 5
 	jnc init_hid_done
