@@ -148,8 +148,8 @@ init_bus_usb_xhci_start:
 
 init_bus_usb_not_found:
 
-	; Output block to screen (3/8)
-	mov ebx, 4
+	; Output block to screen (4/8)
+	mov ebx, 6
 	call os_debug_block
 
 	ret

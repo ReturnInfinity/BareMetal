@@ -171,21 +171,21 @@ os_debug_block:
 	xor edx, edx
 	xor eax, eax
 	xor ebx, ebx
-	mov ax, [0x00005F00 + 0x12]	; Screen Y
+	mov ax, [os_screen_y]		; Screen Y
 	add ax, 16			; Lower row
 	shr ax, 1			; Quick divide by 2
-	mov bx, [0x00005F00 + 0x10]	; Screen X
+	mov bx, [os_screen_x]		; Screen X
 	shl ebx, 2			; Quick multiply by 4
 	mul ebx				; Multiply EDX:EAX by EBX
-	mov rdi, [0x00005F00]		; Frame buffer base
+	mov rdi, [os_screen_lfb]	; Frame buffer base
 	add rdi, rax			; Offset is ((screeny - 8) / 2 + screenx * 4)
 	pop rax
 	pop rbx
 	xor edx, edx
-	mov dx, [0x00005F00 + 0x14]	; PixelsPerScanLine
+	mov dx, [os_screen_ppsl]	; PixelsPerScanLine
 	shl edx, 2			; Quick multiply by 4 for line offset
 	xor ecx, ecx
-	mov cx, [0x00005F00 + 0x10]	; Screen X
+	mov cx, [os_screen_x]		; Screen X
 	shr cx, 4			; Quick divide by 16 (box width plus blank width)
 	sub cx, 8			; CX = total amount of 8-pixel wide blocks
 	add ebx, ecx

@@ -19,12 +19,8 @@ init_hid:
 	cli
 
 init_hid_done:
-	; Output block to screen (6-8/8)
-	mov ebx, 10
-	call os_debug_block
+	; Output block to screen (7/8)
 	mov ebx, 12
-	call os_debug_block
-	mov ebx, 14
 	call os_debug_block
 	ret
 ; -----------------------------------------------------------------------------
