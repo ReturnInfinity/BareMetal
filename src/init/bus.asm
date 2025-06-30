@@ -113,8 +113,8 @@ init_bus_end:
 	mov ecx, 4
 	rep stosd
 
-	; Output block to screen (2/8)
-	mov ebx, 2
+	; Output block to screen (3/8)
+	mov ebx, 4
 	call os_debug_block
 
 init_bus_usb_search:
