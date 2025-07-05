@@ -81,6 +81,8 @@ net_i8254x_init:
 	mov [rdi+nt_transmit], rax
 	mov rax, net_i8254x_poll
 	mov [rdi+nt_poll], rax
+	mov rax, i8254x_MAX_DESC / 2
+	mov [rdi+0x70], rax
 
 net_i8254x_init_error:
 
@@ -339,10 +341,12 @@ net_i8254x_poll:
 	and eax, i8254x_MAX_DESC - 1
 	mov [rdx+nt_rx_head], eax	; Set rx_lasthead
 
-	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
+;	mov eax, [rsi+i8254x_RDT]	; Read the current Receive Descriptor Tail
+	mov rax, [rdx+0x70]
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
 	and eax, i8254x_MAX_DESC - 1
 	mov [rsi+i8254x_RDT], eax	; Write the updated Receive Descriptor Tail
+	mov [rdx+0x70], rax
 
 net_i8254x_poll_end:
 	pop rax
