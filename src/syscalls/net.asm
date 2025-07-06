@@ -98,10 +98,6 @@ b_net_tx_maxcheck:
 	; Call the driver transmit function
 	call [rdx+nt_transmit]		; Call driver transmit function passing RDX as interface
 
-	; Increment interface counters
-	inc qword [rdx+nt_tx_packets]
-	add qword [rdx+nt_tx_bytes], rcx
-
 	; Unlock the network interface
 	mov rax, rdx
 	add rax, nt_lock
@@ -137,13 +133,6 @@ b_net_rx:
 
 	; Call the driver poll function
 	call [rdx+nt_poll]		; Call driver poll function passing RDX as interface
-
-	cmp cx, 0
-	je b_net_rx_end
-
-	; Increment interface counters
-	inc qword [rdx+nt_rx_packets]
-	add qword [rdx+nt_rx_bytes], rcx
 
 b_net_rx_end:
 	pop rdx

@@ -268,7 +268,7 @@ net_i8259x_init_rx_enable_wait:
 	jnc net_i8259x_init_rx_enable_wait
 	xor eax, eax
 	mov [rsi+i8259x_RDH], eax
-	mov eax, i8259x_MAX_DESC - 1
+	mov eax, i8259x_MAX_DESC / 2
 	mov [rsi+i8259x_RDT], eax
 
 ; 	; Set SECRXCTRL_RX_DIS
@@ -445,6 +445,10 @@ net_i8259x_transmit:
 
 	; TDESC.STA.DD (bit 32) should be 1 once the hardware has sent the packet
 
+	; Increment interface counters
+	inc qword [rdx+nt_tx_packets]
+	add qword [rdx+nt_tx_bytes], rcx
+
 	pop rax
 	pop rdi
 	ret
@@ -494,6 +498,10 @@ net_i8259x_poll:
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
 	and eax, i8259x_MAX_DESC - 1
 	mov [rsi+i8259x_RDT], eax	; Write the updated Receive Descriptor Tail
+
+	; Increment interface counters
+	inc qword [rdx+nt_rx_packets]
+	add qword [rdx+nt_rx_bytes], rcx
 
 net_i8259x_poll_end:
 	pop rax
