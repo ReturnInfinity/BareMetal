@@ -16,13 +16,7 @@ b_input:
 	test al, al
 	jz b_input_no_key
 	mov byte [key], 0x00		; clear the variable as the keystroke is in AL now
-	ret
-
 b_input_no_key:
-	bt qword [os_SysConfEn], 1 << 2
-	jnc b_input_no_serial
-	call serial_recv		; Try from the serial port
-b_input_no_serial:
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -33,26 +27,7 @@ b_input_no_serial:
 ;	RCX = number of chars to output
 ; OUT:	All registers preserved
 b_output:
-	push rsi			; Message location
-	push rcx			; Counter of chars left to output
-	push rax			; AL is used for the output function
-
-	call [0x00100018]
-
-;	bt qword [os_SysConfEn], 1 << 2
-;	jnc b_output_done
-;
-;b_output_nextchar:
-;	jrcxz b_output_done		; If RCX is 0 then the function is complete
-;	dec rcx
-;	lodsb				; Get char from string and store in AL
-;	call serial_send
-;	jmp b_output_nextchar
-
-b_output_done:
-	pop rax
-	pop rcx
-	pop rsi
+	call [0x00100018]		; Call kernel function in table
 	ret
 ; -----------------------------------------------------------------------------
 
