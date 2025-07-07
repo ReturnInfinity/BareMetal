@@ -215,7 +215,7 @@ net_i8254x_reset_nextdesc:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8254x_config - 
+; net_i8254x_config -
 ;  IN:	RAX = Base address to store packets
 ;	RDX = Interface ID
 ; OUT:	Nothing
@@ -289,10 +289,6 @@ net_i8254x_transmit:
 	mov rdi, [rdx+nt_base]		; Load the base MMIO of the NIC
 	mov [rdi+i8254x_TDT], eax	; TDL - Transmit Descriptor Tail
 
-	; Increment interface counters
-	inc qword [rdx+nt_tx_packets]
-	add qword [rdx+nt_tx_bytes], rcx
-
 	pop rax
 	pop rdi
 	ret
@@ -347,10 +343,6 @@ net_i8254x_poll:
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
 	and eax, i8254x_MAX_DESC - 1
 	mov [rsi+i8254x_RDT], eax	; Write the updated Receive Descriptor Tail
-
-	; Increment interface counters
-	inc qword [rdx+nt_rx_packets]
-	add qword [rdx+nt_rx_bytes], rcx
 
 net_i8254x_poll_end:
 	pop rax

@@ -103,6 +103,10 @@ b_net_tx_maxcheck:
 	add rax, nt_lock
 	call b_smp_unlock
 
+	; Increment interface counters
+	inc qword [rdx+nt_tx_packets]
+	add qword [rdx+nt_tx_bytes], rcx
+
 b_net_tx_fail:
 	pop rax
 	pop rcx
@@ -133,6 +137,10 @@ b_net_rx:
 
 	; Call the driver poll function
 	call [rdx+nt_poll]		; Call driver poll function passing RDX as interface
+
+	; Increment interface counters
+	inc qword [rdx+nt_rx_packets]
+	add qword [rdx+nt_rx_bytes], rcx
 
 b_net_rx_end:
 	pop rdx

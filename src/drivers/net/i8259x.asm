@@ -188,7 +188,7 @@ net_i8259x_reset_dma_wait:
 	shl eax, 15
 	mov rdi, os_rx_desc
 	add rdi, rax
-net_i8259x_reset_nextdesc:	
+net_i8259x_reset_nextdesc:
 	mov rax, os_PacketBuffers	; Default packet will go here
 	stosq
 	xor eax, eax
@@ -377,7 +377,7 @@ net_i8259x_init_tx_enable_wait:
 
 
 ; -----------------------------------------------------------------------------
-; net_i8259x_config - 
+; net_i8259x_config -
 ;  IN:	RAX = Base address to store packets
 ;	RDX = Interface ID
 ; OUT:	Nothing
@@ -445,10 +445,6 @@ net_i8259x_transmit:
 
 	; TDESC.STA.DD (bit 32) should be 1 once the hardware has sent the packet
 
-	; Increment interface counters
-	inc qword [rdx+nt_tx_packets]
-	add qword [rdx+nt_tx_bytes], rcx
-
 	pop rax
 	pop rdi
 	ret
@@ -498,10 +494,6 @@ net_i8259x_poll:
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
 	and eax, i8259x_MAX_DESC - 1
 	mov [rsi+i8259x_RDT], eax	; Write the updated Receive Descriptor Tail
-
-	; Increment interface counters
-	inc qword [rdx+nt_rx_packets]
-	add qword [rdx+nt_rx_bytes], rcx
 
 net_i8259x_poll_end:
 	pop rax
