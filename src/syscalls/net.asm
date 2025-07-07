@@ -138,6 +138,9 @@ b_net_rx:
 	; Call the driver poll function
 	call [rdx+nt_poll]		; Call driver poll function passing RDX as interface
 
+	cmp cx, 0			; No data?
+	je b_net_rx_end			; If so, don't increment counters
+
 	; Increment interface counters
 	inc qword [rdx+nt_rx_packets]
 	add qword [rdx+nt_rx_bytes], rcx
