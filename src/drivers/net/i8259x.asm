@@ -60,7 +60,7 @@ net_i8259x_init:
 	; Set base addresses for TX and RX descriptors
 	xor ecx, ecx
 	mov cl, byte [os_net_icount]
-	shl ecx, 15
+	shl ecx, 15			; Quick multiply by 32768
 
 	mov rax, os_tx_desc
 	add rax, rcx
@@ -126,7 +126,7 @@ net_i8259x_reset_wait:
 	mov eax, [rsi+i8259x_CTRL]	; Read CTRL
 	jnz net_i8259x_reset_wait	; Wait for it to read back as 0x0
 
-	; Wait 10ns
+	; Wait 10ms (4.6.3.2)
 	mov rax, 10000
 	call b_delay
 
@@ -136,6 +136,18 @@ net_i8259x_reset_wait:
 	mov eax, i8259x_IRQ_CLEAR_MASK
 	mov [rsi+i8259x_EIMC], eax
 	mov eax, [rsi+i8259x_EICR]
+
+	; Preform general configuration (4.6.3.2)
+	;FCTTV
+	;FCRTL - Flow Control Low Threshold
+	;FCRTH - Flow Control High Threshold
+	;FCRTV
+	;FCCFG
+	; Section 3.7.7.3.2 through Section 3.7.7.3.5
+	;FDIRCTRL - Clear PBALLOC
+	;SRRCTL[n].BSIZEPACKET field defines the data buffer size. Section 7.1.2
+	;Aggregation - Section 7.1.7
+	;Receive Coalescing (RSC) - Section 7.11.5.1 
 
 	; Wait for EEPROM auto read completion (4.6.3)
 	mov eax, [rsi+i8259x_EEC]	; Read current value
@@ -185,7 +197,7 @@ net_i8259x_reset_dma_wait:
 	mov ecx, i8259x_MAX_DESC
 	xor eax, eax
 	mov al, byte [os_net_icount]
-	shl eax, 15
+	shl eax, 15			; Quick multiply by 32768
 	mov rdi, os_rx_desc
 	add rdi, rax
 net_i8259x_reset_nextdesc:
@@ -205,13 +217,13 @@ net_i8259x_reset_nextdesc:
 ;	mov eax, 32768
 ;	mov [rsi+i8259x_RXPBSIZE], eax
 	; Set Max packet size
-	mov eax, 9000			; 9000 bytes
-	shl eax, 16			; Shift to bits 31:16
-	mov [rsi+i8259x_MAXFRS], eax
+;	mov eax, 9000			; 9000 bytes
+;	shl eax, 16			; Shift to bits 31:16
+;	mov [rsi+i8259x_MAXFRS], eax
 	; Enable Jumbo Frames
-	mov eax, [rsi+i8259x_HLREG0]
-	or eax, 1 << i8259x_HLREG0_JUMBOEN
-	mov [rsi+i8259x_HLREG0], eax
+;	mov eax, [rsi+i8259x_HLREG0]
+;	or eax, 1 << i8259x_HLREG0_JUMBOEN
+;	mov [rsi+i8259x_HLREG0], eax
 	; Enable CRC offloading
 	mov eax, [rsi+i8259x_HLREG0]
 	or eax, 1 << i8259x_HLREG0_RXCRCSTRP
@@ -223,7 +235,7 @@ net_i8259x_reset_nextdesc:
 	mov eax, [rsi+i8259x_FCTRL]
 	or eax, i8259x_FCTRL_BAM
 	mov [rsi+i8259x_FCTRL], eax
-	; Enable Advanced RX descriptors
+	; Disable Advanced RX descriptors
 	mov eax, [rsi+i8259x_SRRCTL]
 	and eax, 0xF1FFFFFF		; Clear bits 27:25 for DESCTYPE
 ;	or eax, 0x02000000		; Bits 27:25 = 001 for Advanced desc one buffer
@@ -232,7 +244,7 @@ net_i8259x_reset_nextdesc:
 	; Set up RX descriptor ring 0
 	xor eax, eax
 	mov al, byte [os_net_icount]
-	shl eax, 15
+	shl eax, 15			; Quick multiply by 32768
 	add rax, os_rx_desc
 	mov [rsi+i8259x_RDBAL], eax
 	shr rax, 32
@@ -308,7 +320,7 @@ net_i8259x_init_rx_enable_wait:
 	; Set up TX descriptor ring 0
 	xor eax, eax
 	mov al, byte [os_net_icount]
-	shl eax, 15
+	shl eax, 15			; Quick multiply by 32768
 	add rax, os_tx_desc
 	mov [rsi+i8259x_TDBAL], eax	; Bits 6:0 are ignored, memory alignment at 128bytes
 	shr rax, 32
@@ -453,9 +465,9 @@ net_i8259x_transmit:
 
 ; -----------------------------------------------------------------------------
 ; net_i8259x_poll - Polls the Intel 8259x NIC for a received packet
-;  IN:	RDI = Location to store packet
-;	RDX = Interface ID
-; OUT:	RCX = Length of packet
+;  IN:	RDX = Interface ID
+; OUT:	RDI = Location of stored packet
+;	RCX = Length of packet
 ; Note: Receive Descriptor (RDESC) Layout - Legacy Mode (7.1.5):
 ;	Bits 63:0 - Buffer Address
 ;	Bits 95:64 - Fragment Checksum (Bits 31:16) / Length (Bits 15:0)
@@ -465,16 +477,17 @@ net_i8259x_poll:
 	push rbx
 	push rax
 
-	mov rdi, [rdx+nt_rx_desc]
+	mov rdi, [rdx+nt_rx_desc]	; Load the base address of the RX descriptors
 	mov rsi, [rdx+nt_base]		; Load the base MMIO of the NIC
 
 	; Calculate the descriptor to read from
-	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
+	mov eax, [rdx+nt_rx_head]	; Get rx_head
 	shl eax, 4			; Quick multiply by 16
-	add rdi, rax			; Add offset to RDI
-	mov rbx, [rdi]
+	add rdi, rax			; Add offset to RX descriptor base
+	mov rbx, [rdi]			; Load the buffer address (where the packet is)
 	add rdi, 8			; Offset to bytes received
-	; Todo: read all 64 bits. check status bit for DD
+	; Todo: read all 64 bits. check status bit DD(0)
+	; Errors (Bits 47:40) should be clear
 	xor ecx, ecx			; Clear RCX
 	mov cx, [rdi]			; Get the packet length
 	cmp cx, 0
@@ -482,17 +495,19 @@ net_i8259x_poll:
 
 	xor eax, eax
 	stosq				; Clear the descriptor length and status
-	mov rdi, rbx
+	mov rdi, rbx			; Copy the buffer address to RDI
 
-	; Increment i8259x_rx_lasthead and the Receive Descriptor Tail
-	mov eax, [rdx+nt_rx_head]	; Get rx_lasthead
+	; Increment rx_head
+	mov eax, [rdx+nt_rx_head]	; Get rx_head
 	add eax, 1
 	and eax, i8259x_MAX_DESC - 1
-	mov [rdx+nt_rx_head], eax	; Set rx_lasthead
+	mov [rdx+nt_rx_head], eax	; Set rx_head
 
-	mov eax, [rsi+i8259x_RDT]	; Read the current Receive Descriptor Tail
+	; Increment rx_tail and the device Receive Descriptor Tail
+	mov eax, [rdx+nt_rx_tail]	; Load the last tail value
 	add eax, 1			; Add 1 to the Receive Descriptor Tail
-	and eax, i8259x_MAX_DESC - 1
+	and eax, i8259x_MAX_DESC - 1	; Wrap around if needed
+	mov [rdx+nt_rx_tail], eax	; Update driver info
 	mov [rsi+i8259x_RDT], eax	; Write the updated Receive Descriptor Tail
 
 net_i8259x_poll_end:
@@ -504,7 +519,7 @@ net_i8259x_poll_end:
 
 
 ; Constants
-i8259x_MAX_DESC		equ 2048	; Must be 16, 32, 64, 128, etc. Each descriptor is 16 bytes
+i8259x_MAX_DESC		equ 2048	; Must be a multiple of 128. Each descriptor is 16 bytes
 
 ; Register list (All registers should be accessed as 32-bit values)
 
