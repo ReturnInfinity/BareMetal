@@ -152,10 +152,10 @@ nt_transmit:		equ 0x20 ; 64-bit Transmit function address
 nt_poll:		equ 0x28 ; 64-bit Poll function address
 nt_tx_desc:		equ 0x30 ; 64-bit Address of TX descriptors
 nt_rx_desc:		equ 0x38 ; 64-bit Address of RX descriptors
-nt_tx_head:		equ 0x40 ; 32-bit TX Head
-nt_tx_tail:		equ 0x44 ; 32-bit TX Tail
-nt_rx_head:		equ 0x48 ; 32-bit RX Head
-nt_rx_tail:		equ 0x4A ; 32-bit RX Tail
+nt_tx_tail:		equ 0x40 ; 32-bit TX Tail
+nt_rx_head:		equ 0x44 ; 32-bit RX Head
+nt_rx_tail:		equ 0x48 ; 32-bit RX Tail
+nt_tx_head:		equ 0x4A ; 32-bit TX Head
 nt_tx_packets:		equ 0x50 ; 64-bit Number of packets transmitted
 nt_tx_bytes:		equ 0x58 ; 64-bit Number of bytes transmitted
 nt_rx_packets:		equ 0x60 ; 64-bit Number of packets received

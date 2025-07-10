@@ -490,11 +490,11 @@ net_i8259x_poll:
 	add rdi, 8			; Offset to bytes received
 	; Todo: Check Errors (Bits 47:40) should be clear
 	mov rcx, [rdi]			; Get the packet length
-	bt rcx, 32			; Check DD
-	jnc net_i8259x_poll_end_no_data
-	and ecx, 0x0000FFFF		; Keep Length (Bits 15:0)
-	cmp cx, 0
-	je net_i8259x_poll_end_no_data	; No data? Bail out
+	bt rcx, 32			; DD set?
+	jnc net_i8259x_poll_end_nodata
+	and ecx, 0x0000FFFF
+;	cmp cx, 0
+;	je net_i8259x_poll_end_nodata		; No data? Bail out
 
 	xor eax, eax
 	mov [rdi], rax			; Clear the descriptor length and status
@@ -515,7 +515,7 @@ net_i8259x_poll:
 
 	jmp net_i8259x_poll_end
 
-net_i8259x_poll_end_no_data:
+net_i8259x_poll_end_nodata:
 	xor ecx, ecx
 
 net_i8259x_poll_end:
