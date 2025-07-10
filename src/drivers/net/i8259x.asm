@@ -81,6 +81,8 @@ net_i8259x_init:
 	mov [rdi+nt_transmit], rax
 	mov rax, net_i8259x_poll
 	mov [rdi+nt_poll], rax
+	mov eax, i8259x_MAX_DESC / 2
+	mov [rdi+nt_rx_tail], eax
 
 net_i8259x_init_error:
 
@@ -486,15 +488,16 @@ net_i8259x_poll:
 	add rdi, rax			; Add offset to RX descriptor base
 	mov rbx, [rdi]			; Load the buffer address (where the packet is)
 	add rdi, 8			; Offset to bytes received
-	; Todo: read all 64 bits. check status bit DD(0)
-	; Errors (Bits 47:40) should be clear
-	xor ecx, ecx			; Clear RCX
-	mov cx, [rdi]			; Get the packet length
+	; Todo: Check Errors (Bits 47:40) should be clear
+	mov rcx, [rdi]			; Get the packet length
+	bt rcx, 32			; Check DD
+	jnc net_i8259x_poll_end_no_data
+	and ecx, 0x0000FFFF		; Keep Length (Bits 15:0)
 	cmp cx, 0
-	je net_i8259x_poll_end		; No data? Bail out
+	je net_i8259x_poll_end_no_data	; No data? Bail out
 
 	xor eax, eax
-	stosq				; Clear the descriptor length and status
+	mov [rdi], rax			; Clear the descriptor length and status
 	mov rdi, rbx			; Copy the buffer address to RDI
 
 	; Increment rx_head
@@ -509,6 +512,11 @@ net_i8259x_poll:
 	and eax, i8259x_MAX_DESC - 1	; Wrap around if needed
 	mov [rdx+nt_rx_tail], eax	; Update driver info
 	mov [rsi+i8259x_RDT], eax	; Write the updated Receive Descriptor Tail
+
+	jmp net_i8259x_poll_end
+
+net_i8259x_poll_end_no_data:
+	xor ecx, ecx
 
 net_i8259x_poll_end:
 	pop rax
