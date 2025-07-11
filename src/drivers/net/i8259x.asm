@@ -149,7 +149,7 @@ net_i8259x_reset_wait:
 	;FDIRCTRL - Clear PBALLOC
 	;SRRCTL[n].BSIZEPACKET field defines the data buffer size. Section 7.1.2
 	;Aggregation - Section 7.1.7
-	;Receive Coalescing (RSC) - Section 7.11.5.1 
+	;Receive Coalescing (RSC) - Section 7.11.5.1
 
 	; Wait for EEPROM auto read completion (4.6.3)
 	mov eax, [rsi+i8259x_EEC]	; Read current value
@@ -486,18 +486,20 @@ net_i8259x_poll:
 	mov eax, [rdx+nt_rx_head]	; Get rx_head
 	shl eax, 4			; Quick multiply by 16
 	add rdi, rax			; Add offset to RX descriptor base
-	mov rbx, [rdi]			; Load the buffer address (where the packet is)
-	add rdi, 8			; Offset to bytes received
-	; Todo: Check Errors (Bits 47:40) should be clear
-	mov rcx, [rdi]			; Get the packet length
+
+	; Check packet Status
+	; Todo: Check Errors (Bits 47:40) - should be clear
+	mov rcx, [rdi+8]		; Get the packet length
 	bt rcx, 32			; DD set?
 	jnc net_i8259x_poll_end_nodata
-	and ecx, 0x0000FFFF
+	and ecx, 0x0000FFFF		; Keep bits 15:0 for the packet length
 ;	cmp cx, 0
-;	je net_i8259x_poll_end_nodata		; No data? Bail out
+;	je net_i8259x_poll_end_nodata	; No data? Bail out
 
+	; Load the buffer address and clear the status
 	xor eax, eax
-	mov [rdi], rax			; Clear the descriptor length and status
+	mov rbx, [rdi]			; Load the buffer address (where the packet is)
+	mov [rdi+8], rax		; Clear the descriptor length and status
 	mov rdi, rbx			; Copy the buffer address to RDI
 
 	; Increment rx_head
