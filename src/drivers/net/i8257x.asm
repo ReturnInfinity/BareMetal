@@ -299,9 +299,9 @@ net_i8257x_transmit:
 
 ; -----------------------------------------------------------------------------
 ; net_i8257x_poll - Polls the Intel 8257x NIC for a received packet
-;  IN:	RDI = Location to store packet
-;	RDX = Interface ID
-; OUT:	RCX = Length of packet
+;  IN:	RDX = Interface ID
+; OUT:	RDI = Location of stored packet
+;	RCX = Length of packet
 ; Note:	RDESC Descriptor Format:
 ;	First Qword:
 ;	Bits 63:0 - Buffer Address
