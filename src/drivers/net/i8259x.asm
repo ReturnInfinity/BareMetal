@@ -505,8 +505,8 @@ net_i8259x_poll:
 
 	; Increment rx_head
 	mov eax, [rdx+nt_rx_head]	; Get rx_head
-	add eax, 1
-	and eax, i8259x_MAX_DESC - 1
+	add eax, 1			; Add 1 to the Receive Descriptor Tail
+	and eax, i8259x_MAX_DESC - 1	; Wrap around if needed
 	mov [rdx+nt_rx_head], eax	; Set rx_head
 
 	; Increment rx_tail and the device Receive Descriptor Tail
@@ -519,7 +519,7 @@ net_i8259x_poll:
 	jmp net_i8259x_poll_end
 
 net_i8259x_poll_end_nodata:
-	xor ecx, ecx
+	xor ecx, ecx			; Clear RCX as there was no data
 
 net_i8259x_poll_end:
 	pop rax
