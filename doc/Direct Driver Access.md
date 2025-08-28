@@ -10,14 +10,13 @@ API Example:
 
 ```
 	mov rdx, 0		; Interface 0
-	call [b_net_rx]		; Check for a packet
-                                ; Returns the address of the data in RDI and the packet length in RCX
+	call [b_net_rx]		; Check for a packet returning the address of the data in RDI and the packet length in RCX
 ```
 
 In some cases you may want to call a driver directly and skip the checks/counters.
 
 
-### Network Poll
+## Network Poll
 
 ```
 	mov rdx, 0		; Interface 0
@@ -29,13 +28,9 @@ In some cases you may want to call a driver directly and skip the checks/counter
 	call [rdx+0x28]		; Call the interface poll function
 ```
 
-### Network Transmit
-
-The code below depends on RDX being set correctly (like in the previous example).
+## Network Transmit
 
 ```
-  mov rsi, datalocation
-  mov rcx, 1500
 	call [rdx+0x20]		; Call the interface transmit function
 ```
 
