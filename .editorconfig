@@ -1,15 +1,14 @@
-# EditorConfig is awesome: https://EditorConfig.org
+# EditorConfig - https://EditorConfig.org
 
-# top-most EditorConfig file
 root = true
 
-# Unix-style newlines with a newline ending every file
 [*]
-indent_style = tab
-indent_size = 8
 end_of_line = lf
 insert_final_newline = false
 
 # Set tab indentation
-[*.asm]
+[*.{asm,md}]
 charset = utf-8
+indent_style = tab
+indent_size = 8
+trim_trailing_whitespace = true
