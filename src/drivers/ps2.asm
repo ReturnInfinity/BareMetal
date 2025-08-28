@@ -200,7 +200,7 @@ mouse_getbyte:
 	add ebx, os_ps2_mouse_packet	; Add the address of the mouse packet
 	mov [ebx], cl			; Store the byte in CL to the correct index into the mouse packet
 	inc byte [os_ps2_mouse_count]	; Increment the byte counter
-	mov bl, [os_ps2_mouse_count]	; Copy the byte counter value to BL 
+	mov bl, [os_ps2_mouse_count]	; Copy the byte counter value to BL
 	cmp bl, [packetsize]		; Compare byte counter to excepted packet size
 	jb mouse_end			; If below then bail out, wait for rest of packet
 	mov word [os_ps2_mouse_count], 0	; At this point we have a full packet. Clear the byte counter
