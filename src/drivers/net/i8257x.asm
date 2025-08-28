@@ -297,7 +297,7 @@ net_i8257x_transmit:
 net_i8257x_transmit_wait:
 	mov rax, [rbx]
 	bt rax, 32
-	jnc net_i8257x_transmit
+	jnc net_i8257x_transmit_wait
 
 	pop rax
 	pop rbx
