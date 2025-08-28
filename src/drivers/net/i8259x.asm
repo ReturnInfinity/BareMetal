@@ -427,12 +427,21 @@ net_i8259x_config_next_record:
 ;	RDX = Interface ID
 ;	RCX = Length of packet
 ; OUT:	Nothing
-; Note:	Transmit Descriptor (TDESC) Layout - Legacy Mode (7.2.3.2.2):
+; Note:	This driver uses the "legacy format" so TDESC.CMD.DEXT (5) is cleared to 0 - (7.2.3.2.2):
+;	TDESC Descriptor Format:
+;	First Qword:
 ;	Bits 63:0 - Buffer Address
-;	Bits 95:64 - CMD (Bits 31:24) / CSO (Bits 23:16) / Length (Bits 15:0)
-;	Bits 127:96 - VLAN (Bits 63:48) / CSS (Bits 47:40) / Reserved (Bits 39:36) / STA (Bits 35:32)
+;	Second Qword:
+;	Bits 15:0 - Length
+;	Bits 23:16 - CSO - Checksum Offset
+;	Bits 31:24 - CMD - Command Byte
+;	Bits 35:32 - STA - Status
+;	Bits 39:36 - Reserved
+;	Bits 47:40 - CSS - Checksum Start
+;	Bits 63:48 - VLAN
 net_i8259x_transmit:
 	push rdi
+	push rbx
 	push rax
 
 	mov rdi, [rdx+nt_tx_desc]	; Transmit Descriptor Base Address
@@ -450,6 +459,7 @@ net_i8259x_transmit:
 	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
 	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS (CRC)
 	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
+	mov rbx, rdi			; Save location of Second Qword to RBX
 	stosq
 
 	; Increment i8259x_tx_lasttail and the Transmit Descriptor Tail
@@ -460,9 +470,14 @@ net_i8259x_transmit:
 	mov rdi, [rdx+nt_base]		; Load the base MMIO of the NIC
 	mov [rdi+i8259x_TDT], eax	; TDL - Transmit Descriptor Tail
 
-	; TDESC.STA.DD (bit 32) should be 1 once the hardware has sent the packet
+	; Check for TDESC.STA.DD (32) - Descriptor Done
+net_i8259x_transmit_wait:
+	mov rax, [rbx]
+	bt rax, 32
+	jnc net_i8259x_transmit
 
 	pop rax
+	pop rbx
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------

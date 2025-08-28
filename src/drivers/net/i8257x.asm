@@ -264,6 +264,7 @@ net_i8257x_config_next_record:
 ;	Bits 63:48 - VLAN
 net_i8257x_transmit:
 	push rdi
+	push rbx
 	push rax
 
 	mov rdi, [rdx+nt_tx_desc]	; Transmit Descriptor Base Address
@@ -281,6 +282,7 @@ net_i8257x_transmit:
 	bts rax, 24			; TDESC.CMD.EOP (0) - End Of Packet
 	bts rax, 25			; TDESC.CMD.IFCS (1) - Insert FCS (CRC)
 	bts rax, 27			; TDESC.CMD.RS (3) - Report Status
+	mov rbx, rdi			; Save location of Second Qword to RBX
 	stosq
 
 	; Increment i8257x_tx_lasttail and the Transmit Descriptor Tail
@@ -291,7 +293,14 @@ net_i8257x_transmit:
 	mov rdi, [rdx+nt_base]		; Load the base MMIO of the NIC
 	mov [rdi+i8257x_TDT], eax	; TDL - Transmit Descriptor Tail
 
+	; Check for TDESC.STA.DD (32) - Descriptor Done
+net_i8257x_transmit_wait:
+	mov rax, [rbx]
+	bt rax, 32
+	jnc net_i8257x_transmit
+
 	pop rax
+	pop rbx
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
