@@ -198,7 +198,9 @@ virtio_net_init_cap_end:
 	call net_virtio_reset
 
 	; Store call addresses
-	sub rdi, 0x20
+	sub rdi, 0x28
+	mov rax, net_virtio_config
+	stosq
 	mov rax, net_virtio_transmit
 	stosq
 	mov rax, net_virtio_poll
@@ -238,7 +240,7 @@ net_virtio_reset:
 	mov rdi, rsi
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
-	mov al, 0x00			
+	mov al, 0x00
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 virtio_net_init_reset_wait:
 	mov al, [rsi+VIRTIO_DEVICE_STATUS]
@@ -390,6 +392,16 @@ virtio_net_init_pop:
 	pop rsi
 	pop rdi
 
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; net_virtio_config -
+;  IN:	RAX = Base address to store packets
+;	RDX = Interface ID
+; OUT:	Nothing
+net_virtio_config:
 	ret
 ; -----------------------------------------------------------------------------
 
