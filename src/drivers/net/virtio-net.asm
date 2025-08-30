@@ -471,11 +471,10 @@ net_virtio_transmit_wait:
 
 ; -----------------------------------------------------------------------------
 ; net_virtio_poll - Polls the Virtio NIC for a received packet
-;  IN:	RDI = Location to store packet
-;	RDX = Interface ID
-; OUT:	RCX = Length of packet
+;  IN:	RDX = Interface ID
+; OUT:	RDI = Location of stored packet
+;	RCX = Length of packet
 net_virtio_poll:
-	push rdi
 	push rsi
 	push rax
 
@@ -523,13 +522,13 @@ net_virtio_poll:
 	mov ax, 0
 	stosw				; 16-bit ring
 
+	mov rdi, os_PacketBuffers
 	add word [netrxdescindex], 1
 	add word [netrxavailindex], 1
 
 net_virtio_poll_nodata:
 	pop rax
 	pop rsi
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
