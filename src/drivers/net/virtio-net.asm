@@ -198,7 +198,9 @@ virtio_net_init_cap_end:
 	call net_virtio_reset
 
 	; Store call addresses
-	sub rdi, 0x20
+	sub rdi, 0x28
+	mov rax, net_virtio_config
+	stosq
 	mov rax, net_virtio_transmit
 	stosq
 	mov rax, net_virtio_poll
@@ -238,7 +240,7 @@ net_virtio_reset:
 	mov rdi, rsi
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
-	mov al, 0x00			
+	mov al, 0x00
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 virtio_net_init_reset_wait:
 	mov al, [rsi+VIRTIO_DEVICE_STATUS]
@@ -395,6 +397,16 @@ virtio_net_init_pop:
 
 
 ; -----------------------------------------------------------------------------
+; net_virtio_config -
+;  IN:	RAX = Base address to store packets
+;	RDX = Interface ID
+; OUT:	Nothing
+net_virtio_config:
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; net_virtio_transmit - Transmit a packet via a Virtio NIC
 ;  IN:	RSI = Location of packet
 ;	RDX = Interface ID
@@ -459,11 +471,10 @@ net_virtio_transmit_wait:
 
 ; -----------------------------------------------------------------------------
 ; net_virtio_poll - Polls the Virtio NIC for a received packet
-;  IN:	RDI = Location to store packet
-;	RDX = Interface ID
-; OUT:	RCX = Length of packet
+;  IN:	RDX = Interface ID
+; OUT:	RDI = Location of stored packet
+;	RCX = Length of packet
 net_virtio_poll:
-	push rdi
 	push rsi
 	push rax
 
@@ -511,13 +522,13 @@ net_virtio_poll:
 	mov ax, 0
 	stosw				; 16-bit ring
 
+	mov rdi, os_PacketBuffers
 	add word [netrxdescindex], 1
 	add word [netrxavailindex], 1
 
 net_virtio_poll_nodata:
 	pop rax
 	pop rsi
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
