@@ -9,6 +9,9 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
+	mov ax, [NIC_DeviceVendor_ID]
+	cmp ax, 0x0000
+	je init_net_probe_not_found
 	; Check Bus Table for a Ethernet device
 	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 8			; Subtract offset for Class Code
@@ -47,33 +50,49 @@ init_net_probe_find_next_device:
 	jmp init_net_probe_find_next_device	; Check the next device
 init_net_probe_found:
 	pop rsi
+%ifndef NO_VIRTIO
 	cmp bx, 0x1AF4
 	je init_net_probe_found_virtio
+%endif
+%ifndef NO_I8254X
 	cmp bx, 0x8254
 	je init_net_probe_found_i8254x
+%endif
+%ifndef NO_I8257X
 	cmp bx, 0x8257
 	je init_net_probe_found_i8257x
+%endif
+%ifndef NO_I8259X
 	cmp bx, 0x8259
 	je init_net_probe_found_i8259x
+%endif
 ;	cmp bx, 0x8169
 ;	je init_net_probe_found_r8169
 	jmp init_net_probe_not_found
 
+%ifndef NO_VIRTIO
 init_net_probe_found_virtio:
 	call net_virtio_init
 	jmp init_net_probe_found_finish
+%endif
 
+%ifndef NO_I8254X
 init_net_probe_found_i8254x:
 	call net_i8254x_init
 	jmp init_net_probe_found_finish
+%endif
 
+%ifndef NO_I8257X
 init_net_probe_found_i8257x:
 	call net_i8257x_init
 	jmp init_net_probe_found_finish
+%endif
 
+%ifndef NO_I8259X
 init_net_probe_found_i8259x:
 	call net_i8259x_init
 	jmp init_net_probe_found_finish
+%endif
 
 ;init_net_probe_found_r8169:
 ;	call net_r8169_init
@@ -94,7 +113,6 @@ init_net_end:
 	; Output block to screen (6/8)
 	mov ebx, 10
 	call os_debug_block
-
 	ret
 ; -----------------------------------------------------------------------------
 

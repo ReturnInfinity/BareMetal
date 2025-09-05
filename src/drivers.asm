@@ -12,24 +12,44 @@
 %include "drivers/ioapic.asm"
 %include "drivers/ps2.asm"
 %include "drivers/serial.asm"
+%ifndef NO_VIRTIO
 %include "drivers/virtio.asm"
+%endif
 
 ; Bus
 %include "drivers/bus/pcie.asm"
 %include "drivers/bus/pci.asm"
+%ifndef NO_XHCI
 %include "drivers/bus/xhci.asm"
+%endif
 
 ; Non-volatile Storage
+%ifndef NO_NVME
 %include "drivers/nvs/nvme.asm"
+%endif
+%ifndef NO_AHCI
 %include "drivers/nvs/ahci.asm"
+%endif
+%ifndef NO_VIRTIO
 %include "drivers/nvs/virtio-blk.asm"
+%endif
+%ifndef NO_ATA
 %include "drivers/nvs/ata.asm"
+%endif
 
 ; Network
+%ifndef NO_I8254X
 %include "drivers/net/i8254x.asm"
+%endif
+%ifndef NO_I8257X
 %include "drivers/net/i8257x.asm"
+%endif
+%ifndef NO_I8259X
 %include "drivers/net/i8259x.asm"
+%endif
+%ifndef NO_VIRTIO
 %include "drivers/net/virtio-net.asm"
+%endif
 ; %include "drivers/net/r8169.asm"
 
 ; Video
@@ -38,13 +58,16 @@
 NIC_DeviceVendor_ID:	; The supported list of NICs
 
 ; Virtio
+%ifndef NO_VIRTIO
 dw 0x1AF4		; Driver ID
 dw 0x1AF4		; Vendor ID
 dw 0x1000		; Device ID - legacy
 dw 0x1041		; Device ID - v1.0
 dw 0x0000
+%endif
 
 ; Intel 8254x Gigabit Ethernet
+%ifndef NO_I8254X
 dw 0x8254		; Driver ID
 dw 0x8086		; Vendor ID
 dw 0x1000		; 82542 (Fiber)
@@ -85,8 +108,10 @@ dw 0x108A		; 82546GB
 dw 0x1099		; 82546GB (Copper)
 dw 0x10B5		; 82546GB (Copper)
 dw 0x0000
+%endif
 
 ; Intel 8257x Gigabit Ethernet
+%ifndef NO_I8257X
 dw 0x8257		; Driver ID
 dw 0x8086		; Vendor ID
 dw 0x105E		; 82571EB/82571GB
@@ -118,8 +143,10 @@ dw 0x10F6		; 82574L
 dw 0x153A		; I217-LM
 dw 0x153B		; I217-V
 dw 0x0000
+%endif
 
 ; Intel 8259x/X540/X550 10 Gigabit Ethernet
+%ifndef NO_I8259X
 dw 0x8259		; Driver ID
 dw 0x8086		; Vendor ID
 dw 0x10FB		; 82599ES (SFI/SFP+)
@@ -127,6 +154,7 @@ dw 0x1528		; X540-AT2
 dw 0x1560		; X540
 dw 0x1572		; X710 (SFP+)
 dw 0x0000
+%endif
 
 ; Realtek 816x/811x Gigabit Ethernet
 ;dw 0x8169		; Driver ID

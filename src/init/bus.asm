@@ -138,13 +138,17 @@ init_bus_usb_find_driver:
 	mov dl, 0x02
 	call os_bus_read
 	shr eax, 8			; Shift Program Interface to AL
+%ifndef NO_XHCI
 	cmp al, 0x30			; PI for XHCI
 	je init_bus_usb_xhci_start
+%endif
 	add rsi, 8
 	jmp init_bus_usb_check
 
+%ifndef NO_XHCI
 init_bus_usb_xhci_start:
 	call xhci_init
+%endif
 
 init_bus_usb_not_found:
 

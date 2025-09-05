@@ -15,7 +15,9 @@ init_hid:
 	bt qword [os_SysConfEn], 5
 	jnc init_hid_done
 	sti
+%ifndef NO_XHCI
 	call xhci_enumerate_devices
+%endif
 	cli
 
 init_hid_done:
