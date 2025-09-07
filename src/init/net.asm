@@ -9,7 +9,6 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
-
 	mov ax, [NIC_DeviceVendor_ID]	; Check for NIC driver definitions
 	cmp ax, 0x0000
 	je init_net_end			; If none exist then bail out
