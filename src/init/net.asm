@@ -9,17 +9,18 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
-	mov ax, [NIC_DeviceVendor_ID]
+
+	mov ax, [NIC_DeviceVendor_ID]	; Check for NIC driver definitions
 	cmp ax, 0x0000
-	je init_net_probe_not_found
+	je init_net_end			; If none exist then bail out
 	; Check Bus Table for a Ethernet device
 	mov rsi, bus_table		; Load Bus Table address to RSI
 	sub rsi, 8			; Subtract offset for Class Code
 init_net_check_bus:
 	add rsi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
-	cmp ax, 0xFFFF			; Check if at end of list
-	je init_net_probe_not_found
+	cmp ax, 0xFFFF			; Check if at end of Bus Table list
+	je init_net_end
 	cmp ax, 0x0200			; Network Controller (02) / Ethernet (00)
 	je init_net_probe_find_driver
 	jmp init_net_check_bus		; Check Bus Table again
@@ -32,7 +33,7 @@ init_net_probe_find_driver:
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
 	rol r8d, 16			; Swap the Device ID / Vendor ID
 	add rsi, 8			; Move RSI back to Class Code
-	push rsi
+	xchg rsi, rdi
 	mov rsi, NIC_DeviceVendor_ID
 init_net_probe_find_next_driver:
 	lodsw				; Load a driver ID
@@ -49,7 +50,8 @@ init_net_probe_find_next_device:
 	je init_net_probe_found		; If Carry is clear then we found a supported NIC
 	jmp init_net_probe_find_next_device	; Check the next device
 init_net_probe_found:
-	pop rsi
+	xchg rsi, rdi
+
 %ifndef NO_VIRTIO
 	cmp bx, 0x1AF4
 	je init_net_probe_found_virtio
@@ -99,7 +101,7 @@ init_net_probe_found_i8259x:
 ;	jmp init_net_probe_found_finish
 
 init_net_probe_found_finish:
-	mov byte [os_NetEnabled], 1	; A supported NIC was found. Signal to the OS that networking is enabled
+	mov byte [os_NetEnabled], 1	; A supported NIC was found. Set flag in the kernel that networking is enabled
 	add r9, 15			; Add offset to driver enabled byte
 	mov byte [r9], 1		; Mark device as having a driver
 	add byte [os_net_icount], 1
