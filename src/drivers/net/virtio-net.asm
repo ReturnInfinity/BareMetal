@@ -440,13 +440,13 @@ net_virtio_config:
 ;	RCX = Length of packet
 ; OUT:	Nothing
 net_virtio_transmit:
+	push r8
 	push rdi
 	push rdx
 	push rbx
 	push rax
 
 	mov r8, [rdx+nt_tx_desc]
-
 
 	; Create entry in the Descriptor Table
 	mov rdi, r8
@@ -498,6 +498,7 @@ net_virtio_transmit_wait:
 	pop rbx
 	pop rdx
 	pop rdi
+	pop r8
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -508,20 +509,25 @@ net_virtio_transmit_wait:
 ; OUT:	RDI = Location of stored packet
 ;	RCX = Length of packet
 net_virtio_poll:
+	push r8
 	push rsi
 	push rax
 
+	mov r8, [rdx+nt_rx_desc]
+
 	; Get size of packet that was received
-	mov rdi, os_net_mem
+	mov rdi, r8
 	add rdi, 0x2000			; Offset to Used Ring
 	xor eax, eax
-	mov ax, [rdi+2]			; Offset to Used Ring Index
+	mov ax, [rdi+2]			; Load Used Ring Index
+	cmp ax, [lastrx]
+	je net_virtio_poll_nodata
+	mov ax, [lastrx]
 	shl eax, 3			; Quick multiply by 8
+	add eax, 8
 	add rdi, rax			; RDI points to the Used Ring Entry
 	mov ax, [rdi]			; Load the received packet size
 	mov cx, ax			; Save the packet size to CX for later
-	cmp cx, 0
-	je net_virtio_poll_nodata	; Bail out if there was no data
 
 	; Add received packet size to start of os_PacketBuffers
 	push rdi
@@ -537,7 +543,7 @@ net_virtio_poll:
 	mov [rdi], ax			; Clear the Used Ring Entry
 
 	; Re-populate RX desc
-	mov rdi, os_net_mem
+	mov rdi, r8
 	mov rax, os_PacketBuffers	; Address for storing the data
 	stosq
 	mov eax, 1500			; Number of bytes
@@ -546,8 +552,8 @@ net_virtio_poll:
 	stosw				; 16-bit Flags
 
 	; Populate RX avail
-	mov rdi, os_net_mem
-	add rdi, 0x1000
+	mov rdi, r8
+	add rdi, 0x1000			; Add offset to the Available Ring
 	xor eax, eax
 	stosw				; 16-bit flags
 	mov ax, [netrxavailindex]
@@ -558,10 +564,12 @@ net_virtio_poll:
 	mov rdi, os_PacketBuffers
 	add word [netrxdescindex], 1
 	add word [netrxavailindex], 1
+	add word [lastrx], 1
 
 net_virtio_poll_nodata:
 	pop rax
 	pop rsi
+	pop r8
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -575,6 +583,7 @@ netrxdescindex: dw 0
 netrxavailindex: dw 0
 nettxdescindex: dw 0
 nettxavailindex: dw 1
+lastrx: dw 0
 
 align 16
 netheader:
