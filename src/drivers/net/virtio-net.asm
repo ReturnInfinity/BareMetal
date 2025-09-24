@@ -392,6 +392,10 @@ virtio_net_init_pop_tx:
 	mov ax, 0
 	stosw				; 16-bit ring
 
+	; Set nettxavailindex
+	mov ax, 1
+	mov [r8+0x76], ax
+
 	; 3.1.1 - Step 8 - At this point the device is “live”
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
@@ -469,7 +473,7 @@ net_virtio_transmit:
 	add rdi, 0x1000
 	mov ax, 1			; 1 for no interrupts
 	stosw				; 16-bit flags
-	mov ax, [nettxavailindex]
+	mov ax, [rdx+0x76]		; nettxavailindex
 	stosw				; 16-bit index
 	mov ax, 0
 	stosw				; 16-bit ring
@@ -485,14 +489,14 @@ net_virtio_transmit:
 	mov rdi, r8
 	; TODO should flags be checked?
 	add rdi, 0x2002			; Offset to start of Used Ring Index
-	mov bx, [nettxavailindex]
+	mov bx, [rdx+0x76]		; nettxavailindex
 net_virtio_transmit_wait:
 	mov ax, [rdi]			; Load the index
 	cmp ax, bx
 	jne net_virtio_transmit_wait
 
-	add word [nettxdescindex], 2	; 2 entries were required
-	add word [nettxavailindex], 1
+	add word [rdx+0x74], 2		; nettxdescindex - 2 entries were required
+	add word [rdx+0x76], 1		; nettxavailindex
 
 	pop rax
 	pop rbx
@@ -520,14 +524,15 @@ net_virtio_poll:
 	add rdi, 0x2000			; Offset to Used Ring
 	xor eax, eax
 	mov ax, [rdi+2]			; Load Used Ring Index
-	cmp ax, [lastrx]
+	cmp ax, [rdx+0x78]		; lastrx
 	je net_virtio_poll_nodata
-	mov ax, [lastrx]
+	mov ax, [rdx+0x78]		; lastrx
 	shl eax, 3			; Quick multiply by 8
 	add eax, 8
 	add rdi, rax			; RDI points to the Used Ring Entry
 	mov ax, [rdi]			; Load the received packet size
 	mov cx, ax			; Save the packet size to CX for later
+	sub cx, 12			; Subtract the virtio header
 
 	; Add received packet size to start of os_PacketBuffers
 	push rdi
@@ -556,17 +561,17 @@ net_virtio_poll:
 	add rdi, 0x1000			; Add offset to the Available Ring
 	xor eax, eax
 	stosw				; 16-bit flags
-	mov ax, [netrxavailindex]
+	mov ax, [rdx+0x72]		; netrxavailindex
 	stosw				; 16-bit index
 	mov ax, 0
 	stosw				; 16-bit ring
 
 	mov rdi, os_PacketBuffers
-	add word [netrxdescindex], 1
-	add word [netrxavailindex], 1
-	mov ax, [lastrx]
+	add word [rdx+0x70], 1		; netrxdescindex
+	add word [rdx+0x72], 1		; netrxavailindex
+	mov ax, [rdx+0x78]		; lastrx
 	add al, 1			; AL will wrap back to zero if needed
-	mov [lastrx], ax
+	mov [rdx+0x78], ax		; lastrx
 	mov [r8+0x2002], ax		; Store the new index
 
 net_virtio_poll_nodata:
@@ -582,11 +587,6 @@ virtio_net_notify_offset: dq 0
 virtio_net_notify_offset_multiplier: dq 0
 virtio_net_isr_offset: dq 0
 virtio_net_device_offset: dq 0
-netrxdescindex: dw 0
-netrxavailindex: dw 0
-nettxdescindex: dw 0
-nettxavailindex: dw 1
-lastrx: dw 0
 
 align 16
 netheader:
