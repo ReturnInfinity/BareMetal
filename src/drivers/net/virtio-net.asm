@@ -564,7 +564,10 @@ net_virtio_poll:
 	mov rdi, os_PacketBuffers
 	add word [netrxdescindex], 1
 	add word [netrxavailindex], 1
-	add word [lastrx], 1
+	mov ax, [lastrx]
+	add al, 1			; AL will wrap back to zero if needed
+	mov [lastrx], ax
+	mov [r8+0x2002], ax		; Store the new index
 
 net_virtio_poll_nodata:
 	pop rax
