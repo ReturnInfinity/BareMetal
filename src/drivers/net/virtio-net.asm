@@ -382,7 +382,7 @@ virtio_net_init_pop_rx_1:
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
 	inc cl
-	mov ax, cx
+	mov ax, 0
 	stosw				; 16-bit Next
 	cmp cl, 0
 	jne virtio_net_init_pop_rx_1
@@ -457,34 +457,37 @@ net_virtio_transmit:
 
 	mov r8, [rdx+nt_tx_desc]
 
-	; Create entry in the Descriptor Table
+	; Create first entry in the Descriptor Table
 	mov rdi, r8
-	mov rax, netheader		; Address of the netheader
+	mov rax, netheader		; Address of the 12-byte netheader
 	stosq				; 64-bit address
 	mov eax, 12
 	stosd				; 32-bit length
-	mov ax, VIRTQ_DESC_F_NEXT
+	mov ax, VIRTQ_DESC_F_NEXT	; Set flag so next descriptor will be processed as well
 	stosw				; 16-bit Flags
-	add rdi, 2			; Skip Next as it is pre-populated
+	add rdi, 2			; Skip 16-bit Next as it is pre-populated
+
+	; Create second entry in the Descriptor Table
 	mov rax, rsi			; Address of the data
 	stosq
 	mov eax, ecx			; Number of bytes
 	stosd
 	mov ax, 0
 	stosw				; 16-bit Flags
+	stosw				; 16-bit Next
 
 	; Add entry to the Available Ring
 	mov rdi, r8
-	add rdi, 0x1000
+	add rdi, 0x1000			; TODO - gather this value
 	mov ax, 1			; 1 for no interrupts
-	stosw				; 16-bit flags
+	stosw				; 16-bit Flags
 	mov ax, [rdx+0x76]		; nettxavailindex
-	stosw				; 16-bit index
+	stosw				; 16-bit Index
 	mov ax, 0
-	stosw				; 16-bit ring
+	stosw				; 16-bit Ring
 
 	; Notify the queue
-	mov rdi, [rdx+nt_base]	; Transmit Descriptor Base Address
+	mov rdi, [rdx+nt_base]		; Transmit Descriptor Base Address
 	add rdi, [virtio_net_notify_offset]
 	add rdi, 4
 	xor eax, eax
@@ -500,7 +503,7 @@ net_virtio_transmit_wait:
 	cmp ax, bx
 	jne net_virtio_transmit_wait
 
-	add word [rdx+0x74], 2		; nettxdescindex - 2 entries were required
+	add word [rdx+0x74], 2		; nettxdescindex - 2 descriptor entries were required
 	add word [rdx+0x76], 1		; nettxavailindex
 
 	pop rax
