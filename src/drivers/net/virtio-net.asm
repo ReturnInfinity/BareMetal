@@ -350,16 +350,16 @@ virtio_net_init_reset_wait:
 	mov [rsi+VIRTIO_QUEUE_ENABLE], ax
 
 	; Populate the Next entries in the description rings
-	; FIXME - Don't expect exactly 256 entries
-	mov eax, 1
-	mov rdi, [r8+nt_rx_desc]
-	add rdi, 14
-virtio_net_init_pop_rx:
-	mov [rdi], al
-	add rdi, 16
-	add al, 1
-	cmp al, 0
-	jne virtio_net_init_pop_rx
+;	; FIXME - Don't expect exactly 256 entries
+;	mov eax, 1
+;	mov rdi, [r8+nt_rx_desc]
+;	add rdi, 14
+;virtio_net_init_pop_rx:
+;	mov [rdi], al
+;	add rdi, 16
+;	add al, 1
+;	cmp al, 0
+;	jne virtio_net_init_pop_rx
 
 	mov eax, 1
 	mov rdi, [r8+nt_tx_desc]
@@ -371,18 +371,23 @@ virtio_net_init_pop_tx:
 	cmp al, 0
 	jne virtio_net_init_pop_tx
 
-	; Populate RX desc
-	;mov rdi, os_net_mem
+	; Populate RX Descriptor Table
+	xor ecx, ecx
 	mov rdi, [r8+nt_rx_desc]
-	mov rax, os_PacketBuffers	; Address for storing the data
+virtio_net_init_pop_rx_1:
+	mov rax, os_PacketBuffers	; 64-bit Address
 	stosq
-	mov eax, 1500			; Number of bytes
+	mov eax, 1500			; 32-bit Length
 	stosd
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
+	inc cl
+	mov ax, cx
+	stosw				; 16-bit Next
+	cmp cl, 0
+	jne virtio_net_init_pop_rx_1
 
 	; Populate RX avail
-	;mov rdi, os_net_mem
 	mov rdi, [r8+nt_rx_desc]
 	add rdi, 0x1000
 	xor eax, eax
@@ -419,16 +424,16 @@ net_virtio_config:
 	push rcx
 	push rax
 
-;	mov rdi, [rdx+nt_rx_desc]	; Gather offset to device RX descriptors
-;	mov ecx, Queue_size_TBD
-;	call os_virt_to_phys		; Convert (potentially) virtual address
-;net_virtio_config_next_record:
-;	stosq				; Store address
-;	add rdi, 8			; Skip to next entry
-;	add rax, 2048			; Add 2048 to address
-;	dec ecx
-;	cmp ecx, 0
-;	jnz net_virtio_config_next_record
+	mov rdi, [rdx+nt_rx_desc]	; Gather offset to device RX descriptors
+	mov ecx, 256
+	call os_virt_to_phys		; Convert (potentially) virtual address
+net_virtio_config_next_record:
+	stosq				; Store address
+	add rdi, 8			; Skip to next entry
+	add rax, 2048			; Add 2048 to address
+	dec ecx
+	cmp ecx, 0
+	jnz net_virtio_config_next_record
 
 	pop rax
 	pop rcx
@@ -534,27 +539,28 @@ net_virtio_poll:
 	mov cx, ax			; Save the packet size to CX for later
 	sub cx, 12			; Subtract the virtio header
 
-	; Add received packet size to start of os_PacketBuffers
-	push rdi
-	mov rdi, os_PacketBuffers
-	mov rsi, os_PacketBuffers+0x0C	; Skip over the 12 byte Virtio header
-	push cx
-	rep movsb			; Copy the packet data
-	pop cx
-	xor eax, eax
-	stosq				; Clear the end of the packet in os_PacketBuffers
-	stosq
-	pop rdi
-	mov [rdi], ax			; Clear the Used Ring Entry
+;	; Add received packet size to start of os_PacketBuffers
+;	push rdi
+;	mov rdi, os_PacketBuffers
+;	mov rsi, os_PacketBuffers+0x0C	; Skip over the 12 byte Virtio header
+;	push cx
+;	rep movsb			; Copy the packet data
+;	pop cx
+;	xor eax, eax
+;	stosq				; Clear the end of the packet in os_PacketBuffers
+;	stosq
+;	pop rdi
+;	mov [rdi], ax			; Clear the Used Ring Entry
 
 	; Re-populate RX desc
-	mov rdi, r8
-	mov rax, os_PacketBuffers	; Address for storing the data
-	stosq
-	mov eax, 1500			; Number of bytes
-	stosd
-	mov ax, VIRTQ_DESC_F_WRITE
-	stosw				; 16-bit Flags
+;	mov rdi, r8
+;	mov rax, os_PacketBuffers	; Address for storing the data
+;	stosq
+;	add rdi, 8
+;	mov eax, 1500			; Number of bytes
+;	stosd
+;	mov ax, VIRTQ_DESC_F_WRITE
+;	stosw				; 16-bit Flags
 
 	; Populate RX avail
 	mov rdi, r8
@@ -566,7 +572,15 @@ net_virtio_poll:
 	mov ax, 0
 	stosw				; 16-bit ring
 
-	mov rdi, os_PacketBuffers
+	; Set RDI to address of packet
+	xor eax, eax
+	mov ax, [rdx+0x78]		; Gather last RX
+	shl rax, 4			; Quick multiply by 16
+	add r8, rax			; Add offset into Descriptor Table
+	mov rdi, [r8]			; Load address
+	add rdi, 12			; Skip past the header
+
+	; Increment internal counters
 	add word [rdx+0x70], 1		; netrxdescindex
 	add word [rdx+0x72], 1		; netrxavailindex
 	mov ax, [rdx+0x78]		; lastrx
