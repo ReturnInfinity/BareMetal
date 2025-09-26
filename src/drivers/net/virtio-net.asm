@@ -235,6 +235,7 @@ net_virtio_reset:
 	mov al, [os_net_icount]
 	shl eax, 7			; Quick multiply by 128
 	add rsi, rax
+	mov r8, rsi			; Save table base address for this interface
 	add rsi, 16
 	mov rsi, [rsi]
 	mov rdi, rsi
@@ -304,7 +305,7 @@ virtio_net_init_reset_wait:
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
 	mov ecx, eax			; Store queue size in ECX
-	mov eax, os_net_mem
+	mov rax, [r8+nt_rx_desc]
 	mov [rsi+VIRTIO_QUEUE_DESC], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
@@ -330,8 +331,7 @@ virtio_net_init_reset_wait:
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
 	mov ecx, eax			; Store queue size in ECX
-	mov eax, os_net_mem
-	add eax, 16384
+	mov rax, [r8+nt_tx_desc]
 	mov [rsi+VIRTIO_QUEUE_DESC], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
@@ -350,38 +350,60 @@ virtio_net_init_reset_wait:
 	mov [rsi+VIRTIO_QUEUE_ENABLE], ax
 
 	; Populate the Next entries in the description rings
-	; FIXME - Don't expect exactly 256 entries
+;	; FIXME - Don't expect exactly 256 entries
+;	mov eax, 1
+;	mov rdi, [r8+nt_rx_desc]
+;	add rdi, 14
+;virtio_net_init_pop_rx:
+;	mov [rdi], al
+;	add rdi, 16
+;	add al, 1
+;	cmp al, 0
+;	jne virtio_net_init_pop_rx
+
 	mov eax, 1
-	mov rdi, os_net_mem
+	mov rdi, [r8+nt_tx_desc]
 	add rdi, 14
-virtio_net_init_pop:
+virtio_net_init_pop_tx:
 	mov [rdi], al
-	add rdi, 16384
-	mov [rdi], al
-	sub rdi, 16384
 	add rdi, 16
 	add al, 1
 	cmp al, 0
-	jne virtio_net_init_pop
+	jne virtio_net_init_pop_tx
 
-	; Populate RX desc
-	mov rdi, os_net_mem
-	mov rax, os_PacketBuffers	; Address for storing the data
+	; Populate RX Descriptor Table
+	xor ecx, ecx
+	mov rdi, [r8+nt_rx_desc]
+virtio_net_init_pop_rx_1:
+	mov rax, os_PacketBuffers	; 64-bit Address
 	stosq
-	mov eax, 1500			; Number of bytes
+	mov eax, 1500			; 32-bit Length
 	stosd
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
+	inc cl
+	mov ax, 0
+	stosw				; 16-bit Next
+	cmp cl, 0
+	jne virtio_net_init_pop_rx_1
 
 	; Populate RX avail
-	mov rdi, os_net_mem
+	mov rdi, [r8+nt_rx_desc]
 	add rdi, 0x1000
 	xor eax, eax
 	stosw				; 16-bit flags
 	mov ax, 1
 	stosw				; 16-bit index
-	mov ax, 0
+	xor eax, eax
+virtio_net_init_pop_rx_2:
 	stosw				; 16-bit ring
+	inc al
+	cmp al, 0
+	jne virtio_net_init_pop_rx_2
+
+	; Set nettxavailindex
+	mov ax, 1
+	mov [r8+0x76], ax
 
 	; 3.1.1 - Step 8 - At this point the device is “live”
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
@@ -402,6 +424,24 @@ virtio_net_init_pop:
 ;	RDX = Interface ID
 ; OUT:	Nothing
 net_virtio_config:
+	push rdi
+	push rcx
+	push rax
+
+	mov rdi, [rdx+nt_rx_desc]	; Gather offset to device RX descriptors
+	mov ecx, 256
+	call os_virt_to_phys		; Convert (potentially) virtual address
+net_virtio_config_next_record:
+	stosq				; Store address
+	add rdi, 8			; Skip to next entry
+	add rax, 2048			; Add 2048 to address
+	dec ecx
+	cmp ecx, 0
+	jnz net_virtio_config_next_record
+
+	pop rax
+	pop rcx
+	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -413,58 +453,68 @@ net_virtio_config:
 ;	RCX = Length of packet
 ; OUT:	Nothing
 net_virtio_transmit:
+	push r8
 	push rdi
 	push rdx
 	push rbx
 	push rax
 
-	; Create Descriptor entries
-	mov rdi, 0x1a4000
-	mov rax, netheader		; Address of the netheader
+	mov r8, [rdx+nt_tx_desc]
+
+	; Create first entry in the Descriptor Table
+	mov rdi, r8
+	mov rax, netheader		; Address of the 12-byte netheader
 	stosq				; 64-bit address
 	mov eax, 12
 	stosd				; 32-bit length
-	mov ax, VIRTQ_DESC_F_NEXT
+	mov ax, VIRTQ_DESC_F_NEXT	; Set flag so next descriptor will be processed as well
 	stosw				; 16-bit Flags
-	add rdi, 2			; Skip Next as it is pre-populated
+	add rdi, 2			; Skip 16-bit Next as it is pre-populated
+
+	; Create second entry in the Descriptor Table
 	mov rax, rsi			; Address of the data
 	stosq
 	mov eax, ecx			; Number of bytes
 	stosd
 	mov ax, 0
 	stosw				; 16-bit Flags
+	stosw				; 16-bit Next
 
-	; Add entry to Avail
-	mov rdi, 0x1a5000
+	; Add entry to the Available Ring
+	mov rdi, r8
+	add rdi, 0x1000			; TODO - gather this value
 	mov ax, 1			; 1 for no interrupts
-	stosw				; 16-bit flags
-	mov ax, [nettxavailindex]
-	stosw				; 16-bit index
+	stosw				; 16-bit Flags
+	mov ax, [rdx+0x76]		; nettxavailindex
+	stosw				; 16-bit Index
 	mov ax, 0
-	stosw				; 16-bit ring
+	stosw				; 16-bit Ring
 
 	; Notify the queue
-	mov rdi, [rdx+nt_base]	; Transmit Descriptor Base Address
+	mov rdi, [rdx+nt_base]		; Transmit Descriptor Base Address
 	add rdi, [virtio_net_notify_offset]
 	add rdi, 4
 	xor eax, eax
 	stosw
 
-	; Inspect the used ring
-	mov rdi, 0x1a6002		; Offset to start of Used Ring
-	mov bx, [nettxavailindex]
+	; Inspect the Used Ring
+	mov rdi, r8
+	; TODO should flags be checked?
+	add rdi, 0x2002			; Offset to start of Used Ring Index
+	mov bx, [rdx+0x76]		; nettxavailindex
 net_virtio_transmit_wait:
 	mov ax, [rdi]			; Load the index
 	cmp ax, bx
 	jne net_virtio_transmit_wait
 
-	add word [nettxdescindex], 2	; 2 entries were required
-	add word [nettxavailindex], 1
+	add word [rdx+0x74], 2		; nettxdescindex - 2 descriptor entries were required
+	add word [rdx+0x76], 1		; nettxavailindex
 
 	pop rax
 	pop rbx
 	pop rdx
 	pop rdi
+	pop r8
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -475,60 +525,66 @@ net_virtio_transmit_wait:
 ; OUT:	RDI = Location of stored packet
 ;	RCX = Length of packet
 net_virtio_poll:
+	push r8
 	push rsi
 	push rax
 
-	; Get size of packet that was received
-	mov rdi, os_net_mem
+	mov r8, [rdx+nt_rx_desc]
+
+	; Check if the Used Ring Index has changed from the last known value
+	mov rdi, r8
 	add rdi, 0x2000			; Offset to Used Ring
 	xor eax, eax
-	mov ax, [rdi+2]			; Offset to Used Ring Index
+	mov ax, [rdi+2]			; Load Used Ring Index
+	cmp ax, [rdx+0x78]		; Check against the last known index value
+	je net_virtio_poll_nodata	; If equal then bail out
+
+	; Get size of packet that was received
+	mov ax, [rdx+0x78]		; Last known index
 	shl eax, 3			; Quick multiply by 8
+	add eax, 8
 	add rdi, rax			; RDI points to the Used Ring Entry
 	mov ax, [rdi]			; Load the received packet size
 	mov cx, ax			; Save the packet size to CX for later
-	cmp cx, 0
-	je net_virtio_poll_nodata	; Bail out if there was no data
+	sub cx, 12			; Subtract the virtio header
 
-	; Add received packet size to start of os_PacketBuffers
-	push rdi
-	mov rdi, os_PacketBuffers
-	mov rsi, os_PacketBuffers+0x0C	; Skip over the 12 byte Virtio header
-	push cx
-	rep movsb			; Copy the packet data
-	pop cx
+	; Populate RX Available Ring
+	mov rdi, r8
+	add rdi, 0x1002			; Add offset to the Available Ring
+	mov ax, [rdi]			; 16-bit Index
+	inc ax
+	and ax, 0x00FF			; Wrap back to 0 if greater than 255
+	mov [rdi], ax			; 16-bit Index
+
+	; Clear old Used Ring Entry
+	mov rdi, r8
+	add rdi, 0x2004			; Start of Used Ring Entries
+	mov ax, [rdx+0x78]
+	shl rax, 3			; Quick multiply by 8
+	add rdi, rax
 	xor eax, eax
-	stosq				; Clear the end of the packet in os_PacketBuffers
 	stosq
-	pop rdi
-	mov [rdi], ax			; Clear the Used Ring Entry
 
-	; Re-populate RX desc
-	mov rdi, os_net_mem
-	mov rax, os_PacketBuffers	; Address for storing the data
-	stosq
-	mov eax, 1500			; Number of bytes
-	stosd
-	mov ax, VIRTQ_DESC_F_WRITE
-	stosw				; 16-bit Flags
-
-	; Populate RX avail
-	mov rdi, os_net_mem
-	add rdi, 0x1000
+	; Set RDI to address of packet
 	xor eax, eax
-	stosw				; 16-bit flags
-	mov ax, [netrxavailindex]
-	stosw				; 16-bit index
-	mov ax, 0
-	stosw				; 16-bit ring
+	mov ax, [rdx+0x78]		; Gather last RX
+	shl rax, 4			; Quick multiply by 16
+	mov rdi, r8
+	add rdi, rax			; Add offset into Descriptor Table
+	mov rdi, [rdi]			; Load address
+	add rdi, 12			; Skip past the header
 
-	mov rdi, os_PacketBuffers
-	add word [netrxdescindex], 1
-	add word [netrxavailindex], 1
+	; Increment internal counters
+	mov ax, [rdx+0x78]		; lastrx
+	inc ax
+	and ax, 0x00FF			; Wrap back to 0 if greater than 255
+	mov [rdx+0x78], ax		; lastrx
+	mov [r8+0x2002], ax		; Store the new Used Ring Index
 
 net_virtio_poll_nodata:
 	pop rax
 	pop rsi
+	pop r8
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -538,10 +594,6 @@ virtio_net_notify_offset: dq 0
 virtio_net_notify_offset_multiplier: dq 0
 virtio_net_isr_offset: dq 0
 virtio_net_device_offset: dq 0
-netrxdescindex: dw 0
-netrxavailindex: dw 0
-nettxdescindex: dw 0
-nettxavailindex: dw 1
 
 align 16
 netheader:
