@@ -394,8 +394,12 @@ virtio_net_init_pop_rx_1:
 	stosw				; 16-bit flags
 	mov ax, 1
 	stosw				; 16-bit index
-	mov ax, 0
+	xor eax, eax
+virtio_net_init_pop_rx_2:
 	stosw				; 16-bit ring
+	inc al
+	cmp al, 0
+	jne virtio_net_init_pop_rx_2
 
 	; Set nettxavailindex
 	mov ax, 1
@@ -527,14 +531,16 @@ net_virtio_poll:
 
 	mov r8, [rdx+nt_rx_desc]
 
-	; Get size of packet that was received
+	; Check if the Used Ring Index has changed from the last known value
 	mov rdi, r8
 	add rdi, 0x2000			; Offset to Used Ring
 	xor eax, eax
 	mov ax, [rdi+2]			; Load Used Ring Index
-	cmp ax, [rdx+0x78]		; lastrx
-	je net_virtio_poll_nodata
-	mov ax, [rdx+0x78]		; lastrx
+	cmp ax, [rdx+0x78]		; Check against the last known index value
+	je net_virtio_poll_nodata	; If equal then bail out
+
+	; Get size of packet that was received
+	mov ax, [rdx+0x78]		; Last known index
 	shl eax, 3			; Quick multiply by 8
 	add eax, 8
 	add rdi, rax			; RDI points to the Used Ring Entry
@@ -542,54 +548,38 @@ net_virtio_poll:
 	mov cx, ax			; Save the packet size to CX for later
 	sub cx, 12			; Subtract the virtio header
 
-;	; Add received packet size to start of os_PacketBuffers
-;	push rdi
-;	mov rdi, os_PacketBuffers
-;	mov rsi, os_PacketBuffers+0x0C	; Skip over the 12 byte Virtio header
-;	push cx
-;	rep movsb			; Copy the packet data
-;	pop cx
-;	xor eax, eax
-;	stosq				; Clear the end of the packet in os_PacketBuffers
-;	stosq
-;	pop rdi
-;	mov [rdi], ax			; Clear the Used Ring Entry
-
-	; Re-populate RX desc
-;	mov rdi, r8
-;	mov rax, os_PacketBuffers	; Address for storing the data
-;	stosq
-;	add rdi, 8
-;	mov eax, 1500			; Number of bytes
-;	stosd
-;	mov ax, VIRTQ_DESC_F_WRITE
-;	stosw				; 16-bit Flags
-
-	; Populate RX avail
+	; Populate RX Available Ring
 	mov rdi, r8
-	add rdi, 0x1000			; Add offset to the Available Ring
+	add rdi, 0x1002			; Add offset to the Available Ring
+	mov ax, [rdi]			; 16-bit Index
+	inc ax
+	and ax, 0x00FF			; Wrap back to 0 if greater than 255
+	mov [rdi], ax			; 16-bit Index
+
+	; Clear old Used Ring Entry
+	mov rdi, r8
+	add rdi, 0x2004			; Start of Used Ring Entries
+	mov ax, [rdx+0x78]
+	shl rax, 3			; Quick multiply by 8
+	add rdi, rax
 	xor eax, eax
-	stosw				; 16-bit flags
-	mov ax, [rdx+0x72]		; netrxavailindex
-	stosw				; 16-bit index
-	mov ax, 0
-	stosw				; 16-bit ring
+	stosq
 
 	; Set RDI to address of packet
 	xor eax, eax
 	mov ax, [rdx+0x78]		; Gather last RX
 	shl rax, 4			; Quick multiply by 16
-	add r8, rax			; Add offset into Descriptor Table
-	mov rdi, [r8]			; Load address
+	mov rdi, r8
+	add rdi, rax			; Add offset into Descriptor Table
+	mov rdi, [rdi]			; Load address
 	add rdi, 12			; Skip past the header
 
 	; Increment internal counters
-	add word [rdx+0x70], 1		; netrxdescindex
-	add word [rdx+0x72], 1		; netrxavailindex
 	mov ax, [rdx+0x78]		; lastrx
-	add al, 1			; AL will wrap back to zero if needed
+	inc ax
+	and ax, 0x00FF			; Wrap back to 0 if greater than 255
 	mov [rdx+0x78], ax		; lastrx
-	mov [r8+0x2002], ax		; Store the new index
+	mov [r8+0x2002], ax		; Store the new Used Ring Index
 
 net_virtio_poll_nodata:
 	pop rax
