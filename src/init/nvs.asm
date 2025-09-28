@@ -44,7 +44,7 @@ init_nvs_check_bus:
 %endif
 %ifndef NO_VIRTIO
 	cmp ax, 0x0100			; Mass Storage Controller (01) / SCSI storage controller (00)
-	je init_nvs_virtio_blk
+	je init_nvs_virtio
 %endif
 	jmp init_nvs_check_bus		; Check Bus Table again
 
@@ -52,7 +52,7 @@ init_nvs_check_bus:
 init_nvs_nvme:
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
-	call nvme_init
+	call nvs_nvme_init
 	jmp init_nvs_done
 %endif
 
@@ -60,15 +60,15 @@ init_nvs_nvme:
 init_nvs_ahci:
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
-	call ahci_init
+	call nvs_ahci_init
 	jmp init_nvs_done
 %endif
 
 %ifndef NO_VIRTIO
-init_nvs_virtio_blk:
+init_nvs_virtio:
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
-	call virtio_blk_init
+	call nvs_virtio_init
 	jmp init_nvs_done
 %endif
 
@@ -76,7 +76,7 @@ init_nvs_virtio_blk:
 init_nvs_ata:
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
-	call ata_init
+	call nvs_ata_init
 	jmp init_nvs_done
 %endif
 

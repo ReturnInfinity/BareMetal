@@ -7,7 +7,7 @@
 
 
 ; -----------------------------------------------------------------------------
-ahci_init:
+nvs_ahci_init:
 	push rsi			; Used in init_storage
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 

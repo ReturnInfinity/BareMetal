@@ -7,30 +7,13 @@
 
 
 ; -----------------------------------------------------------------------------
-virtio_blk_init:
+nvs_virtio_blk_init:
 	push rsi
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 	push rbx
 	push rax
 
-	; Verify this driver supports the Vendor
-	mov eax, [rsi+4]		; Offset to Vendor/Device ID in the Bus Table
-	mov rsi, virtio_blk_driverid
-	mov bx, [rsi]			; Load the Vendor (0x1AF4)
-	cmp ax, bx
-	jne virtio_blk_init_error	; Bail out if it wasn't a match
-
-	; Verify this driver support the Device
-	shr eax, 16			; Move Device ID into AX
-virtio_blk_init_next_dev:
-	add rsi, 2
-	mov bx, [rsi]			; Load the Device
-	cmp bx, 0			; End of list?
-	je virtio_blk_init_error	; If so, bail out
-	cmp ax, bx			; Check against the list
-	jne virtio_blk_init_next_dev	; No match? Try next entry
-
-	; Grab the Base I/O Address of the device
+	; Gather the Base I/O Address of the device
 	mov al, 4			; Read BAR4
 	call os_bus_read_bar
 	mov [os_virtioblk_base], rax	; Save it as the base
@@ -105,7 +88,7 @@ virtio_blk_init_cap_end:
 	; Device Initialization (section 3.1)
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
-	mov al, 0x00			
+	mov al, 0x00
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 virtio_blk_init_reset_wait:
 	mov al, [rsi+VIRTIO_DEVICE_STATUS]
@@ -331,7 +314,7 @@ virtio_blk_io_wait:
 
 
 ; -----------------------------------------------------------------------------
-; virtio_blk_id -- 
+; virtio_blk_id --
 ; IN:	EAX = CDW0
 ;	EBX = CDW1
 ;	ECX = CDW10
@@ -348,13 +331,6 @@ notify_offset: dq 0
 notify_offset_multiplier: dq 0
 descindex: dw 0
 availindex: dw 1
-
-; Driver
-virtio_blk_driverid:
-dw 0x1AF4				; Vendor ID
-dw 0x1001				; Device ID - legacy
-dw 0x1042				; Device ID - v1.0
-dw 0x0000				; End of list
 
 align 16
 footer:
@@ -380,15 +356,15 @@ VIRTIO_BLK_MIN_IO_SIZE				equ 0x2E ; 16-bit SUGGESTED MINIMUM I/O SIZE IN BLOCKS
 VIRTIO_BLK_OPT_IO_SIZE				equ 0x30 ; 32-bit OPTIMAL (SUGGESTED MAXIMUM) I/O SIZE IN BLOCKS
 VIRTIO_BLK_WRITEBACK				equ 0x34 ; 8-bit
 VIRTIO_BLK_NUM_QUEUES				equ 0x36 ; 16-bit
-VIRTIO_BLK_MAX_DISCARD_SECTORS			equ 0x38 ; 32-bit 
-VIRTIO_BLK_MAX_DISCARD_SEG			equ 0x3C ; 32-bit 
-VIRTIO_BLK_DISCARD_SECTOR_ALIGNMENT		equ 0x40 ; 32-bit 
-VIRTIO_BLK_MAX_WRITE_ZEROES_SECTORS		equ 0x44 ; 32-bit 
-VIRTIO_BLK_MAX_WRITE_ZEROES_SEG			equ 0x48 ; 32-bit 
+VIRTIO_BLK_MAX_DISCARD_SECTORS			equ 0x38 ; 32-bit
+VIRTIO_BLK_MAX_DISCARD_SEG			equ 0x3C ; 32-bit
+VIRTIO_BLK_DISCARD_SECTOR_ALIGNMENT		equ 0x40 ; 32-bit
+VIRTIO_BLK_MAX_WRITE_ZEROES_SECTORS		equ 0x44 ; 32-bit
+VIRTIO_BLK_MAX_WRITE_ZEROES_SEG			equ 0x48 ; 32-bit
 VIRTIO_BLK_WRITE_ZEROES_MAY_UNMAP		equ 0x4C ; 8-bit
-VIRTIO_BLK_MAX_SECURE_ERASE_SECTORS		equ 0x50 ; 32-bit 
-VIRTIO_BLK_MAX_SECURE_ERASE_SEG			equ 0x54 ; 32-bit 
-VIRTIO_BLK_SECURE_ERASE_SECTOR_ALIGNMENT	equ 0x58 ; 32-bit 
+VIRTIO_BLK_MAX_SECURE_ERASE_SECTORS		equ 0x50 ; 32-bit
+VIRTIO_BLK_MAX_SECURE_ERASE_SEG			equ 0x54 ; 32-bit
+VIRTIO_BLK_SECURE_ERASE_SECTOR_ALIGNMENT	equ 0x58 ; 32-bit
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_BLK_F_BARRIER			equ 0 ; Legacy - Device supports request barriers
