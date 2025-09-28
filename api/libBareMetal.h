@@ -22,7 +22,7 @@ void b_output(const char *str, u64 nbr);
 
 // Network
 void b_net_tx(void *mem, u64 len, u64 iid);
-u64 b_net_rx(void *mem, u64 iid);
+u64 b_net_rx(void **mem, u64 iid);
 
 // Non-volatile Storage
 u64 b_nvs_read(void *mem, u64 start, u64 num, u64 drivenum);
