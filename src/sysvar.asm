@@ -76,6 +76,7 @@ os_nvs_io:		equ os_SystemVariables + 0x00B0
 os_nvs_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
+os_virtioscsi_base:	equ os_SystemVariables + 0x00C8
 os_MouseCallback:	equ os_SystemVariables + 0x00D8
 os_xHCI_Base:		equ os_SystemVariables + 0x00E0
 os_usb_evtoken:		equ os_SystemVariables + 0x00E8
@@ -95,7 +96,7 @@ os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interr
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 0x0200
 os_CoreSpeed:		equ os_SystemVariables + 0x0202
-os_nvsVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
+os_nvsVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block, 4 for Virtio SCSI
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
 os_screen_ppsl:		equ os_SystemVariables + 0x020E

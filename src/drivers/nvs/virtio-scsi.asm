@@ -16,7 +16,7 @@ nvs_virtio_scsi_init:
 	; Gather the Base I/O Address of the device
 	mov al, 4			; Read BAR4
 	call os_bus_read_bar
-	mov [os_virtioblk_base], rax	; Save it as the base
+	mov [os_virtioscsi_base], rax	; Save it as the base
 	mov rsi, rax			; RSI holds the base for MMIO
 
 	; Set PCI Status/Command values
@@ -108,7 +108,7 @@ virtio_scsi_init_reset_wait:
 	xor eax, eax
 	mov [rsi+VIRTIO_DEVICE_FEATURE_SELECT], eax
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
-	mov eax, 0x44			; Only support BLK_SIZE (6) & SEG_MAX (2)
+	mov eax, 0x04			; Only support VIRTIO_SCSI_F_CHANGE (4)
 	push rax
 	xor eax, eax
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
@@ -141,7 +141,7 @@ virtio_scsi_init_reset_wait:
 	; reading and possibly writing the device’s virtio configuration space
 	; population of virtqueues
 
-	; Set up Queue 0
+	; Set up Queue 0 - CONTROLQ
 	xor eax, eax
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
@@ -176,12 +176,56 @@ virtio_scsi_init_pop:
 	cmp al, 0
 	jne virtio_scsi_init_pop
 
+	; Gather Device Configuration Layout
+	; Parse how many request queues exist
+
+	; Set up Queue 2 - REQUESTQUEUE
+	mov eax, 2
+	mov [rsi+VIRTIO_QUEUE_SELECT], ax
+	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
+	mov ecx, eax			; Store queue size in ECX
+	mov eax, os_nvs_mem
+	add eax, 16384			; TODO remove hardcoded values
+	mov [rsi+VIRTIO_QUEUE_DESC], eax
+	rol rax, 32
+	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
+	rol rax, 32
+	add rax, 4096
+	mov [rsi+VIRTIO_QUEUE_DRIVER], eax
+	rol rax, 32
+	mov [rsi+VIRTIO_QUEUE_DRIVER+8], eax
+	rol rax, 32
+	add rax, 4096
+	mov [rsi+VIRTIO_QUEUE_DEVICE], eax
+	rol rax, 32
+	mov [rsi+VIRTIO_QUEUE_DEVICE+8], eax
+	rol rax, 32
+	mov ax, 1
+	mov [rsi+VIRTIO_QUEUE_ENABLE], ax
+
+	; Populate the Next entries in the description ring
+	; FIXME - Don't expect exactly 256 entries
+	mov eax, 1
+	mov rdi, os_nvs_mem+0x4000
+	add rdi, 14
+virtio_scsi_init_pop2:
+	mov [rdi], al
+	add rdi, 16
+	add al, 1
+	cmp al, 0
+	jne virtio_scsi_init_pop2
+
 	; 3.1.1 - Step 8 - At this point the device is “live”
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
+	mov rcx, 1
+	mov rdi, 0x600000
+	call virtio_scsi_io
+	jmp virtio_scsi_init_error
+
 virtio_scsi_init_done:
-	bts word [os_nvsVar], 3	; Set the bit flag that Virtio Block has been initialized
+	bts word [os_nvsVar], 4	; Set the bit flag that Virtio SCSI has been initialized
 	mov rdi, os_nvs_io		; Write over the storage function addresses
 	mov rax, virtio_scsi_io
 	stosq
@@ -222,6 +266,90 @@ virtio_scsi_io:
 	push rbx
 	push rax
 
+	push rax			; Save the starting sector
+	mov r9, rdi			; Save the memory address
+
+	; Build the request
+	; todo
+
+	mov rdi, os_nvs_mem		; This driver always starts at beginning of the Descriptor Table
+					; FIXME: Add desc_index offset
+	add rdi, 16384
+
+	; Add Request to Descriptor Entry 0
+	mov rax, req			; Address of the request
+	stosq				; 64-bit address
+	mov eax, 52
+	stosd				; 32-bit length
+	mov ax, VIRTQ_DESC_F_NEXT
+	stosw				; 16-bit Flags
+	add rdi, 2			; Skip Next as it is pre-populated
+
+	; Add data to Descriptor Entry 1
+	mov rax, r9			; Address to store the data
+	stosq
+	shl rcx, 12			; Covert count to 4096B sectors
+	mov eax, ecx			; Number of bytes
+	stosd
+	mov ax, VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE
+	stosw				; 16-bit Flags
+	add rdi, 2			; Skip Next as it is pre-populated
+
+	; Add Response to Descriptor Entry 3
+	mov rax, resp			; Address of the response
+	stosq				; 64-bit address
+	mov eax, 108
+	stosd				; 32-bit length
+	mov eax, VIRTQ_DESC_F_WRITE
+	stosw				; 16-bit Flags
+	add rdi, 2			; Skip Next as it is pre-populated
+
+;	; Build the header
+;	mov rdi, header
+;	; BareMetal I/O opcode for Read is 2, Write is 1
+;	; Virtio-blk I/O opcode for Read is 0, Write is 1
+;	; FIXME: Currently we just clear bit 1.
+;	btc bx, 1
+;	mov eax, ebx
+;	stosd				; type
+;	xor eax, eax
+;	stosd				; reserved
+	pop rax				; Restore the starting sector
+;	shl rax, 3			; Multiply by 8 as we use 4096-byte sectors internally
+;	stosq				; starting sector
+;
+;	; Build the footer
+;	mov rdi, footer
+;	xor eax, eax
+;	stosb
+
+	; Add entry to Avail
+	mov rdi, os_nvs_mem+0x5000	; Offset to start of Availability Ring
+	mov ax, 1			; 1 for no interrupts
+	stosw				; 16-bit flags
+	mov ax, [availindex]
+	stosw				; 16-bit index
+	mov ax, 0
+	stosw				; 16-bit ring
+
+	; Notify the queue
+	mov rdi, [os_virtioscsi_base]
+	add rdi, [notify_offset]	; This driver only uses Queue 0 so no multiplier needed
+	add rdi, 8
+	xor eax, eax
+	stosw
+
+	; Inspect the used ring
+	mov rdi, os_nvs_mem+0x6002	; Offset to start of Used Ring
+	mov bx, [availindex]
+virtio_scsi_io_wait:
+	mov ax, [rdi]			; Load the index
+	cmp ax, bx
+	jne virtio_scsi_io_wait
+
+	add word [descindex], 3		; 3 entries were required
+	add word [availindex], 1
+
 	pop rax
 	pop rbx
 	pop rcx
@@ -245,6 +373,42 @@ virtio_scsi_id:
 	ret
 ; -----------------------------------------------------------------------------
 
+align 16
+req:
+lun: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+id: dq 0x0000000000000000
+task_attr: db 0x00
+prio: db 0x00
+crn: db 0x00 ;
+cdb: db 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ;times 32 db 0x00
+
+align 16
+resp:
+sense_len: dd 0x00000000
+residual: dd 0x00000000
+status_qualifier: dw 0x0000
+status: db 0x00
+response: db 0x00
+sense: times 96 db 0x00
+
+
+; VIRTIO SCSI Registers - Device Config
+; num_queues ; 32-bit
+; seg_max ; 32-bit
+; max_sectors ; 32-bit
+; cmd_per_lun ; 32-bit
+; event_info_size ; 32-bit
+; sense_size ; 32-bit
+; cdb_size ; 32-bit
+; max_channel ; 16-bit
+; max_target ; 16-bit
+; max_lun ; 32-bit
+
+; VIRTIO_DEVICEFEATURES bits
+VIRTIO_SCSI_F_INOUT			equ 0 ; A single request can include both device-readable and device-writable data buffers
+VIRTIO_SCSI_F_HOTPLUG			equ 1 ; The host SHOULD enable reporting of hot-plug and hot-unplug events for LUNs and targets on the SCSI bus. The guest SHOULD handle hot-plug and hot-unplug events.
+VIRTIO_SCSI_F_CHANGE			equ 2 ; The host will report changes to LUN parameters via a VIRTIO_SCSI_T_-PARAM_CHANGE event; the guest SHOULD handle them
+VIRTIO_SCSI_F_T10_PI			equ 3 ; The extended fields for T10 protection information (DIF/DIX) are included in the SCSI request header
 
 ; =============================================================================
 ; EOF
