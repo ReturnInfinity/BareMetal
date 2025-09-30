@@ -16,8 +16,10 @@ b_net_status:
 
 	cld
 	xor eax, eax
-	cmp byte [os_NetEnabled], 0
-	je b_net_status_end
+
+	and edx, 0x000000FF		; Keep low 8-bits
+	cmp byte [os_net_icount], dl	; Check provided Interface ID
+	jb b_net_status_end		; Bail out if it was an invalid interface
 
 	mov ecx, 6
 
@@ -50,6 +52,10 @@ b_net_config:
 	push rdx
 	push rcx
 
+	and edx, 0x000000FF		; Keep low 8-bits
+	cmp byte [os_net_icount], dl	; Check provided Interface ID
+	jb b_net_config_end		; Bail out if it was an invalid interface
+
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
 
@@ -75,8 +81,9 @@ b_net_tx:
 	push rcx
 	push rax
 
-	cmp byte [os_NetEnabled], 1	; Check if networking is enabled
-	jne b_net_tx_fail
+	and edx, 0x000000FF		; Keep low 8-bits
+	cmp byte [os_net_icount], dl	; Check provided Interface ID
+	jb b_net_tx_fail		; Bail out if it was an invalid interface
 
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
@@ -124,13 +131,11 @@ b_net_tx_fail:
 b_net_rx:
 	push rdx
 
-	mov cl, byte [os_net_icount]	; Get interface count
-	cmp cl, 0
-	je b_net_rx_end			; Bail out if there are no valid interfaces
-	dec cl				; Interfaces start at 0
-	cmp cl, dl
 	xor ecx, ecx
-	ja b_net_rx_end			; Bail out if it was an invalid interface
+
+	and edx, 0x000000FF		; Keep low 8-bits
+	cmp byte [os_net_icount], dl	; Check provided Interface ID
+	jb b_net_rx_end			; Bail out if it was an invalid interface
 
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
