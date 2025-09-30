@@ -12,22 +12,26 @@
 ; OUT:	RAX = MAC Address (bits 0-47) if net is enabled, otherwise 0
 b_net_status:
 	push rsi
+	push rdx
 	push rcx
 
 	cld
 	xor eax, eax
 
+	; Validity checks
 	and edx, 0x000000FF		; Keep low 8-bits
-	cmp byte [os_net_icount], dl	; Check provided Interface ID
-	jb b_net_status_end		; Bail out if it was an invalid interface
-
-	mov ecx, 6
+	mov cl, byte [os_net_icount]	; Gather Interface count
+	cmp cl, 0			; Is Interface count 0?
+	je b_net_status_end		; If so, bail out as there are no interfaces
 
 	mov rsi, rdx
+
+	; Calculate offset into net_table
 	shl esi, 7			; Quick multiply by 128
 	add esi, net_table		; Add offset to net_table
 	add esi, 8
 
+	mov ecx, 6
 b_net_status_loadMAC:
 	shl rax, 8
 	lodsb
@@ -37,6 +41,7 @@ b_net_status_loadMAC:
 
 b_net_status_end:
 	pop rcx
+	pop rdx
 	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
@@ -51,11 +56,17 @@ b_net_config:
 	push rsi
 	push rdx
 	push rcx
+	push rbx
 
+	; Validity checks
 	and edx, 0x000000FF		; Keep low 8-bits
-	cmp byte [os_net_icount], dl	; Check provided Interface ID
-	jb b_net_config_end		; Bail out if it was an invalid interface
+	mov bl, byte [os_net_icount]	; Gather Interface count
+	cmp bl, 0			; Is Interface count 0?
+	je b_net_config_end		; If so, bail out as there are no interfaces
+	cmp bl, dl			; Make sure Interface ID < Interface count
+	ja b_net_config_end		; Bail out if it was an invalid interface
 
+	; Calculate offset into net_table
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
 
@@ -63,6 +74,7 @@ b_net_config:
 	call [rdx+nt_config]		; Call driver transmit function passing RDX as interface
 
 b_net_config_end:
+	pop rbx
 	pop rcx
 	pop rdx
 	pop rsi
@@ -81,16 +93,19 @@ b_net_tx:
 	push rcx
 	push rax
 
+	; Validity checks
 	and edx, 0x000000FF		; Keep low 8-bits
-	cmp byte [os_net_icount], dl	; Check provided Interface ID
-	jb b_net_tx_fail		; Bail out if it was an invalid interface
+	mov al, byte [os_net_icount]	; Gather Interface count
+	cmp al, 0			; Is Interface count 0?
+	je b_net_tx_fail		; If so, bail out as there are no interfaces
+	cmp al, dl			; Make sure Interface ID < Interface count
+	jbe b_net_tx_fail		; Bail out if it was an invalid interface
+	cmp cx, 1522			; Check how many bytes were to be sent
+	ja b_net_tx_fail		; Fail if more than 1522 bytes
 
+	; Calculate offset into net_table
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
-
-b_net_tx_maxcheck:
-	cmp rcx, 1522			; Fail if more than 1522 bytes
-	ja b_net_tx_fail
 
 	; Lock the network interface so only one send can happen at a time
 	mov rax, rdx
@@ -130,13 +145,19 @@ b_net_tx_fail:
 ;	All other registers preserved
 b_net_rx:
 	push rdx
+	push rax
 
 	xor ecx, ecx
 
+	; Validity checks
 	and edx, 0x000000FF		; Keep low 8-bits
-	cmp byte [os_net_icount], dl	; Check provided Interface ID
+	mov al, byte [os_net_icount]	; Gather Interface count
+	cmp al, 0			; Is Interface count 0?
+	je b_net_rx_end			; If so, bail out as there are no interfaces
+	cmp al, dl			; Make sure Interface ID < Interface count
 	jb b_net_rx_end			; Bail out if it was an invalid interface
 
+	; Calculate offset into net_table
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
 
@@ -151,6 +172,7 @@ b_net_rx:
 	add qword [rdx+nt_rx_bytes], rcx
 
 b_net_rx_end:
+	pop rax
 	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
