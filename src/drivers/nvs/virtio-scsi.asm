@@ -219,6 +219,22 @@ virtio_scsi_init_pop2:
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
+	; REPORT LUNS 0xA0 - 124
+
+	; INQUIRY 0x12 - 144
+
+	; TEST UNIT READY 0x00 - 108
+
+	; REQUEST SENSE 0x03 - 126
+
+	; TEST UNIT READY 0x00 - 108
+
+	; READ CAPACITY (10) 0x25 - 116
+
+	; MODE SENSE (10) 0x5A - 135
+
+	; READ (10) 0x28
+
 	mov rcx, 1
 	mov rdi, 0x600000
 	call virtio_scsi_io
@@ -279,28 +295,29 @@ virtio_scsi_io:
 	; Add Request to Descriptor Entry 0
 	mov rax, req			; Address of the request
 	stosq				; 64-bit address
-	mov eax, 52
+	mov eax, 51			; 19 byte REQ Header + 32 byte CDB
 	stosd				; 32-bit length
 	mov ax, VIRTQ_DESC_F_NEXT
 	stosw				; 16-bit Flags
 	add rdi, 2			; Skip Next as it is pre-populated
 
-	; Add data to Descriptor Entry 1
-	mov rax, r9			; Address to store the data
-	stosq
-	shl rcx, 12			; Covert count to 4096B sectors
-	mov eax, ecx			; Number of bytes
-	stosd
-	mov ax, VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE
-	stosw				; 16-bit Flags
-	add rdi, 2			; Skip Next as it is pre-populated
-
-	; Add Response to Descriptor Entry 3
+	; Add Response to Descriptor Entry 1
 	mov rax, resp			; Address of the response
 	stosq				; 64-bit address
 	mov eax, 108
 	stosd				; 32-bit length
-	mov eax, VIRTQ_DESC_F_WRITE
+	mov eax, VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE
+	stosw				; 16-bit Flags
+	add rdi, 2			; Skip Next as it is pre-populated
+
+	; Add data to Descriptor Entry 2
+	mov rax, r9			; Address to store the data
+	stosq
+	shl rcx, 12			; Covert count to 4096B sectors
+	mov eax, ecx			; Number of bytes
+	mov eax, 512			; TODO remote hardcoded length
+	stosd
+	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
 	add rdi, 2			; Skip Next as it is pre-populated
 
@@ -374,13 +391,45 @@ virtio_scsi_id:
 ; -----------------------------------------------------------------------------
 
 align 16
-req:
-lun: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+req: ; 19 bytes
+lun: db 0x01, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00
 id: dq 0x0000000000000000
 task_attr: db 0x00
 prio: db 0x00
 crn: db 0x00 ;
-cdb: db 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ;times 32 db 0x00
+
+; 10-byte Command Descriptor Block
+cdb: db 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00
+
+blank: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+
+; 16-byte Command Descriptor Block
+;cdb_opcode: db 0x28
+;cdb_blank: db 0x00
+;cdb_addr: dq 0x0000000000000000
+;cdb_length: dd 0x00000001
+;cdb_resv: db 0x00
+;cdb_ctrl: db 0x00
+
+
+; 32-byte Command Descriptor Block
+;cdb_opcode: db 0x28
+;cdb_ctrl: db 0x00
+;cdb_misc1: db 0x00
+;cdb_misc2: db 0x00
+;cdb_misc3: db 0x00
+;cdb_misc4: db 0x00
+;cdb_misc5: db 0x00
+;cdb_len: db 0x09
+;cdb_srvact: dw 0x0000
+;cdb_misc6: db 0x00
+;cdb_misc7: db 0x00
+;cdb_addr: dq 0x0000000000000000
+;cdb_misc8: dq 0x0000000000000000
+;cdb_length: dd 0x00000200
+
+
+;cdb: db 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ;times 32 db 0x00
 
 align 16
 resp:
@@ -409,6 +458,18 @@ VIRTIO_SCSI_F_INOUT			equ 0 ; A single request can include both device-readable 
 VIRTIO_SCSI_F_HOTPLUG			equ 1 ; The host SHOULD enable reporting of hot-plug and hot-unplug events for LUNs and targets on the SCSI bus. The guest SHOULD handle hot-plug and hot-unplug events.
 VIRTIO_SCSI_F_CHANGE			equ 2 ; The host will report changes to LUN parameters via a VIRTIO_SCSI_T_-PARAM_CHANGE event; the guest SHOULD handle them
 VIRTIO_SCSI_F_T10_PI			equ 3 ; The extended fields for T10 protection information (DIF/DIX) are included in the SCSI request header
+
+; VIRTIO SCSI command-specific response values
+VIRTIO_SCSI_S_OK			equ 0
+VIRTIO_SCSI_S_OVERRUN			equ 1
+VIRTIO_SCSI_S_ABORTED			equ 2
+VIRTIO_SCSI_S_BAD_TARGET		equ 3
+VIRTIO_SCSI_S_RESET			equ 4
+VIRTIO_SCSI_S_BUSY			equ 5
+VIRTIO_SCSI_S_TRANSPORT_FAILURE		equ 6
+VIRTIO_SCSI_S_TARGET_FAILURE		equ 7
+VIRTIO_SCSI_S_NEXUS_FAILURE		equ 8
+VIRTIO_SCSI_S_FAILURE			equ 9
 
 ; =============================================================================
 ; EOF
