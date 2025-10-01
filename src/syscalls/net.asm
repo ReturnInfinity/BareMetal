@@ -11,38 +11,31 @@
 ;  IN:	RDX = Interface ID
 ; OUT:	RAX = MAC Address (bits 0-47) if net is enabled, otherwise 0
 b_net_status:
-	push rsi
 	push rdx
 	push rcx
 
-	cld
 	xor eax, eax
+	and edx, 0x000000FF		; Keep low 8-bits of the requested interface
 
 	; Validity checks
-	and edx, 0x000000FF		; Keep low 8-bits
 	mov cl, byte [os_net_icount]	; Gather Interface count
 	cmp cl, 0			; Is Interface count 0?
 	je b_net_status_end		; If so, bail out as there are no interfaces
-
-	mov rsi, rdx
+	cmp cl, dl			; Make sure Interface ID < Interface count
+	jbe b_net_status_end		; Bail out if it was an invalid interface
 
 	; Calculate offset into net_table
-	shl esi, 7			; Quick multiply by 128
-	add esi, net_table		; Add offset to net_table
-	add esi, 8
+	shl edx, 7			; Quick multiply by 128
+	add edx, net_table+8		; Add offset to net_table + MAC
 
-	mov ecx, 6
-b_net_status_loadMAC:
-	shl rax, 8
-	lodsb
-	sub ecx, 1
-	test ecx, ecx
-	jnz b_net_status_loadMAC
+	; Load MAC Address into RAX
+	mov rax, [rdx]			; Load the 64-bit value of the 48-bit MAC Address
+	bswap rax			; Reverse the byte order
+	shr rax, 16			; Shift to remove the 16-bit padding
 
 b_net_status_end:
 	pop rcx
 	pop rdx
-	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -53,25 +46,26 @@ b_net_status_end:
 ;	RAX = Base for receive descriptors
 ; OUT:	Nothing
 b_net_config:
-	push rsi
+	push rsi			; TODO - Drivers should push/pop this if needed
 	push rdx
-	push rcx
+	push rcx			; TODO - Drivers should push/pop this if needed
 	push rbx
 
+	and edx, 0x000000FF		; Keep low 8-bits of the requested interface
+
 	; Validity checks
-	and edx, 0x000000FF		; Keep low 8-bits
 	mov bl, byte [os_net_icount]	; Gather Interface count
 	cmp bl, 0			; Is Interface count 0?
 	je b_net_config_end		; If so, bail out as there are no interfaces
 	cmp bl, dl			; Make sure Interface ID < Interface count
-	ja b_net_config_end		; Bail out if it was an invalid interface
+	jbe b_net_config_end		; Bail out if it was an invalid interface
 
 	; Calculate offset into net_table
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
 
 	; Call the driver config function
-	call [rdx+nt_config]		; Call driver transmit function passing RDX as interface
+	call [rdx+nt_config]		; Call driver transmit function passing RDX as entry to interface table
 
 b_net_config_end:
 	pop rbx
@@ -90,11 +84,11 @@ b_net_config_end:
 ; OUT:	Nothing. All registers preserved
 b_net_tx:
 	push rdx
-	push rcx
 	push rax
 
+	and edx, 0x000000FF		; Keep low 8-bits of the requested interface
+
 	; Validity checks
-	and edx, 0x000000FF		; Keep low 8-bits
 	mov al, byte [os_net_icount]	; Gather Interface count
 	cmp al, 0			; Is Interface count 0?
 	je b_net_tx_fail		; If so, bail out as there are no interfaces
@@ -118,7 +112,7 @@ b_net_tx:
 	xchg rax, rsi
 
 	; Call the driver transmit function
-	call [rdx+nt_transmit]		; Call driver transmit function passing RDX as interface
+	call [rdx+nt_transmit]		; Call driver transmit function passing RDX as entry to interface table
 
 	; Unlock the network interface
 	mov rax, rdx
@@ -131,7 +125,6 @@ b_net_tx:
 
 b_net_tx_fail:
 	pop rax
-	pop rcx
 	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
@@ -148,24 +141,23 @@ b_net_rx:
 	push rax
 
 	xor ecx, ecx
+	and edx, 0x000000FF		; Keep low 8-bits of the requested interface
 
 	; Validity checks
-	and edx, 0x000000FF		; Keep low 8-bits
 	mov al, byte [os_net_icount]	; Gather Interface count
 	cmp al, 0			; Is Interface count 0?
 	je b_net_rx_end			; If so, bail out as there are no interfaces
 	cmp al, dl			; Make sure Interface ID < Interface count
-	jb b_net_rx_end			; Bail out if it was an invalid interface
+	jbe b_net_rx_end		; Bail out if it was an invalid interface
 
 	; Calculate offset into net_table
 	shl edx, 7			; Quick multiply by 128
 	add edx, net_table		; Add offset to net_table
 
 	; Call the driver poll function
-	call [rdx+nt_poll]		; Call driver poll function passing RDX as interface
-
-	cmp cx, 0			; No data?
-	je b_net_rx_end			; If so, don't increment counters
+	call [rdx+nt_poll]		; Call driver transmit function passing RDX as entry to interface table
+	cmp cx, 0			; Check if there was data
+	je b_net_rx_end			; If not, don't increment counters
 
 	; Increment interface counters
 	inc qword [rdx+nt_rx_packets]
