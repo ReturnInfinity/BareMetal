@@ -263,7 +263,7 @@ virtio_net_init_reset_wait:
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
 	xor eax, eax
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
-	mov eax, 0x00010020		; Feature bits 31:0 - STATUS, MAC
+	mov eax, 0x00010020		; Feature bits 31:0 - STATUS (16), MAC (5)
 	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
 	; Process the next 32-bits of Feature bits
 	mov eax, 1
@@ -271,7 +271,7 @@ virtio_net_init_reset_wait:
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
 	mov eax, 1
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
-	mov eax, 1			; Feature bits 63:32 - LEGACY
+	mov eax, 1			; Feature bits 63:32 - LEGACY (32)
 	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
 
 	; 3.1.1 - Step 5
@@ -526,7 +526,7 @@ net_virtio_poll:
 	shl eax, 3			; Quick multiply by 8
 	add eax, 4			; Add offset to entries
 	add rdi, rax			; RDI points to the Used Ring Entry
-	mov rcx, [rdi]			; Load the Address and Length
+	mov rcx, [rdi]			; Load the 32-bit Index and 32-bit Length
 
 	; Populate RX Available Ring
 	mov rdi, r8
@@ -535,15 +535,6 @@ net_virtio_poll:
 	inc ax
 	and ax, 0x00FF			; Wrap back to 0 if greater than 255
 	mov [rdi], ax			; 16-bit Index
-
-	; Clear old Used Ring Entry
-	mov rdi, r8
-	add rdi, 0x2004			; Start of Used Ring Entries
-	mov ax, [rdx+0x78]
-	shl rax, 3			; Quick multiply by 8
-	add rdi, rax
-	xor eax, eax
-	stosq
 
 	; Set RDI to address of packet
 	xor eax, eax
