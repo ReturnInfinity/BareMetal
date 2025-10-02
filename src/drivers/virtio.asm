@@ -62,12 +62,20 @@ VIRTIO_STATUS_DRIVER_OK			equ 0x04 ; Indicates that the driver is set up and rea
 VIRTIO_STATUS_DRIVER			equ 0x02 ; Indicates that the guest OS knows how to drive the device
 VIRTIO_STATUS_ACKNOWLEDGE		equ 0x01 ; Indicates that the guest OS has found the device and recognized it as a valid virtio device.
 
-; VIRTQUEUE Flags
+; VIRTQUEUE Descriptor Flags
 VIRTQ_DESC_F_NEXT			equ 1
 VIRTQ_DESC_F_WRITE			equ 2
 VIRTQ_DESC_F_INDIRECT			equ 4
 
+; VIRTQUEUE Used Flags
+VIRTQ_USED_F_NO_NOTIFY			equ 1
 
+; VIRTQUEUE Available Flags
+VIRTQ_AVAIL_F_NO_INTERRUPT		equ 1
+
+; VIRTIO Feature Flags
+VIRTIO_F_NOTIFY_ON_EMPTY		equ 24
+VIRTIO_F_ANY_LAYOUT			equ 27
 VIRTIO_F_INDIRECT_DESC			equ 28
 VIRTIO_F_EVENT_IDX			equ 29
 VIRTIO_F_VERSION_1			equ 32
@@ -79,6 +87,7 @@ VIRTIO_F_SR_IOV				equ 37
 VIRTIO_F_NOTIFICATION_DATA		equ 38
 VIRTIO_F_NOTIF_CONFIG_DATA		equ 39
 VIRTIO_F_RING_RESET			equ 40
+IRTIO_F_ADMIN_VQ			equ 41
 
 VIRTIO_MSI_NO_VECTOR			equ 0xFFFF
 
