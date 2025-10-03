@@ -374,7 +374,7 @@ virtio_net_init_pop_rx_d:
 	add rdi, 0x1000
 	xor eax, eax
 	stosw				; 16-bit flags
-	mov ax, 1
+	mov ax, 128
 	stosw				; 16-bit index
 	xor eax, eax
 virtio_net_init_pop_rx_a:
@@ -445,7 +445,7 @@ net_virtio_transmit:
 
 	; Create first entry in the Descriptor Table
 	mov rdi, r8
-	mov rax, netheader		; Address of the 12-byte netheader
+	mov rax, virtio_net_hdr		; Address of the 12-byte virtio_net_hdr
 	stosq				; 64-bit address
 	mov eax, 12
 	stosd				; 32-bit length
@@ -571,10 +571,14 @@ virtio_net_isr_offset: dq 0
 virtio_net_device_offset: dq 0
 
 align 16
-netheader:
-dd 0x00000000
-dd 0x00000000
-dd 0x00000000
+virtio_net_hdr:
+flags: db 0x00
+gso_type: db 0x00
+hdr_len: dw 0x0000
+gso_size: dw 0x0000
+csum_start: dw 0x0000
+csum_offset: dw 0x0000
+num_buffers: dw 0x0000
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_NET_F_CSUM		equ 0 ; Device handles packets with partial checksum
