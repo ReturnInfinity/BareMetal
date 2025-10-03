@@ -109,6 +109,10 @@ ps2_keyboard_interrupt:
 	in al, PS2_DATA			; Get the scan code from the keyboard
 	cmp al, 0x01
 	je keyboard_escape
+	cmp al, 0x4B
+	je keyboard_left
+	cmp al, 0x4D
+	je keyboard_right
 	cmp al, 0x1D
 	je keyboard_control
 	cmp al, 0x2A			; Left Shift Make
@@ -146,6 +150,14 @@ keyboard_escape:
 	jmp reboot
 
 keyup:
+	jmp keyboard_done
+
+keyboard_left:
+	mov byte [key], 0x03
+	jmp keyboard_done
+
+keyboard_right:
+	mov byte [key], 0x02
 	jmp keyboard_done
 
 keyboard_control:
