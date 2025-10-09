@@ -61,8 +61,6 @@ render_done:
 	mul ecx
 	mov [Screen_Bytes], eax
 
-;	call lfb_clear
-
 	; Calculate display parameters based on font dimensions
 	xor eax, eax
 	xor edx, edx
@@ -180,27 +178,28 @@ lfb_dec_cursor_done:
 ;  IN:	Nothing
 ; OUT:	All registers preserved
 lfb_update_cursor:
+	; Check if cursor is enabled
+	cmp byte [lfb_cursor_on], 1	; 1 means enabled
+	jne lfb_update_cursor_skip	; If not, skip entire function
+
 	push rdi
 	push rdx
 	push rcx
 	push rbx
 	push rax
 
-	xor eax, eax
-	xor ebx, ebx
-
 	; Clear old cursor
-	mov rdi, [lfb_last_cursor]
+	mov rdi, [lfb_last_cursor]	; Gather the LFB memory address of the start of the cursor
 	xor ecx, ecx
-	xor ebx, ebx
+	xor ebx, ebx			; Used for value of bytes per line
 	mov bx, [os_screen_ppsl]
-	shl ebx, 2
+	shl ebx, 2			; Quick multiply by 4
 	mov cl, font_h
 	sub cl, 2
 	sub rdi, 4
 	mov eax, [BG_Color]
 lfb_update_cursor_line_old:
-	add rdi, rbx
+	add rdi, rbx			; Add value of bytes per line
 	mov [rdi], eax
 	dec cl
 	jnz lfb_update_cursor_line_old
@@ -229,7 +228,7 @@ lfb_update_cursor_line_old:
 	xor ecx, ecx
 	xor ebx, ebx
 	mov bx, [os_screen_ppsl]
-	shl ebx, 2
+	shl ebx, 2			; Quick multiply by 4
 	mov cl, font_h
 	sub cl, 2
 	sub rdi, 4
@@ -245,6 +244,7 @@ lfb_update_cursor_line:
 	pop rcx
 	pop rdx
 	pop rdi
+lfb_update_cursor_skip:
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -618,6 +618,7 @@ Screen_Rows:		dw 0
 Screen_Cols:		dw 0
 Screen_Cursor_Row:	dw 0
 Screen_Cursor_Col:	dw 0
+lfb_cursor_on:		db 1
 
 
 ; =============================================================================
