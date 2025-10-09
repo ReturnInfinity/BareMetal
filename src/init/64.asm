@@ -105,13 +105,12 @@ make_interrupt_gate_stubs:
 	mov rax, 0x200000		; Stacks start at 2MiB
 	mov [os_StackBase], rax
 
-	; Initialize the linear frame buffer output
+	; Initialize text output
 %ifndef NO_LFB
-	call lfb_init
+	call lfb_init			; Initialize LFB for text output
 %else
-	; Set kernel b_output function so output goes to the serial port
 	mov rax, b_output_serial
-	mov [0x100018], rax
+	mov [0x100018], rax		; Set kernel b_output to the serial port
 %endif
 
 	; Initialize the APIC
