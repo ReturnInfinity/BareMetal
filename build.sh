@@ -14,6 +14,7 @@ BUILDFLAGS=""
 # -dNO_I8259X	Remove i8259x 10-Gigabit driver
 # HID
 # -dNO_XHCI	Remove xHCI USB driver (hid)
+# -dNO_LFB	Remove LFB text driver
 
 mkdir -p bin
 cd src

@@ -51,7 +51,7 @@ init_64:
 	lodsw
 	mov [os_pcie_count], ax
 	lodsw
-	mov [os_boot_arch], ax 
+	mov [os_boot_arch], ax
 	xor eax, eax
 	mov esi, 0x00005604		; IOAPIC
 	lodsd
@@ -106,7 +106,13 @@ make_interrupt_gate_stubs:
 	mov [os_StackBase], rax
 
 	; Initialize the linear frame buffer output
+%ifndef NO_LFB
 	call lfb_init
+%else
+	; Set kernel b_output function so output goes to the serial port
+	mov rax, b_output_serial
+	mov [0x100018], rax
+%endif
 
 	; Initialize the APIC
 	call os_apic_init

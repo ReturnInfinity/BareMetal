@@ -22,12 +22,35 @@ b_input_no_key:
 
 
 ; -----------------------------------------------------------------------------
-; b_output -- Outputs characters
+; b_output -- Outputs characters via kernel call
 ;  IN:	RSI = Memory address of message (non zero-terminated)
 ;	RCX = number of chars to output
 ; OUT:	All registers preserved
 b_output:
 	call [0x00100018]		; Call kernel function in table
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; b_output_serial -- Outputs characters via serial
+;  IN:	RSI = Memory address of message (non zero-terminated)
+;	RCX = number of chars to output
+; OUT:	All registers preserved
+b_output_serial:
+	push rsi
+	push rcx
+	push rax
+
+b_output_serial_next:
+	lodsb				; Load a byte from the string into AL
+	call serial_send		; Output it via serial
+	dec cx				; Decrement the counter
+	jnz b_output_serial_next	; Loop if counter isn't zero
+
+	pop rax
+	pop rcx
+	pop rsi
 	ret
 ; -----------------------------------------------------------------------------
 
