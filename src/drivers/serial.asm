@@ -10,7 +10,7 @@
 serial_init:
 	; Pure64 has already initialized the serial port
 
-	; Check if PS/2 is present via ACPI IAPC_BOOT_ARCH
+	; Check if Serial is present via ACPI IAPC_BOOT_ARCH
 	mov ax, [os_boot_arch]
 	bt ax, 0			; LEGACY_DEVICES
 	jnc serial_init_error

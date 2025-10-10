@@ -61,8 +61,6 @@ render_done:
 	mul ecx
 	mov [Screen_Bytes], eax
 
-;	call lfb_clear
-
 	; Calculate display parameters based on font dimensions
 	xor eax, eax
 	xor edx, edx
@@ -112,6 +110,7 @@ render_done:
 
 	mov rax, [os_screen_lfb]
 	mov [LastLine], rax
+	mov [lfb_last_cursor], rax
 
 	; Overwrite the kernel b_output function so output goes to the screen instead of the serial port
 	mov rax, lfb_output_chars
@@ -143,7 +142,10 @@ lfb_inc_cursor:
 	cmp ax, [Screen_Rows]		; Compare it to the # of rows for the screen
 	jne lfb_inc_cursor_done		; If not equal we are done
 	mov word [Screen_Cursor_Row], 0	; Wrap around
+
 lfb_inc_cursor_done:
+	call lfb_update_cursor
+
 	pop rax
 	ret
 ; -----------------------------------------------------------------------------
@@ -164,8 +166,85 @@ lfb_dec_cursor:
 
 lfb_dec_cursor_done:
 	dec word [Screen_Cursor_Col]	; Decrement the cursor as usual
+	call lfb_update_cursor
 
 	pop rax
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; lfb_update_cursor -- Update the cursor
+;  IN:	Nothing
+; OUT:	All registers preserved
+lfb_update_cursor:
+	; Check if cursor is enabled
+	cmp byte [lfb_cursor_on], 1	; 1 means enabled
+	jne lfb_update_cursor_skip	; If not, skip entire function
+
+	push rdi
+	push rdx
+	push rcx
+	push rbx
+	push rax
+
+	; Clear old cursor
+	mov rdi, [lfb_last_cursor]	; Gather the LFB memory address of the start of the cursor
+	xor ecx, ecx
+	xor ebx, ebx			; Used for value of bytes per line
+	mov bx, [os_screen_ppsl]
+	shl ebx, 2			; Quick multiply by 4
+	mov cl, font_h
+	sub cl, 2
+	sub rdi, 4
+	mov eax, [BG_Color]
+lfb_update_cursor_line_old:
+	add rdi, rbx			; Add value of bytes per line
+	mov [rdi], eax
+	dec cl
+	jnz lfb_update_cursor_line_old
+
+	; Calculate where to put cursor in the Linear Frame Buffer
+	mov rdi, [os_screen_lfb]
+
+	; Calculate offset for row into Linear Frame Buffer
+	xor ecx, ecx
+	mov eax, [lfb_glyph_bytes_per_row]
+	mov cx, [Screen_Cursor_Row]
+	mul ecx				; EDX:EAX := EAX * ECX
+	add rdi, rax
+
+	; Calculate offset for column into Linear Frame Buffer
+	xor ecx, ecx
+	mov eax, [lfb_glyph_bytes_per_col]
+	mov cx, [Screen_Cursor_Col]
+	mul ecx				; EDX:EAX := EAX * ECX
+	add rdi, rax
+
+	; Store cursor location
+	mov [lfb_last_cursor], rdi
+
+	; Draw new cursor
+	xor ecx, ecx
+	xor ebx, ebx
+	mov bx, [os_screen_ppsl]
+	shl ebx, 2			; Quick multiply by 4
+	mov cl, font_h
+	sub cl, 2
+	sub rdi, 4
+	mov eax, [Cursor_Color]
+lfb_update_cursor_line:
+	add rdi, rbx
+	mov [rdi], eax
+	dec cl
+	jnz lfb_update_cursor_line
+
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
+	pop rdi
+lfb_update_cursor_skip:
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -524,9 +603,11 @@ align 16
 align 16
 
 LastLine:		dq 0
+lfb_last_cursor:	dq 0
 lfb_glyph_next_line:	dq 0
 FG_Color:		dd 0x00FFFFFF	; White
 BG_Color:		dd 0x00404040	; Dark grey
+Cursor_Color:		dd 0x00A0A0A0
 Line_Color:		dd 0x00F7CA54	; Return Infinity Yellow/Orange
 Screen_Pixels:		dd 0
 Screen_Bytes:		dd 0
@@ -537,6 +618,7 @@ Screen_Rows:		dw 0
 Screen_Cols:		dw 0
 Screen_Cursor_Row:	dw 0
 Screen_Cursor_Col:	dw 0
+lfb_cursor_on:		db 1
 
 
 ; =============================================================================
