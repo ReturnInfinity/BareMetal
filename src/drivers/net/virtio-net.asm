@@ -261,24 +261,17 @@ virtio_net_init_reset_wait:
 	xor eax, eax
 	mov [rsi+VIRTIO_DEVICE_FEATURE_SELECT], eax
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
-;	btc eax, VIRTIO_NET_F_MQ	; Disable Multiqueue support for this driver
-;	bts eax, VIRTIO_NET_F_MAC
-;	bts eax, VIRTIO_NET_F_STATUS
-	mov eax, 0x00010020		; STATUS, MAC
-	push rax
 	xor eax, eax
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
-	pop rax
+	mov eax, 0x00010020		; Feature bits 31:0 - STATUS (16), MAC (5)
 	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
 	; Process the next 32-bits of Feature bits
 	mov eax, 1
 	mov [rsi+VIRTIO_DEVICE_FEATURE_SELECT], eax
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
-	and eax, 1
-	push rax
 	mov eax, 1
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
-	pop rax
+	mov eax, 1			; Feature bits 63:32 - LEGACY (32)
 	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
 
 	; 3.1.1 - Step 5
@@ -349,35 +342,24 @@ virtio_net_init_reset_wait:
 	mov ax, 1
 	mov [rsi+VIRTIO_QUEUE_ENABLE], ax
 
-	; Populate the Next entries in the description rings
-;	; FIXME - Don't expect exactly 256 entries
-;	mov eax, 1
-;	mov rdi, [r8+nt_rx_desc]
-;	add rdi, 14
-;virtio_net_init_pop_rx:
-;	mov [rdi], al
-;	add rdi, 16
-;	add al, 1
-;	cmp al, 0
-;	jne virtio_net_init_pop_rx
-
+	; Populate TX Descriptor Table Entries
 	mov eax, 1
 	mov rdi, [r8+nt_tx_desc]
 	add rdi, 14
-virtio_net_init_pop_tx:
+virtio_net_init_pop_tx_d:
 	mov [rdi], al
 	add rdi, 16
 	add al, 1
 	cmp al, 0
-	jne virtio_net_init_pop_tx
+	jne virtio_net_init_pop_tx_d
 
-	; Populate RX Descriptor Table
+	; Populate RX Descriptor Table Entries
 	xor ecx, ecx
 	mov rdi, [r8+nt_rx_desc]
-virtio_net_init_pop_rx_1:
+virtio_net_init_pop_rx_d:
 	mov rax, os_PacketBuffers	; 64-bit Address
 	stosq
-	mov eax, 1500			; 32-bit Length
+	mov eax, 1536			; 32-bit Length
 	stosd
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
@@ -385,21 +367,21 @@ virtio_net_init_pop_rx_1:
 	mov ax, 0
 	stosw				; 16-bit Next
 	cmp cl, 0
-	jne virtio_net_init_pop_rx_1
+	jne virtio_net_init_pop_rx_d
 
-	; Populate RX avail
+	; Populate RX Available Ring Entries
 	mov rdi, [r8+nt_rx_desc]
 	add rdi, 0x1000
 	xor eax, eax
 	stosw				; 16-bit flags
-	mov ax, 1
+	mov ax, 128
 	stosw				; 16-bit index
 	xor eax, eax
-virtio_net_init_pop_rx_2:
+virtio_net_init_pop_rx_a:
 	stosw				; 16-bit ring
 	inc al
 	cmp al, 0
-	jne virtio_net_init_pop_rx_2
+	jne virtio_net_init_pop_rx_a
 
 	; Set nettxavailindex
 	mov ax, 1
@@ -463,7 +445,7 @@ net_virtio_transmit:
 
 	; Create first entry in the Descriptor Table
 	mov rdi, r8
-	mov rax, netheader		; Address of the 12-byte netheader
+	mov rax, virtio_net_hdr		; Address of the 12-byte virtio_net_hdr
 	stosq				; 64-bit address
 	mov eax, 12
 	stosd				; 32-bit length
@@ -542,11 +524,9 @@ net_virtio_poll:
 	; Get size of packet that was received
 	mov ax, [rdx+0x78]		; Last known index
 	shl eax, 3			; Quick multiply by 8
-	add eax, 8
+	add eax, 4			; Add offset to entries
 	add rdi, rax			; RDI points to the Used Ring Entry
-	mov ax, [rdi]			; Load the received packet size
-	mov cx, ax			; Save the packet size to CX for later
-	sub cx, 12			; Subtract the virtio header
+	mov rcx, [rdi]			; Load the 32-bit Index and 32-bit Length
 
 	; Populate RX Available Ring
 	mov rdi, r8
@@ -556,23 +536,18 @@ net_virtio_poll:
 	and ax, 0x00FF			; Wrap back to 0 if greater than 255
 	mov [rdi], ax			; 16-bit Index
 
-	; Clear old Used Ring Entry
-	mov rdi, r8
-	add rdi, 0x2004			; Start of Used Ring Entries
-	mov ax, [rdx+0x78]
-	shl rax, 3			; Quick multiply by 8
-	add rdi, rax
-	xor eax, eax
-	stosq
-
 	; Set RDI to address of packet
 	xor eax, eax
-	mov ax, [rdx+0x78]		; Gather last RX
-	shl rax, 4			; Quick multiply by 16
-	mov rdi, r8
-	add rdi, rax			; Add offset into Descriptor Table
-	mov rdi, [rdi]			; Load address
-	add rdi, 12			; Skip past the header
+	mov eax, ecx			; Lower 32 bits of RCX contains the Used Ring Entry Address
+	shl rax, 4			; Quick multiply by 16 as each Descriptor Table Entry is 16 bytes
+	mov rdi, r8			; Set RDI to the address of the Descriptor Table
+	add rdi, rax			; Add entry offset into Descriptor Table
+	mov rdi, [rdi]			; Load memory address
+	add rdi, 12			; Skip past the virtio-net header
+
+	; Set RCX to just the packet length
+	shr rcx, 32			; Shift upper 32 bits to the lower 32
+	sub cx, 12			; Subtract the virtio-net header
 
 	; Increment internal counters
 	mov ax, [rdx+0x78]		; lastrx
@@ -596,10 +571,14 @@ virtio_net_isr_offset: dq 0
 virtio_net_device_offset: dq 0
 
 align 16
-netheader:
-dd 0x00000000
-dd 0x00000000
-dd 0x00000000
+virtio_net_hdr:
+flags: db 0x00
+gso_type: db 0x00
+hdr_len: dw 0x0000
+gso_size: dw 0x0000
+csum_start: dw 0x0000
+csum_offset: dw 0x0000
+num_buffers: dw 0x0000
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_NET_F_CSUM		equ 0 ; Device handles packets with partial checksum
@@ -634,19 +613,6 @@ VIRTIO_NET_F_RSS		equ 60 ; Device supports RSS (receive-side scaling) with Toepl
 VIRTIO_NET_F_RSC_EXT		equ 61 ; Device can process duplicated ACKs and report number of coalesced segments and duplicated ACKs.
 VIRTIO_NET_F_STANDBY		equ 62 ; Device may act as a standby for a primary device with the same MAC address.
 VIRTIO_NET_F_SPEED_DUPLEX	equ 63 ; Device reports speed and duplex
-
-; VIRTIO_STATUS
-VIRTIO_STATUS_FAILED		equ 0x80 ; Indicates that something went wrong in the guest, and it has given up on the device
-VIRTIO_STATUS_DEVICE_NEEDS_RESET	equ 0x40 ; Indicates that the device has experienced an error from which it can’t recover
-VIRTIO_STATUS_FEATURES_OK	equ 0x08 ; Indicates that the driver has acknowledged all the features it understands, and feature negotiation is complete
-VIRTIO_STATUS_DRIVER_OK		equ 0x04 ; Indicates that the driver is set up and ready to drive the device
-VIRTIO_STATUS_DRIVER		equ 0x02 ; Indicates that the guest OS knows how to drive the device
-VIRTIO_STATUS_ACKNOWLEDGE	equ 0x01 ; Indicates that the guest OS has found the device and recognized it as a valid virtio device.
-
-; VIRTQUEUE Flags
-VIRTQ_DESC_F_NEXT		equ 1
-VIRTQ_DESC_F_WRITE		equ 2
-VIRTQ_DESC_F_INDIRECT		equ 4
 
 ; VIRTQUEUES
 VIRTIO_NET_QUEUE_RX		equ 0	; The first of the Receive Queues
