@@ -53,7 +53,9 @@
 ; %include "drivers/net/r8169.asm"
 
 ; Video
+%ifndef NO_LFB
 %include "drivers/lfb/lfb.asm"
+%endif
 
 NIC_DeviceVendor_ID:	; The supported list of NICs
 
