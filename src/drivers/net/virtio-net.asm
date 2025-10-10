@@ -614,19 +614,6 @@ VIRTIO_NET_F_RSC_EXT		equ 61 ; Device can process duplicated ACKs and report num
 VIRTIO_NET_F_STANDBY		equ 62 ; Device may act as a standby for a primary device with the same MAC address.
 VIRTIO_NET_F_SPEED_DUPLEX	equ 63 ; Device reports speed and duplex
 
-; VIRTIO_STATUS
-VIRTIO_STATUS_FAILED		equ 0x80 ; Indicates that something went wrong in the guest, and it has given up on the device
-VIRTIO_STATUS_DEVICE_NEEDS_RESET	equ 0x40 ; Indicates that the device has experienced an error from which it can’t recover
-VIRTIO_STATUS_FEATURES_OK	equ 0x08 ; Indicates that the driver has acknowledged all the features it understands, and feature negotiation is complete
-VIRTIO_STATUS_DRIVER_OK		equ 0x04 ; Indicates that the driver is set up and ready to drive the device
-VIRTIO_STATUS_DRIVER		equ 0x02 ; Indicates that the guest OS knows how to drive the device
-VIRTIO_STATUS_ACKNOWLEDGE	equ 0x01 ; Indicates that the guest OS has found the device and recognized it as a valid virtio device.
-
-; VIRTQUEUE Flags
-VIRTQ_DESC_F_NEXT		equ 1
-VIRTQ_DESC_F_WRITE		equ 2
-VIRTQ_DESC_F_INDIRECT		equ 4
-
 ; VIRTQUEUES
 VIRTIO_NET_QUEUE_RX		equ 0	; The first of the Receive Queues
 VIRTIO_NET_QUEUE_TX		equ 1	; The first of the Transmit Queues
