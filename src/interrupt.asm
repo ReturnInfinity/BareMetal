@@ -50,6 +50,29 @@ int_keyboard:
 
 
 ; -----------------------------------------------------------------------------
+; Serial interrupt. IRQ 0x04, INT 0x24
+; This IRQ runs whenever there is input on the serial port
+align 8
+int_serial:
+	push rcx
+	push rax
+
+	call serial_interrupt	; Call interrupt code in serial driver
+
+	; Acknowledge the IRQ
+	mov ecx, APIC_EOI
+	xor eax, eax
+	call os_apic_write
+
+	call b_smp_wakeup_all		; A terrible hack
+
+	pop rax
+	pop rcx
+	iretq
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; Mouse interrupt. IRQ 0x0C, INT 0x2C
 ; This IRQ runs whenever there is input on the mouse
 ; Note: A PS/2 mouse sends one byte per interrupt. So this is triggered 3 or 4 times per mouse action.
