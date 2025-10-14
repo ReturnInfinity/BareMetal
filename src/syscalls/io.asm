@@ -44,6 +44,8 @@ b_output_serial:
 
 b_output_serial_next:
 	lodsb				; Load a byte from the string into AL
+	cmp al, 3			; Check for Decrement cursor
+	je b_output_serial_decrement
 	cmp al, 10			; Check for Line Feed
 	jne b_output_serial_send
 	mov al, 13			; Carriage Return
@@ -58,6 +60,11 @@ b_output_serial_send:
 	pop rcx
 	pop rsi
 	ret
+
+b_output_serial_decrement:
+	mov al, 8			; Backspace
+	jmp b_output_serial_send
+
 ; -----------------------------------------------------------------------------
 
 
