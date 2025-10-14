@@ -67,6 +67,11 @@ init_net_probe_found:
 	cmp bx, 0x8259
 	je init_net_probe_found_i8259x
 %endif
+%ifndef NO_ENA
+	cmp bx, 0x0EC2
+	je init_net_probe_found_ena
+%endif
+
 ;	cmp bx, 0x8169
 ;	je init_net_probe_found_r8169
 	jmp init_net_probe_not_found
@@ -92,6 +97,12 @@ init_net_probe_found_i8257x:
 %ifndef NO_I8259X
 init_net_probe_found_i8259x:
 	call net_i8259x_init
+	jmp init_net_probe_found_finish
+%endif
+
+%ifndef NO_ENA
+init_net_probe_found_ena:
+	call net_ena_init
 	jmp init_net_probe_found_finish
 %endif
 

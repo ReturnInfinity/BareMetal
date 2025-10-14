@@ -50,6 +50,9 @@
 %ifndef NO_VIRTIO
 %include "drivers/net/virtio-net.asm"
 %endif
+%ifndef NO_ENA
+%include "drivers/net/ena.asm"
+%endif
 ; %include "drivers/net/r8169.asm"
 
 ; Video
@@ -155,6 +158,16 @@ dw 0x10FB		; 82599ES (SFI/SFP+)
 dw 0x1528		; X540-AT2
 dw 0x1560		; X540
 dw 0x1572		; X710 (SFP+)
+dw 0x0000
+%endif
+
+%ifndef NO_ENA
+dw 0x0EC2		; Driver ID
+dw 0x1D0F		; Vendor ID (Amazon)
+dw 0x0EC2		; ENA_PF
+dw 0x1EC2		; ENA_LLQ_PF
+dw 0xEC20		; ENA_VF
+dw 0xEC21		; ENA_LLQ_VF
 dw 0x0000
 %endif
 
