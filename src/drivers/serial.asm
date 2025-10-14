@@ -15,10 +15,25 @@ serial_init:
 	bt ax, 0			; LEGACY_DEVICES
 	jnc serial_init_error
 
-	; TODO - Enable interrupts if needed
-
 	; Set flag that Serial was enabled
 	or qword [os_SysConfEn], 1 << 2
+
+%ifdef NO_LFB
+	; Configure interrupt handler
+	mov edi, 0x24
+	mov rax, int_serial
+	call create_gate
+
+	; Enable specific interrupts
+	mov ecx, 4			; Serial IRQ
+	mov eax, 0x24			; Serial Interrupt Vector
+	call os_ioapic_mask_clear
+
+	; Enable serial port interrupts
+	mov dx, COM_PORT_INTERRUPT_ENABLE
+	mov al, 1			; Set bit 0 for Received Data Available
+	out dx, al
+%endif
 
 serial_init_error:
 	ret
@@ -87,6 +102,19 @@ serial_recv_enter:
 serial_recv_backspace:
 	mov al, 0x0E			; Adjust it to the same value as a keyboard
 	jmp serial_recv_done
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; serial_interrupt -- Receives a character via the configured serial port
+serial_interrupt:
+	push rax
+
+	call serial_recv
+	mov [key], al			; Treat the character as being from the keyboard
+
+	pop rax
+	ret
 ; -----------------------------------------------------------------------------
 
 

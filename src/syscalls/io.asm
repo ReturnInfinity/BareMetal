@@ -7,15 +7,15 @@
 
 
 ; -----------------------------------------------------------------------------
-; b_input -- Scans keyboard for input
+; b_input -- Scans for input
 ;  IN:	Nothing
 ; OUT:	AL = 0 if no key pressed, otherwise ASCII code, other regs preserved
 ;	All other registers preserved
 b_input:
-	mov al, [key]
+	mov al, [key]			; Keyboard/Serial interrupt handler sets key
 	test al, al
 	jz b_input_no_key
-	mov byte [key], 0x00		; clear the variable as the keystroke is in AL now
+	mov byte [key], 0x00		; Clear the variable as the keystroke is in AL now
 b_input_no_key:
 	ret
 ; -----------------------------------------------------------------------------
@@ -44,6 +44,14 @@ b_output_serial:
 
 b_output_serial_next:
 	lodsb				; Load a byte from the string into AL
+	cmp al, 3			; Check for Decrement cursor
+	je b_output_serial_decrement
+	cmp al, 10			; Check for Line Feed
+	jne b_output_serial_send
+	mov al, 13			; Carriage Return
+	call serial_send
+	mov al, 10
+b_output_serial_send:
 	call serial_send		; Output it via serial
 	dec cx				; Decrement the counter
 	jnz b_output_serial_next	; Loop if counter isn't zero
@@ -52,6 +60,11 @@ b_output_serial_next:
 	pop rcx
 	pop rsi
 	ret
+
+b_output_serial_decrement:
+	mov al, 8			; Backspace
+	jmp b_output_serial_send
+
 ; -----------------------------------------------------------------------------
 
 
