@@ -1,6 +1,5 @@
-# Debugging with GDB and QEMU
+# Debugging
 
-This document deals with debugging in [GDB](https://www.gnu.org/software/gdb/).
 
 ## Prerequisites
 
@@ -8,9 +7,11 @@ This document expects the reader to understand some basic fundamentals about x86
 
 This document was written while using an Ubuntu 25.04 virtual machine within VirtualBox.
 
-This document is based on using BareMetal-OS and its script.
 
 ## Debugging with GDB
+
+This section deals with debugging in [GDB](https://www.gnu.org/software/gdb/).
+
 
 ### Terminal 1
 
@@ -19,6 +20,7 @@ Set a 'jmp $' somewhere in the source code.
 Start a minimal QEMU BareMetal instance
 
 	qemu-system-x86-64 -s -drive format=raw,file=baremetal_os.img
+
 
 ### Terminal 2
 
@@ -44,18 +46,25 @@ Execution will be stopped where you put the 'jmp $' in the code. Take a look at 
 QEMU will now be running the code directly after the `jmp $` you had inserted. After the first `stepi` command is executed you can hit enter to repeat the action and want the CPU step through the assembly code.
 
 
-## Debugging with QEMU (at a known address)
+### GDB instructions
+
+Dump some memory
+
+	x 0xXXXXX
+
+
+## Debugging with QEMU
 
 When the kernel is compiled a file called `kernel-debug.txt` is generated. This file can be used as a reference for opcode addresses within the kernel. Add `0x100000` to any address in the text file for the actual in-memory address.
 
 Start QEMU with the `-S` switch to start the virtual machine in a paused mode if you need to add a breakpoint somewhere in the kernel startup code. You can un-pause the execution by typing `c` into GDB after you create the breakpoint.
 
 
-## The QEMU monitor
+### The QEMU monitor
 
-QEMU has a built in monitor to allow you to query the state of the VM.
+QEMU has a built in monitor to allow you to query the state of the VM. Running BareMetal via `./baremetal.sh run` in `BareMetal-OS` enables the monitor telnet port.
 
-`Escape+2` will switch to the QEMU monitor console and `Escape+1` will switch back to the VM. Enter `quit` on the QEMU monitor console to stop the VM.
+	telnet localhost 8086
 
 
 ### Debugging via QEMU monitor
@@ -84,13 +93,6 @@ Dump 8 bytes in hexadecimal format starting at address 0x100000
 The "count" parameter is the number of items to be dumped.
 The "format" can be x (hex), d (signed decimal), u (unsigned decimal), o (octal), c (char) or i (assembly instruction).
 The "size" parameter can be b (8 bits), h (16 bits), w (32 bits) or g (64 bits).
-
-
-## GDB instructions
-
-Dump some memory
-
-	x 0xXXXXX
 
 
 ## Capturing QEMU network traffic
