@@ -16,12 +16,9 @@ This document is based on using BareMetal-OS and its script.
 
 Set a 'jmp $' somewhere in the source code.
 
-Edit `baremetal.sh` and remove the comment for `-s` to enable GDB debugging
+Start a minimal QEMU BareMetal instance
 
-Start BareMetal-OS
-
-	./baremetal.sh bnr
-
+	qemu-system-x86-64 -s -drive format=raw,file=baremetal_os.img
 
 ### Terminal 2
 
