@@ -8,6 +8,7 @@
 
 BITS 64					; Specify 64-bit
 ORG 0x0000000000100000			; The kernel needs to be loaded at this address
+DEFAULT ABS
 
 %DEFINE BAREMETAL_VER 'v1.0.0 (January 21, 2020)', 13, 'Copyright (C) 2008-2025 Return Infinity', 13, 0
 %DEFINE BAREMETAL_API_VER 1
