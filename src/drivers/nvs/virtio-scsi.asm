@@ -215,30 +215,53 @@ virtio_scsi_init_pop2:
 	cmp al, 0
 	jne virtio_scsi_init_pop2
 
+	; Set sizes
+;	sense_size to 96
+;	cdb_size to 32
+
 	; 3.1.1 - Step 8 - At this point the device is “live”
 	mov al, VIRTIO_STATUS_ACKNOWLEDGE | VIRTIO_STATUS_DRIVER | VIRTIO_STATUS_DRIVER_OK | VIRTIO_STATUS_FEATURES_OK
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 
+	; Check which LUNs exist
 	; REPORT LUNS 0xA0 - 124
+	mov rdi, cmd_cdb
+	mov al, 0xa0
+	stosb			; Operation Code
+	mov al, 0x00
+	stosb			; Select Report
+	stosb			; Reserved
+	stosb			; Reserved
+	stosb			; Reserved
+	stosb			; Reserved
+	mov eax, 512
+	stosd
 
+	call virtio_scsi_cmd
+
+	; Check each LUN
 	; INQUIRY 0x12 - 144
 
+	; Verify each is ready
 	; TEST UNIT READY 0x00 - 108
 
 	; REQUEST SENSE 0x03 - 126
 
 	; TEST UNIT READY 0x00 - 108
 
+	; Check the capacity
 	; READ CAPACITY (10) 0x25 - 116
 
 	; MODE SENSE (10) 0x5A - 135
 
+	; Read some data
 	; READ (10) 0x28
 
-	mov rcx, 1
-	mov rdi, 0x600000
-	call virtio_scsi_io
-	jmp virtio_scsi_init_error
+jmp $
+;	mov rcx, 1
+;	mov rdi, 0x600000
+;	call virtio_scsi_io
+;	jmp virtio_scsi_init_error
 
 virtio_scsi_init_done:
 	bts word [os_nvsVar], 4	; Set the bit flag that Virtio SCSI has been initialized
@@ -261,6 +284,92 @@ virtio_scsi_init_error:
 	pop rbx
 	pop rdx
 	pop rsi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; virtio_scsi_cmd -- Perform a VIRTIO SCSI command
+; IN:	TBD
+; OUT:	Nothing
+;	All other registers preserved
+virtio_scsi_cmd:
+	push r9
+	push rdi
+	push rdx
+	push rcx
+	push rbx
+	push rax
+
+	mov r9, rdi			; Save the memory address
+
+	; Build the request
+	; todo
+
+	mov rdi, os_nvs_mem		; This driver always starts at beginning of the Descriptor Table
+					; FIXME: Add desc_index offset
+	add rdi, 16384
+
+	; Add Request to Descriptor Entry 0
+	mov rax, cmd			; Address of the request
+	stosq				; 64-bit address
+	mov eax, 51			; 19 byte REQ Header + 32 byte CDB
+	stosd				; 32-bit length
+	mov ax, VIRTQ_DESC_F_NEXT
+	stosw				; 16-bit Flags
+	add rdi, 2			; Skip Next as it is pre-populated
+
+	; Add Response to Descriptor Entry 1
+	mov rax, 0x600000		; Address of the response
+	stosq				; 64-bit address
+	mov eax, 108
+	stosd				; 32-bit length
+	mov eax, VIRTQ_DESC_F_NEXT | VIRTQ_DESC_F_WRITE
+	stosw				; 16-bit Flags
+	add rdi, 2			; Skip Next as it is pre-populated
+
+	; Add data to Descriptor Entry 2
+	mov rax, 0x610000		; Address to store the data
+	stosq
+	mov eax, 512			; TODO remote hardcoded length
+	stosd
+	mov ax, VIRTQ_DESC_F_WRITE
+	stosw				; 16-bit Flags
+	add rdi, 2			; Skip Next as it is pre-populated
+
+	; Add entry to Avail
+	mov rdi, os_nvs_mem+0x5000	; Offset to start of Availability Ring
+	mov ax, 1			; 1 for no interrupts
+	stosw				; 16-bit flags
+	mov ax, [availindex]
+	stosw				; 16-bit index
+	mov ax, 0
+	stosw				; 16-bit ring
+
+	; Notify the queue
+	mov rdi, [os_virtioscsi_base]
+	add rdi, [notify_offset]	; This driver only uses Queue 0 so no multiplier needed
+	add rdi, 8
+	xor eax, eax
+	stosw
+
+	; Inspect the used ring
+	mov rdi, os_nvs_mem+0x6002	; Offset to start of Used Ring
+	mov bx, [availindex]
+virtio_scsi_cmd_wait:
+	mov ax, [rdi]			; Load the index
+	cmp ax, bx
+	jne virtio_scsi_cmd_wait
+
+	add word [descindex], 3		; 3 entries were required
+	add word [availindex], 1
+
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
+	pop rdi
+	pop r9
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -392,16 +501,25 @@ virtio_scsi_id:
 
 align 16
 req: ; 19 bytes
-lun: db 0x01, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00
-id: dq 0x0000000000000000
-task_attr: db 0x00
-prio: db 0x00
-crn: db 0x00 ;
+;lun: db 0x01, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00
+;id: dq 0x0000000000000000
+;task_attr: db 0x00
+;prio: db 0x00
+;crn: db 0x00 ;
 
 ; 10-byte Command Descriptor Block
-cdb: db 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00
+;cdb: db 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00
 
-blank: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+;blank: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, ;0x00
+
+align 16
+cmd:
+cmd_lun: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+cmd_tag: dq 0
+cmd_task_attr: db 0x00
+cmd_prio: db 0x00
+cmd_crn: db 0x00
+cmd_cdb: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 ; 16-byte Command Descriptor Block
 ;cdb_opcode: db 0x28
@@ -431,14 +549,14 @@ blank: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 
 ;cdb: db 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ;times 32 db 0x00
 
-align 16
+;align 16
 resp:
-sense_len: dd 0x00000000
-residual: dd 0x00000000
-status_qualifier: dw 0x0000
-status: db 0x00
-response: db 0x00
-sense: times 96 db 0x00
+;sense_len: dd 0x00000000
+;residual: dd 0x00000000
+;status_qualifier: dw 0x0000
+;status: db 0x00
+;response: db 0x00
+;sense: times 96 db 0x00
 
 
 ; VIRTIO SCSI Registers - Device Config
