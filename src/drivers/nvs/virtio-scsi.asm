@@ -234,8 +234,13 @@ virtio_scsi_init_pop2:
 	stosb			; Reserved
 	stosb			; Reserved
 	stosb			; Reserved
-	mov eax, 512
+	stosb			; Reserved
+	stosb			; Reserved
+	mov eax, 4096
 	stosd
+	mov al, 0x00
+	stosb
+	stosb
 
 	call virtio_scsi_cmd
 
@@ -331,7 +336,7 @@ virtio_scsi_cmd:
 	; Add data to Descriptor Entry 2
 	mov rax, 0x610000		; Address to store the data
 	stosq
-	mov eax, 512			; TODO remote hardcoded length
+	mov eax, 4096			; TODO remote hardcoded length
 	stosd
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
@@ -514,7 +519,7 @@ req: ; 19 bytes
 
 align 16
 cmd:
-cmd_lun: db 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+cmd_lun: db 0x01, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00
 cmd_tag: dq 0
 cmd_task_attr: db 0x00
 cmd_prio: db 0x00
