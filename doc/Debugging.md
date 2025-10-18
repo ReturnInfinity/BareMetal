@@ -41,7 +41,15 @@ Execution will be stopped where you put the 'jmp $' in the code. Take a look at 
 	break *0xXXXXXXX
 	jump *0xXXXXXXX
 
-	stepi
+Stepping
+
+	stepi XXX
+	nexti XXX
+
+Setting a watchpoint for changes to memory
+
+	watch *(unsigned char*)0xXXXXX
+	watch *(unsigned int*)0xXXXXX
 
 QEMU will now be running the code directly after the `jmp $` you had inserted. After the first `stepi` command is executed you can hit enter to repeat the action and want the CPU step through the assembly code.
 
