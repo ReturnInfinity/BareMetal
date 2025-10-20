@@ -98,6 +98,26 @@ net_ena_reset:
 
 	; Stop queues if they are running
 
+	; Reset interface
+	mov eax, 1
+	mov [rsi+ENA_DEV_CTL], eax
+
+	; Wait for reset
+net_ena_reset_wait:
+	mov eax, [rsi+ENA_DEV_STS]
+	bt eax, 3
+	jc net_ena_reset_wait
+
+	; Clear reset
+	xor eax, eax
+	mov [rsi+ENA_DEV_CTL], eax
+
+	; Wait for reset clear
+net_ena_reset_wait_clear:
+	mov eax, [rsi+ENA_DEV_STS]
+	bt eax, 3
+	jnc net_ena_reset_wait_clear
+
 	; Check ENA_DEV_STS.READY
 	mov eax, [rsi+ENA_DEV_STS]
 	test eax, 1
@@ -132,7 +152,7 @@ net_ena_reset:
 	; Check ENA_DEV_STS.READY
 
 	; Build an Admin command
-	; opcode ENA_ADMIN_GET_FEATURE = 0x0009
+	; opcode ENA_ADMIN_GET_FEATURE = 0x0008
 	; feat_id ENA_ADMIN_DEVICE_ATTRIBUTES = 1
 	; Put it in the queue
 	; Wait for completion
@@ -247,6 +267,53 @@ ENA_MMIO_RESP_LO		equ 0x60
 ENA_MMIO_RESP_HI		equ 0x64
 ENA_RSS_IND_ENTRY_UPDATE	equ 0x68
 
+; Admin Queue Opcodes
+ENA_ADMIN_CREATE_SQ		equ 1
+ENA_ADMIN_DESTROY_SQ		equ 2
+ENA_ADMIN_CREATE_CQ		equ 3
+ENA_ADMIN_DESTROY_CQ		equ 4
+ENA_ADMIN_GET_FEATURE		equ 8
+ENA_ADMIN_SET_FEATURE		equ 9
+ENA_ADMIN_GET_STATS		equ 11
+
+; Admin Queue Status
+ENA_ADMIN_SUCCESS			equ 0
+ENA_ADMIN_RESOURCE_ALLOCATION_FAILURE	equ 1
+ENA_ADMIN_BAD_OPCODE			equ 2
+ENA_ADMIN_UNSUPPORTED_OPCODE		equ 3
+ENA_ADMIN_MALFORMED_REQUEST		equ 4
+ENA_ADMIN_ILLEGAL_PARAMETER		equ 5
+ENA_ADMIN_UNKNOWN_ERROR			equ 6
+ENA_ADMIN_RESOURCE_BUSY			equ 7
+
+; Admin Queue Feature ID
+ENA_ADMIN_DEVICE_ATTRIBUTES		equ 1
+ENA_ADMIN_MAX_QUEUES_NUM		equ 2
+ENA_ADMIN_HW_HINTS			equ 3
+ENA_ADMIN_LLQ				equ 4
+ENA_ADMIN_MAX_QUEUES_EXT		equ 7
+ENA_ADMIN_RSS_HASH_FUNCTION		equ 10
+ENA_ADMIN_STATELESS_OFFLOAD_CONFIG	equ 11
+ENA_ADMIN_RSS_INDIRECTION_TABLE_CONFIG	equ 12
+ENA_ADMIN_MTU				equ 14
+ENA_ADMIN_RSS_HASH_INPUT		equ 18
+ENA_ADMIN_INTERRUPT_MODERATION		equ 20
+ENA_ADMIN_AENQ_CONFIG			equ 26
+ENA_ADMIN_LINK_CONFIG			equ 27
+ENA_ADMIN_HOST_ATTR_CONFIG		equ 28
+ENA_ADMIN_FEATURES_OPCODE_NUM		equ 32
+
+; Speeds
+ENA_ADMIN_LINK_SPEED_1G			equ 0x1
+ENA_ADMIN_LINK_SPEED_2_HALF_G		equ 0x2
+ENA_ADMIN_LINK_SPEED_5G			equ 0x4
+ENA_ADMIN_LINK_SPEED_10G		equ 0x8
+ENA_ADMIN_LINK_SPEED_25G		equ 0x10
+ENA_ADMIN_LINK_SPEED_40G		equ 0x20
+ENA_ADMIN_LINK_SPEED_50G		equ 0x40
+ENA_ADMIN_LINK_SPEED_100G		equ 0x80
+ENA_ADMIN_LINK_SPEED_200G		equ 0x100
+ENA_ADMIN_LINK_SPEED_400G		equ 0x200
 
 ; Register bits
 
