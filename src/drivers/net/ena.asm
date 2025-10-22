@@ -99,24 +99,24 @@ net_ena_reset:
 	; Stop queues if they are running
 
 	; Reset interface
-	mov eax, 1
+	mov eax, 1			; Set the bit for ENA_CTRL_RESET
 	mov [rsi+ENA_DEV_CTL], eax
 
 	; Wait for reset
 net_ena_reset_wait:
-	mov eax, [rsi+ENA_DEV_STS]
-	bt eax, 3
-	jc net_ena_reset_wait
+	mov eax, [rsi+ENA_DEV_STS]	; Read the current controller status
+	bt eax, 3			; Put bit 3 into carry flag
+	jc net_ena_reset_wait		; Keep polling until carry is clear (reset completed)
 
 	; Clear reset
-	xor eax, eax
+	xor eax, eax			; Clear the ENA_CTRL_RESET bit we set earlier
 	mov [rsi+ENA_DEV_CTL], eax
 
 	; Wait for reset clear
 net_ena_reset_wait_clear:
-	mov eax, [rsi+ENA_DEV_STS]
-	bt eax, 3
-	jnc net_ena_reset_wait_clear
+	mov eax, [rsi+ENA_DEV_STS]	; Read the current controller status
+	bt eax, 3			; Put bit 3 into carry flag
+	jnc net_ena_reset_wait_clear	; Keep polling until carry is set
 
 	; Check ENA_DEV_STS.READY
 	mov eax, [rsi+ENA_DEV_STS]
@@ -145,7 +145,7 @@ net_ena_reset_wait_clear:
 	shr rax, 32
 	mov [rsi+ENA_AENQ_BASE_HI], eax
 
-	; Create Admin Queue
+	; Create Admin Queues
 	; Admin Submission Queue (AQ)
 	; Admin Completion Queue (ACQ)
 
