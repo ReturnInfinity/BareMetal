@@ -131,19 +131,26 @@ net_ena_reset_wait_clear:
 	mov eax, [rsi+ENA_CAPS]
 	mov eax, [rsi+ENA_CAPS_EXT]
 
-	; Set device memory
+	; Configure Admin Queue
 	mov rax, 0x600000
 	mov [rsi+ENA_AQ_BASE_LO], eax
 	shr rax, 32
 	mov [rsi+ENA_AQ_BASE_HI], eax
+	mov eax, 0x00400002
+	mov [rsi+ENA_AQ_CAPS], eax
+
+	; Configure Admin Completion Queue
 	mov rax, 0x610000
 	mov [rsi+ENA_ACQ_BASE_LO], eax
 	shr rax, 32
 	mov [rsi+ENA_ACQ_BASE_HI], eax
-	mov rax, 0x620000
-	mov [rsi+ENA_AENQ_BASE_LO], eax
-	shr rax, 32
-	mov [rsi+ENA_AENQ_BASE_HI], eax
+	mov eax, 0x00400002
+	mov [rsi+ENA_ACQ_CAPS], eax
+
+;	mov rax, 0x620000
+;	mov [rsi+ENA_AENQ_BASE_LO], eax
+;	shr rax, 32
+;	mov [rsi+ENA_AENQ_BASE_HI], eax
 
 	; Create Admin Queues
 	; Admin Submission Queue (AQ)
@@ -155,6 +162,7 @@ net_ena_reset_wait_clear:
 	; opcode ENA_ADMIN_GET_FEATURE = 0x0008
 	; feat_id ENA_ADMIN_DEVICE_ATTRIBUTES = 1
 	; Put it in the queue
+	; Write to the doorbell [rsi+ENA_AQ_DB]
 	; Wait for completion
 	; Check head has changed
 	; Verify command
