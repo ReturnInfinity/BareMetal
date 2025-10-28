@@ -119,8 +119,8 @@ make_interrupt_gate_stubs:
 	; Initialize the I/O APIC
 	call os_ioapic_init
 
-	; Initialize the HPET
-	call os_hpet_init
+	; Initialize the timer
+	call os_timer_init
 
 	; Output block to screen (1/8)
 	mov ebx, 0

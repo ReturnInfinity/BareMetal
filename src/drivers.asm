@@ -8,10 +8,10 @@
 
 ; Internal
 %include "drivers/apic.asm"
-%include "drivers/hpet.asm"
 %include "drivers/ioapic.asm"
 %include "drivers/ps2.asm"
 %include "drivers/serial.asm"
+%include "drivers/timer.asm"
 %ifndef NO_VIRTIO
 %include "drivers/virtio.asm"
 %endif
