@@ -18,6 +18,9 @@ serial_init:
 	; Set flag that Serial was enabled
 	or qword [os_SysConfEn], 1 << 2
 
+	mov rax, b_output_serial
+	mov [0x100018], rax		; Set kernel b_output to the serial port
+
 %ifdef NO_LFB
 	; Configure interrupt handler
 	mov edi, 0x24

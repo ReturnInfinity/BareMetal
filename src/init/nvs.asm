@@ -9,6 +9,9 @@
 ; -----------------------------------------------------------------------------
 ; init_nvs -- Configure the first non-volatile storage device it finds
 init_nvs:
+	mov rsi, msg_nvs
+	call os_debug_string
+
 %ifndef NO_NVME
 	; Check Bus Table for NVMe
 	mov rsi, bus_table		; Load Bus Table address to RSI
@@ -84,6 +87,9 @@ init_nvs_done:
 	; Output block to screen (5/8)
 	mov ebx, 8
 	call os_debug_block
+
+	mov rsi, msg_ok
+	call os_debug_string
 
 	ret
 ; -----------------------------------------------------------------------------
