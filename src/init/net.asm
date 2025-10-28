@@ -9,6 +9,10 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
+	; Output progress via serial
+	mov rsi, msg_net
+	call os_debug_string
+
 	mov ax, [NIC_DeviceVendor_ID]	; Check for NIC driver definitions
 	cmp ax, 0x0000
 	je init_net_end			; If none exist then bail out
@@ -114,6 +118,11 @@ init_net_end:
 	; Output block to screen (6/8)
 	mov ebx, 10
 	call os_debug_block
+
+	; Output progress via serial
+	mov rsi, msg_ok
+	call os_debug_string
+
 	ret
 ; -----------------------------------------------------------------------------
 

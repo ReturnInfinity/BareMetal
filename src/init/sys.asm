@@ -24,6 +24,10 @@ init_sys_done:
 	mov ebx, 14
 	call os_debug_block
 
+	; Output progress via serial
+	mov rsi, msg_ready
+	call os_debug_string
+
 	ret
 ; -----------------------------------------------------------------------------
 

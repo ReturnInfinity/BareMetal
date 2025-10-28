@@ -57,7 +57,7 @@ int_serial:
 	push rcx
 	push rax
 
-	call serial_interrupt	; Call interrupt code in serial driver
+	call serial_interrupt		; Call interrupt code in serial driver
 
 	; Acknowledge the IRQ
 	mov ecx, APIC_EOI

@@ -33,6 +33,9 @@ serial_init:
 	mov dx, COM_PORT_INTERRUPT_ENABLE
 	mov al, 1			; Set bit 0 for Received Data Available
 	out dx, al
+
+	mov rax, b_output_serial
+	mov [0x100018], rax		; Set kernel b_output to the serial port
 %endif
 
 serial_init_error:
