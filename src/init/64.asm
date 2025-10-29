@@ -105,12 +105,18 @@ make_interrupt_gate_stubs:
 	mov rax, 0x200000		; Stacks start at 2MiB
 	mov [os_StackBase], rax
 
+	; Configure the serial port (if present)
+	call serial_init
+
+	; Output progress via serial
+	mov rsi, msg_baremetal
+	call os_debug_string
+	mov rsi, msg_64
+	call os_debug_string
+
 	; Initialize text output
 %ifndef NO_LFB
 	call lfb_init			; Initialize LFB for text output
-%else
-	mov rax, b_output_serial
-	mov [0x100018], rax		; Set kernel b_output to the serial port
 %endif
 
 	; Initialize the APIC
@@ -144,12 +150,13 @@ skip_ap:
 	jmp next_ap
 no_more_aps:
 
-	; Configure the serial port
-	call serial_init
-
 	; Output block to screen (2/8)
 	mov ebx, 2
 	call os_debug_block
+
+	; Output progress via serial
+	mov rsi, msg_ok
+	call os_debug_string
 
 	ret
 ; -----------------------------------------------------------------------------

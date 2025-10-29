@@ -156,6 +156,31 @@ os_debug_space:
 
 
 ; -----------------------------------------------------------------------------
+; os_debug_string - Dump a string to output
+; IN:	RSI = String Address (null terminated)
+os_debug_string:
+	push rdi
+	push rcx
+	push rax
+
+	xor ecx, ecx
+	xor eax, eax
+	mov rdi, rsi
+	not rcx
+	repne scasb			; compare byte at RDI to value in AL
+	not rcx
+	dec rcx
+
+	call b_output
+
+	pop rax
+	pop rcx
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
 ; os_debug_block - Create a block (8x8 pixels) of colour on the screen
 ; IN:	EBX = Index #
 os_debug_block:

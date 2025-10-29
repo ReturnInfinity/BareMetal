@@ -11,9 +11,9 @@ serial_init:
 	; Pure64 has already initialized the serial port
 
 	; Check if Serial is present via ACPI IAPC_BOOT_ARCH
-	mov ax, [os_boot_arch]
-	bt ax, 0			; LEGACY_DEVICES
-	jnc serial_init_error
+;	mov ax, [os_boot_arch]
+;	bt ax, 0			; LEGACY_DEVICES
+;	jnc serial_init_error
 
 	; Set flag that Serial was enabled
 	or qword [os_SysConfEn], 1 << 2
@@ -34,6 +34,9 @@ serial_init:
 	mov al, 1			; Set bit 0 for Received Data Available
 	out dx, al
 %endif
+
+	mov rax, b_output_serial
+	mov [0x100018], rax		; Set kernel b_output to the serial port
 
 serial_init_error:
 	ret
