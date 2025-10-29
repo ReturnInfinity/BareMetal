@@ -28,6 +28,13 @@
 
 ; -----------------------------------------------------------------------------
 init_bus:
+
+%ifdef NO_LFB
+	; Output progress via serial
+	mov rsi, msg_bus
+	call os_debug_string
+%endif
+
 	mov rdi, bus_table		; Address of Bus Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
 
@@ -113,9 +120,11 @@ init_bus_end:
 	mov ecx, 4
 	rep stosd
 
+%ifndef NO_LFB
 	; Output block to screen (3/8)
 	mov ebx, 4
 	call os_debug_block
+%endif
 
 init_bus_usb_search:
 	; Check Bus Table for a USB Controller
@@ -152,9 +161,15 @@ init_bus_usb_xhci_start:
 
 init_bus_usb_not_found:
 
+%ifndef NO_LFB
 	; Output block to screen (4/8)
 	mov ebx, 6
 	call os_debug_block
+%else
+	; Output progress via serial
+	mov rsi, msg_ok
+	call os_debug_string
+%endif
 
 	ret
 ; -----------------------------------------------------------------------------

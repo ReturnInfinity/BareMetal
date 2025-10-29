@@ -52,6 +52,9 @@ init_64:
 	mov [os_pcie_count], ax
 	lodsw
 	mov [os_boot_arch], ax
+	mov esi, 0x000050E2
+	lodsb
+	mov [os_boot_mode], al
 	xor eax, eax
 	mov esi, 0x00005604		; IOAPIC
 	lodsd
@@ -105,12 +108,18 @@ make_interrupt_gate_stubs:
 	mov rax, 0x200000		; Stacks start at 2MiB
 	mov [os_StackBase], rax
 
+	; Configure the serial port (if present)
+	call serial_init
+
 	; Initialize text output
 %ifndef NO_LFB
 	call lfb_init			; Initialize LFB for text output
 %else
-	mov rax, b_output_serial
-	mov [0x100018], rax		; Set kernel b_output to the serial port
+	; Output progress via serial
+	mov rsi, msg_baremetal
+	call os_debug_string
+	mov rsi, msg_64
+	call os_debug_string
 %endif
 
 	; Initialize the APIC
@@ -119,12 +128,14 @@ make_interrupt_gate_stubs:
 	; Initialize the I/O APIC
 	call os_ioapic_init
 
-	; Initialize the HPET
-	call os_hpet_init
+	; Initialize the timer
+	call os_timer_init
 
+%ifndef NO_LFB
 	; Output block to screen (1/8)
 	mov ebx, 0
 	call os_debug_block
+%endif
 
 	; Initialize all AP's to run our reset code. Skip the BSP
 	call b_smp_get_id
@@ -144,12 +155,15 @@ skip_ap:
 	jmp next_ap
 no_more_aps:
 
-	; Configure the serial port
-	call serial_init
-
+%ifndef NO_LFB
 	; Output block to screen (2/8)
 	mov ebx, 2
 	call os_debug_block
+%else
+	; Output progress via serial
+	mov rsi, msg_ok
+	call os_debug_string
+%endif
 
 	ret
 ; -----------------------------------------------------------------------------

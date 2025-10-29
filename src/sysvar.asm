@@ -10,6 +10,13 @@
 newline:		db 13, 10, 0
 space:			db ' ', 0
 system_status_header:	db 'BareMetal v1.0.0', 0
+msg_baremetal:		db 13, 10, '[ BareMetal ]', 0
+msg_64:			db 13, 10, '64', 0
+msg_bus:		db 13, 10, 'bus', 0
+msg_nvs:		db 13, 10, 'nvs', 0
+msg_net:		db 13, 10, 'net', 0
+msg_ok:			db ' ok', 0
+msg_ready:		db 13, 10, 'system ready', 13, 10, 13, 10, 0
 
 ; Memory addresses
 
@@ -66,6 +73,7 @@ os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
 os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI
 os_StackBase:		equ os_SystemVariables + 0x0020
+sys_timer:		equ os_SystemVariables + 0x0048
 os_HPET_Address:	equ os_SystemVariables + 0x0050
 os_AHCI_Base:		equ os_SystemVariables + 0x0058
 os_NetworkCallback:	equ os_SystemVariables + 0x0060
@@ -117,6 +125,7 @@ key_shift:		equ os_SystemVariables + 0x0302
 os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe is enabled
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
 os_payload:		equ os_SystemVariables + 0x0305
+os_boot_mode:		equ os_SystemVariables + 0x0306
 os_NVMeIRQ:		equ os_SystemVariables + 0x030C
 os_NVMeMJR:		equ os_SystemVariables + 0x030D
 os_NVMeMNR:		equ os_SystemVariables + 0x030E
@@ -134,6 +143,7 @@ os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 os_net_icount:		equ os_SystemVariables + 0x031B
 
+kvm_timer:		equ os_SystemVariables + 0x1000
 
 ; System tables
 bus_table:		equ os_SystemVariables + 0x8000

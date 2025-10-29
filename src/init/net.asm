@@ -9,6 +9,13 @@
 ; -----------------------------------------------------------------------------
 ; init_net -- Configure the first network device it finds
 init_net:
+
+%ifdef NO_LFB
+	; Output progress via serial
+	mov rsi, msg_net
+	call os_debug_string
+%endif
+
 	mov ax, [NIC_DeviceVendor_ID]	; Check for NIC driver definitions
 	cmp ax, 0x0000
 	je init_net_end			; If none exist then bail out
@@ -111,9 +118,17 @@ init_net_probe_found_finish:
 init_net_probe_not_found:
 
 init_net_end:
+
+%ifndef NO_LFB
 	; Output block to screen (6/8)
 	mov ebx, 10
 	call os_debug_block
+%else
+	; Output progress via serial
+	mov rsi, msg_ok
+	call os_debug_string
+%endif
+
 	ret
 ; -----------------------------------------------------------------------------
 

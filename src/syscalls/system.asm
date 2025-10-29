@@ -31,8 +31,7 @@ b_system_end:
 ; Basic
 
 b_system_timecounter:
-	mov ecx, 0xF0
-	call os_hpet_read
+	;TODO
 	ret
 
 b_system_free_memory:
@@ -207,33 +206,7 @@ b_system_shutdown:
 ; Note:	There are 1,000,000 microseconds in a second
 ;	There are 1,000 milliseconds in a second
 b_delay:
-	push rdx
-	push rcx
-	push rbx
-	push rax
-
-	mov rbx, rax			; Save delay to RBX
-	xor edx, edx
-	mov ecx, [os_HPET_Frequency]
-	mov rax, 1000000000
-	div rcx				; RAX = RDX:RAX / RCX (converting from period in femtoseconds to frequency in MHz)
-	xor edx, edx
-	mul rbx				; RAX *= RBX, should get number of HPET cycles to wait, save result in RBX
-	mov rbx, rax
-	mov ecx, HPET_MAIN_COUNTER
-	call os_hpet_read		; Get HPET counter in RAX
-	add rbx, rax			; RBX += RAX Until when to wait
-b_delay_loop:				; Stay in this loop until the HPET timer reaches the expected value
-	mov ecx, HPET_MAIN_COUNTER
-	call os_hpet_read		; Get HPET counter in RAX
-	cmp rax, rbx			; If RAX < RBX then jump to loop, otherwise fall through to end
-	jb b_delay_loop
-b_delay_end:
-
-	pop rax
-	pop rbx
-	pop rcx
-	pop rdx
+	call timer_delay
 	ret
 ; -----------------------------------------------------------------------------
 
