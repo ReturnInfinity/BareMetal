@@ -131,9 +131,11 @@ make_interrupt_gate_stubs:
 	; Initialize the timer
 	call os_timer_init
 
+%ifndef NO_LFB
 	; Output block to screen (1/8)
 	mov ebx, 0
 	call os_debug_block
+%endif
 
 	; Initialize all AP's to run our reset code. Skip the BSP
 	call b_smp_get_id
