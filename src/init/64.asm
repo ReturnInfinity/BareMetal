@@ -111,15 +111,15 @@ make_interrupt_gate_stubs:
 	; Configure the serial port (if present)
 	call serial_init
 
+	; Initialize text output
+%ifndef NO_LFB
+	call lfb_init			; Initialize LFB for text output
+%else
 	; Output progress via serial
 	mov rsi, msg_baremetal
 	call os_debug_string
 	mov rsi, msg_64
 	call os_debug_string
-
-	; Initialize text output
-%ifndef NO_LFB
-	call lfb_init			; Initialize LFB for text output
 %endif
 
 	; Initialize the APIC
@@ -153,13 +153,15 @@ skip_ap:
 	jmp next_ap
 no_more_aps:
 
+%ifndef NO_LFB
 	; Output block to screen (2/8)
 	mov ebx, 2
 	call os_debug_block
-
+%else
 	; Output progress via serial
 	mov rsi, msg_ok
 	call os_debug_string
+%endif
 
 	ret
 ; -----------------------------------------------------------------------------

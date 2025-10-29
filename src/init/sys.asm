@@ -20,13 +20,16 @@ init_sys:
 	rep movsq			; Copy 16384 bytes
 
 init_sys_done:
+
+%ifndef NO_LFB
 	; Output block to screen (8/8)
 	mov ebx, 14
 	call os_debug_block
-
+%else
 	; Output progress via serial
 	mov rsi, msg_ready
 	call os_debug_string
+%endif
 
 	ret
 ; -----------------------------------------------------------------------------
