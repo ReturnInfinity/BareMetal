@@ -10,10 +10,16 @@
 serial_init:
 	; Pure64 has already initialized the serial port
 
+	; Check if we booted via BIOS
+	cmp byte [os_boot_mode], 'B'
+	je serial_init_skip_arch	; If so, skip the IAPC_BOOT_ARCH check
+
 	; Check if Serial is present via ACPI IAPC_BOOT_ARCH
-;	mov ax, [os_boot_arch]
-;	bt ax, 0			; LEGACY_DEVICES
-;	jnc serial_init_error
+	mov ax, [os_boot_arch]
+	bt ax, 0			; LEGACY_DEVICES
+	jnc serial_init_error
+
+serial_init_skip_arch:
 
 	; Set flag that Serial was enabled
 	or qword [os_SysConfEn], 1 << 2
