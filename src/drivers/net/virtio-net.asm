@@ -271,6 +271,7 @@ virtio_net_init_reset_wait:
 	mov eax, [rsi+VIRTIO_DEVICE_FEATURE]
 	mov eax, 1
 	mov [rsi+VIRTIO_DRIVER_FEATURE_SELECT], eax
+	; TODO - Check into how LEGACY affects the 12-byte header
 	mov eax, 1			; Feature bits 63:32 - LEGACY (32)
 	mov [rsi+VIRTIO_DRIVER_FEATURE], eax
 
@@ -379,7 +380,8 @@ virtio_net_init_pop_rx_d:
 	add rdi, 0x1000
 	xor eax, eax
 	stosw				; 16-bit flags
-	mov ax, 128
+	mov ax, [r8+0x7C]		; Gather queue size
+	dec ax				; Mark all descriptors (minus 1) as available
 	stosw				; 16-bit index
 	xor eax, eax
 virtio_net_init_pop_rx_a:
@@ -517,30 +519,32 @@ net_virtio_poll:
 	push rbx
 	push rax
 
+	; Gather info from driver info
 	mov r8, [rdx+nt_rx_desc]
+	mov bx, [rdx+0x7E]		; Receive queue size
+	dec bx				; Ex: 0x100 becomes 0xFF
 
 	; Check if the Used Ring Index has changed from the last known value
 	mov rdi, r8
 	add rdi, 0x2000			; Offset to Used Ring
 	xor eax, eax
 	mov ax, [rdi+2]			; Load Used Ring Index
+	and ax, bx
 	cmp ax, [rdx+0x78]		; Check against the last known index value
 	je net_virtio_poll_nodata	; If equal then bail out
 
 	; Get size of packet that was received
-	mov ax, [rdx+0x78]		; Last known index
+	mov ax, [rdx+0x78]		; Get last known Used Ring Index
 	shl eax, 3			; Quick multiply by 8
 	add eax, 4			; Add offset to entries (skip 16-bit Flags and 16-bit Index)
 	add rdi, rax			; RDI points to the Used Ring Entry
-	mov rcx, [rdi]			; Load the 32-bit ID and 32-bit Length together
+	mov rcx, [rdi]			; Load the 32-bit ID (low bits) and 32-bit Length (high bits) together
+
 	; Populate RX Available Ring
 	mov rdi, r8
 	add rdi, 0x1002			; Add offset to the Available Ring
 	mov ax, [rdi]			; 16-bit Index
-	mov bx, [rdx+0x7E]		; Receive queue size
-	dec bx				; Ex: 0x100 becomes 0xFF
-	inc ax
-	and ax, bx			; Wrap back to 0 if greater than queue length
+	inc ax				; 65535 will wrap back around to 0
 	mov [rdi], ax			; 16-bit Index
 
 	; Set RDI to address of packet
@@ -561,7 +565,6 @@ net_virtio_poll:
 	inc ax
 	and ax, bx			; Wrap back to 0 if greater than queue length
 	mov [rdx+0x78], ax		; lastrx
-	mov [r8+0x2002], ax		; Store the new Used Ring Index
 
 net_virtio_poll_nodata:
 	pop rax
