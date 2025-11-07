@@ -297,18 +297,19 @@ virtio_net_init_reset_wait:
 	xor eax, eax
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
-	mov ecx, eax			; Store queue size in ECX
-	mov rax, [r8+nt_rx_desc]
+	mov [r8+0x7E], ax		; Store receive queue size in net_table
+	mov ecx, eax			; Store receive queue size in ECX
+	mov rax, [r8+nt_rx_desc]	; Set address of Descriptor ring
 	mov [rsi+VIRTIO_QUEUE_DESC], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
 	rol rax, 32
-	add rax, 4096
+	add rax, 4096			; Set address of Available ring
 	mov [rsi+VIRTIO_QUEUE_DRIVER], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DRIVER+8], eax
 	rol rax, 32
-	add rax, 4096
+	add rax, 4096			; Set address of Used ring
 	mov [rsi+VIRTIO_QUEUE_DEVICE], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DEVICE+8], eax
@@ -323,18 +324,19 @@ virtio_net_init_reset_wait:
 	mov eax, 1
 	mov [rsi+VIRTIO_QUEUE_SELECT], ax
 	mov ax, [rsi+VIRTIO_QUEUE_SIZE]	; Return the size of the queue
-	mov ecx, eax			; Store queue size in ECX
-	mov rax, [r8+nt_tx_desc]
+	mov [r8+0x7C], ax		; Store transmit queue size in net_table
+	mov ecx, eax			; Store transmit queue size in ECX
+	mov rax, [r8+nt_tx_desc]	; Set address of Descriptor ring
 	mov [rsi+VIRTIO_QUEUE_DESC], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DESC+8], eax
 	rol rax, 32
-	add rax, 4096
+	add rax, 4096			; Set address of Available ring
 	mov [rsi+VIRTIO_QUEUE_DRIVER], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DRIVER+8], eax
 	rol rax, 32
-	add rax, 4096
+	add rax, 4096			; Set address of Used ring
 	mov [rsi+VIRTIO_QUEUE_DEVICE], eax
 	rol rax, 32
 	mov [rsi+VIRTIO_QUEUE_DEVICE+8], eax
@@ -356,10 +358,12 @@ virtio_net_init_pop_tx_d:
 	; Populate RX Descriptor Table Entries
 	xor ecx, ecx
 	mov rdi, [r8+nt_rx_desc]
+	mov rbx, [os_PacketBase]
 virtio_net_init_pop_rx_d:
-	mov rax, os_PacketBuffers	; 64-bit Address
+	mov rax, rbx			; 64-bit Address
+	add rbx, 2048
 	stosq
-	mov eax, 1536			; 32-bit Length
+	mov eax, 2048			; 32-bit Length
 	stosd
 	mov ax, VIRTQ_DESC_F_WRITE
 	stosw				; 16-bit Flags
@@ -368,6 +372,7 @@ virtio_net_init_pop_rx_d:
 	stosw				; 16-bit Next
 	cmp cl, 0
 	jne virtio_net_init_pop_rx_d
+	mov [os_PacketBase], rbx
 
 	; Populate RX Available Ring Entries
 	mov rdi, [r8+nt_rx_desc]
@@ -509,6 +514,7 @@ net_virtio_transmit_wait:
 net_virtio_poll:
 	push r8
 	push rsi
+	push rbx
 	push rax
 
 	mov r8, [rdx+nt_rx_desc]
@@ -524,16 +530,17 @@ net_virtio_poll:
 	; Get size of packet that was received
 	mov ax, [rdx+0x78]		; Last known index
 	shl eax, 3			; Quick multiply by 8
-	add eax, 4			; Add offset to entries
+	add eax, 4			; Add offset to entries (skip 16-bit Flags and 16-bit Index)
 	add rdi, rax			; RDI points to the Used Ring Entry
-	mov rcx, [rdi]			; Load the 32-bit Index and 32-bit Length
-
+	mov rcx, [rdi]			; Load the 32-bit ID and 32-bit Length together
 	; Populate RX Available Ring
 	mov rdi, r8
 	add rdi, 0x1002			; Add offset to the Available Ring
 	mov ax, [rdi]			; 16-bit Index
+	mov bx, [rdx+0x7E]		; Receive queue size
+	dec bx				; Ex: 0x100 becomes 0xFF
 	inc ax
-	and ax, 0x00FF			; Wrap back to 0 if greater than 255
+	and ax, bx			; Wrap back to 0 if greater than queue length
 	mov [rdi], ax			; 16-bit Index
 
 	; Set RDI to address of packet
@@ -552,12 +559,13 @@ net_virtio_poll:
 	; Increment internal counters
 	mov ax, [rdx+0x78]		; lastrx
 	inc ax
-	and ax, 0x00FF			; Wrap back to 0 if greater than 255
+	and ax, bx			; Wrap back to 0 if greater than queue length
 	mov [rdx+0x78], ax		; lastrx
 	mov [r8+0x2002], ax		; Store the new Used Ring Index
 
 net_virtio_poll_nodata:
 	pop rax
+	pop rbx
 	pop rsi
 	pop r8
 	ret
