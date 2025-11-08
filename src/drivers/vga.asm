@@ -2,7 +2,7 @@
 ; BareMetal -- a 64-bit OS written in Assembly for x86-64 systems
 ; Copyright (C) 2008-2025 Return Infinity -- see LICENSE.TXT
 ;
-; VGA Text mode functions
+; VGA text mode Output
 ; =============================================================================
 
 
@@ -10,7 +10,6 @@
 ; vga_init -- Initialize VGA text output
 ;  IN:	Nothing
 ; OUT:	Nothing
-;	All other registers preserved
 vga_init:
 	mov word [vga_Rows], 25
 	mov word [vga_Cols], 80
@@ -56,36 +55,6 @@ nexttritone:
 	mov rax, vga_output_chars
 	mov [0x100018], rax
 
-	ret
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
-; vga_clear_screen -- Clear the screen
-;  IN:	Nothing
-; OUT:	All registers preserved
-vga_clear_screen:
-	push rdi
-	push rcx
-	push rax
-	pushfq
-
-	; Set cursor to top left corner
-	mov word [vga_Cursor_Row], 0
-	mov word [vga_Cursor_Col], 0
-
-	cld				; Clear the direction flag as we want to increment through memory
-
-	xor ecx, ecx
-	mov ax, 0x8F20			; 0x8F for gray background/bright white foreground, 0x20 for space (black) character
-	mov edi, 0xB8000
-	mov ecx, 2000			; 80 x 25
-	rep stosw			; Clear the screen. Store word in AX to RDI, RCX times
-
-	popfq
-	pop rax
-	pop rcx
-	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -372,6 +341,36 @@ vga_output_chars_done:
 	pop rax
 	pop rcx
 	pop rsi
+	pop rdi
+	ret
+; -----------------------------------------------------------------------------
+
+
+; -----------------------------------------------------------------------------
+; vga_clear_screen -- Clear the screen
+;  IN:	Nothing
+; OUT:	All registers preserved
+vga_clear_screen:
+	push rdi
+	push rcx
+	push rax
+	pushfq
+
+	; Set cursor to top left corner
+	mov word [vga_Cursor_Row], 0
+	mov word [vga_Cursor_Col], 0
+
+	cld				; Clear the direction flag as we want to increment through memory
+
+	xor ecx, ecx
+	mov ax, 0x8F20			; 0x8F for gray background/bright white foreground, 0x20 for space (black) character
+	mov edi, 0xB8000
+	mov ecx, 2000			; 80 x 25
+	rep stosw			; Clear the screen. Store word in AX to RDI, RCX times
+
+	popfq
+	pop rax
+	pop rcx
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
