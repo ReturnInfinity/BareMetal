@@ -70,6 +70,10 @@ vga_clear_screen:
 	push rax
 	pushfq
 
+	; Set cursor to top left corner
+	mov word [vga_Cursor_Row], 0
+	mov word [vga_Cursor_Col], 0
+
 	cld				; Clear the direction flag as we want to increment through memory
 
 	xor ecx, ecx
@@ -295,7 +299,8 @@ vga_output_chars:
 	cld				; Clear the direction flag.. we want to increment through the string
 
 vga_output_chars_nextchar:
-	jrcxz vga_output_chars_done
+	cmp rcx, 0
+	jz vga_output_chars_done
 	dec rcx
 	lodsb				; Get char from string and store in AL
 	cmp al, 13			; Check if there was a newline character in the string
@@ -304,7 +309,30 @@ vga_output_chars_nextchar:
 	je vga_output_chars_newline	; If so then we print a new line
 	cmp al, 9
 	je vga_output_chars_tab
+	; Check for special characters
+	cmp al, 0x01			; Clear Screen
+	je vga_output_cls
+	cmp al, 0x02			; Increment Cursor
+	je vga_output_inc_cursor
+	cmp al, 0x03			; Decrement Cursor
+	je vga_output_dec_cursor
 	call vga_output_char
+	jmp vga_output_chars_nextchar
+
+vga_output_cls:
+	call vga_clear_screen
+	call vga_draw_line
+	jmp vga_output_chars_nextchar
+
+vga_output_inc_cursor:
+	call vga_inc_cursor
+	jmp vga_output_chars_nextchar
+
+vga_output_dec_cursor:
+	call vga_dec_cursor		; Decrement the cursor
+	mov al, ' '			; 0x20 is the character for a space
+	call vga_output_char		; Write over the last typed character with the space
+	call vga_dec_cursor		; Decrement the cursor again
 	jmp vga_output_chars_nextchar
 
 vga_output_chars_newline:
