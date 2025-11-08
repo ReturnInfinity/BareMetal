@@ -115,6 +115,7 @@ make_interrupt_gate_stubs:
 %ifndef NO_LFB
 	call lfb_init			; Initialize LFB for text output
 %else
+	call vga_init
 	; Output progress via serial
 	mov rsi, msg_baremetal
 	call os_debug_string
