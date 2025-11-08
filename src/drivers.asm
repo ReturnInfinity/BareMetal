@@ -55,6 +55,8 @@
 ; Video
 %ifndef NO_LFB
 %include "drivers/lfb/lfb.asm"
+%else
+%include "drivers/vga.asm"
 %endif
 
 NIC_DeviceVendor_ID:	; The supported list of NICs
