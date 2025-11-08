@@ -77,7 +77,7 @@ make_exception_gate_stubs:
 make_exception_gates:
 	call create_gate
 	inc edi
-	add rax, 24			; Each exception gate is 24 bytes
+	add eax, 24			; Each exception gate is 24 bytes
 	dec rcx
 	jnz make_exception_gates
 
@@ -105,7 +105,7 @@ make_interrupt_gate_stubs:
 	stosq
 
 	; Configure the Stack base
-	mov rax, 0x200000		; Stacks start at 2MiB
+	mov eax, 0x200000		; Stacks start at 2MiB
 	mov [os_StackBase], rax
 
 	; Configure the serial port (if present)
@@ -117,9 +117,9 @@ make_interrupt_gate_stubs:
 %else
 	call vga_init
 	; Output progress via serial
-	mov rsi, msg_baremetal
+	mov esi, msg_baremetal
 	call os_debug_string
-	mov rsi, msg_64
+	mov esi, msg_64
 	call os_debug_string
 %endif
 
@@ -162,7 +162,7 @@ no_more_aps:
 	call os_debug_block
 %else
 	; Output progress via serial
-	mov rsi, msg_ok
+	mov esi, msg_ok
 	call os_debug_string
 %endif
 

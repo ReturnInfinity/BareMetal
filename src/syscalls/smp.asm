@@ -123,7 +123,7 @@ b_smp_set:
 	push rcx		; Save the APIC ID
 	push rax		; Save the code address
 
-	mov rdi, os_SMP
+	mov edi, os_SMP
 	shl rcx, 3		; Quick multiply by 8
 	add rdi, rcx		; Add the offset
 	mov rcx, [rdi]		; Load current value for that core
@@ -171,7 +171,7 @@ b_smp_get:
 
 	call b_smp_get_id	; Return APIC ID in RAX
 
-	mov rsi, os_SMP
+	mov esi, os_SMP
 	shl rax, 3		; Quick multiply by 8
 	add rsi, rax		; Add the offset
 	mov rax, [rsi]		; Load code address and flags
@@ -193,7 +193,7 @@ b_smp_setflag:
 
 	call b_smp_get_id	; Return APIC ID in RAX
 
-	mov rsi, os_SMP
+	mov esi, os_SMP
 	shl rax, 3		; Quick multiply by 8
 	add rsi, rax		; Add the offset
 	mov rax, [rsi]		; Load code address and flags
@@ -221,7 +221,7 @@ b_smp_busy:
 	call b_smp_get_id
 	mov bl, al		; Store local APIC ID in BL
 	xor ecx, ecx
-	mov rsi, os_SMP
+	mov esi, os_SMP
 
 b_smp_busy_read:
 	lodsq			; Load a single CPU entry. Flags are in AL

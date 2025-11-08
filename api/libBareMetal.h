@@ -34,7 +34,6 @@ u64 b_system(u64 function, u64 var1, u64 var2);
 // Index for b_config calls
 #define TIMECOUNTER		0x00
 #define FREE_MEMORY		0x01
-#define GET_MOUSE		0x02
 #define SMP_ID			0x10
 #define SMP_NUMCORES		0x11
 #define SMP_SET			0x12
@@ -57,7 +56,6 @@ u64 b_system(u64 function, u64 var1, u64 var2);
 #define CALLBACK_TIMER		0x60
 #define CALLBACK_NETWORK	0x61
 #define CALLBACK_KEYBOARD	0x62
-#define CALLBACK_MOUSE		0x63
 #define DUMP_MEM		0x70
 #define DUMP_RAX		0x71
 #define DELAY			0x72

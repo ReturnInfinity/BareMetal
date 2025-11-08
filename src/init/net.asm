@@ -12,7 +12,7 @@ init_net:
 
 %ifdef NO_LFB
 	; Output progress via serial
-	mov rsi, msg_net
+	mov esi, msg_net
 	call os_debug_string
 %endif
 
@@ -20,10 +20,10 @@ init_net:
 	cmp ax, 0x0000
 	je init_net_end			; If none exist then bail out
 	; Check Bus Table for a Ethernet device
-	mov rsi, bus_table		; Load Bus Table address to RSI
-	sub rsi, 8			; Subtract offset for Class Code
+	mov esi, bus_table		; Load Bus Table address to RSI
+	sub esi, 8			; Subtract offset for Class Code
 init_net_check_bus:
-	add rsi, 16			; Increment to next record in memory
+	add esi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of Bus Table list
 	je init_net_end
@@ -33,14 +33,14 @@ init_net_check_bus:
 
 	; Check the Ethernet device to see if it has a driver
 init_net_probe_find_driver:
-	sub rsi, 8			; Move RSI back to start of Bus record
+	sub esi, 8			; Move RSI back to start of Bus record
 	mov r9, rsi			; Save start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	mov r8d, [rsi+4]		; Save the Device ID / Vendor ID in R8D
 	rol r8d, 16			; Swap the Device ID / Vendor ID
-	add rsi, 8			; Move RSI back to Class Code
+	add esi, 8			; Move RSI back to Class Code
 	xchg rsi, rdi
-	mov rsi, NIC_DeviceVendor_ID
+	mov esi, NIC_DeviceVendor_ID
 init_net_probe_find_next_driver:
 	lodsw				; Load a driver ID
 	mov bx, ax			; Save the driver ID
@@ -125,7 +125,7 @@ init_net_end:
 	call os_debug_block
 %else
 	; Output progress via serial
-	mov rsi, msg_ok
+	mov esi, msg_ok
 	call os_debug_string
 %endif
 

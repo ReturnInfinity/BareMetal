@@ -27,7 +27,7 @@ init_sys_done:
 	call os_debug_block
 %else
 	; Output progress via serial
-	mov rsi, msg_ready
+	mov esi, msg_ready
 	call os_debug_string
 %endif
 

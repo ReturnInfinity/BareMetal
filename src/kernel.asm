@@ -32,7 +32,7 @@ align 16
 
 align 16
 start:
-	mov rsp, 0x10000		; Set the temporary stack
+	mov esp, 0x10000		; Set the temporary stack
 
 	; System and driver initialization
 	call init_64			; After this point we are in a working 64-bit environment
@@ -53,14 +53,14 @@ start_payload:
 	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
 	mov [os_BSP], al		; Keep a record of the BSP APIC ID
 	mov ebx, eax			; Save the APIC ID
-	mov rdi, os_SMP			; Clear the entry in the work table
+	mov edi, os_SMP			; Clear the entry in the work table
 	shl rax, 3			; Quick multiply by 8 to get to proper record
 	add rdi, rax
 	xor eax, eax
 	or al, 1			; Set bit 0 for "present"
 	stosq				; Clear the code address
 	mov rcx, rbx			; Copy the APIC ID for b_smp_set
-	mov rax, 0x1E0000		; Payload was copied here
+	mov eax, 0x1E0000		; Payload was copied here
 	call b_smp_set
 	jmp bsp				; Skip to bsp as payload was prepped
 
@@ -77,7 +77,7 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	mov ebx, eax			; Save the APIC ID
 
 	; Clear the entry in the work table
-	mov rdi, os_SMP
+	mov edi, os_SMP
 	shl rax, 3			; Quick multiply by 8 to get to proper record
 	add rdi, rax
 	xor eax, eax

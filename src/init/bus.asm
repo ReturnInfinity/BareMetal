@@ -31,11 +31,11 @@ init_bus:
 
 %ifdef NO_LFB
 	; Output progress via serial
-	mov rsi, msg_bus
+	mov esi, msg_bus
 	call os_debug_string
 %endif
 
-	mov rdi, bus_table		; Address of Bus Table in memory
+	mov edi, bus_table		; Address of Bus Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
 
 	; Check for PCIe first
@@ -128,11 +128,11 @@ init_bus_end:
 
 init_bus_usb_search:
 	; Check Bus Table for a USB Controller
-	mov rsi, bus_table		; Load Bus Table address to RSI
-	sub rsi, 16
-	add rsi, 8			; Add offset to Class Code
+	mov esi, bus_table		; Load Bus Table address to RSI
+	sub esi, 16
+	add esi, 8			; Add offset to Class Code
 init_bus_usb_check:
-	add rsi, 16			; Increment to next record in memory
+	add esi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_bus_usb_not_found
@@ -142,7 +142,7 @@ init_bus_usb_check:
 
 	; Check the USB Controller to see if it is supported
 init_bus_usb_find_driver:
-	sub rsi, 8			; Move RSI back to start of Bus record
+	sub esi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	mov dl, 0x02
 	call os_bus_read
@@ -151,7 +151,7 @@ init_bus_usb_find_driver:
 	cmp al, 0x30			; PI for XHCI
 	je init_bus_usb_xhci_start
 %endif
-	add rsi, 8
+	add esi, 8
 	jmp init_bus_usb_check
 
 %ifndef NO_XHCI
@@ -167,7 +167,7 @@ init_bus_usb_not_found:
 	call os_debug_block
 %else
 	; Output progress via serial
-	mov rsi, msg_ok
+	mov esi, msg_ok
 	call os_debug_string
 %endif
 

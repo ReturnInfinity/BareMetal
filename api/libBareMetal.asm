@@ -21,7 +21,6 @@ b_system		equ 0x0000000000100040	; Configure system. IN: RCX = Function, RAX = V
 ; Index for b_system calls
 TIMECOUNTER		equ 0x00
 FREE_MEMORY		equ 0x01
-GET_MOUSE		equ 0x02
 SMP_ID			equ 0x10
 SMP_NUMCORES		equ 0x11
 SMP_SET			equ 0x12
@@ -44,7 +43,6 @@ STDOUT_GET		equ 0x53
 CALLBACK_TIMER		equ 0x60
 CALLBACK_NETWORK	equ 0x61
 CALLBACK_KEYBOARD	equ 0x62
-CALLBACK_MOUSE		equ 0x63
 DUMP_MEM		equ 0x70
 DUMP_RAX		equ 0x71
 DELAY			equ 0x72

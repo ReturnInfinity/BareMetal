@@ -12,17 +12,17 @@ init_nvs:
 
 %ifdef NO_LFB
 	; Output progress via serial
-	mov rsi, msg_nvs
+	mov esi, msg_nvs
 	call os_debug_string
 %endif
 
 %ifndef NO_NVME
 	; Check Bus Table for NVMe
-	mov rsi, bus_table		; Load Bus Table address to RSI
-	sub rsi, 16
-	add rsi, 8			; Add offset to Class Code
+	mov esi, bus_table		; Load Bus Table address to RSI
+	sub esi, 16
+	add esi, 8			; Add offset to Class Code
 init_nvs_nvme_check:
-	add rsi, 16			; Increment to next record in memory
+	add esi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_nvs_nvme_skip		; If no NVMe the bail out
@@ -33,11 +33,11 @@ init_nvs_nvme_skip:
 %endif
 
 	; Check Bus Table for any other supported controllers
-	mov rsi, bus_table		; Load Bus Table address to RSI
-	sub rsi, 16
-	add rsi, 8			; Add offset to Class Code
+	mov esi, bus_table		; Load Bus Table address to RSI
+	sub esi, 16
+	add esi, 8			; Add offset to Class Code
 init_nvs_check_bus:
-	add rsi, 16			; Increment to next record in memory
+	add esi, 16			; Increment to next record in memory
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_nvs_done		; No storage controller found
@@ -57,7 +57,7 @@ init_nvs_check_bus:
 
 %ifndef NO_NVME
 init_nvs_nvme:
-	sub rsi, 8			; Move RSI back to start of Bus record
+	sub esi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call nvme_init
 	jmp init_nvs_done
@@ -65,7 +65,7 @@ init_nvs_nvme:
 
 %ifndef NO_AHCI
 init_nvs_ahci:
-	sub rsi, 8			; Move RSI back to start of Bus record
+	sub esi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call ahci_init
 	jmp init_nvs_done
@@ -73,7 +73,7 @@ init_nvs_ahci:
 
 %ifndef NO_VIRTIO
 init_nvs_virtio_blk:
-	sub rsi, 8			; Move RSI back to start of Bus record
+	sub esi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call virtio_blk_init
 	jmp init_nvs_done
@@ -81,7 +81,7 @@ init_nvs_virtio_blk:
 
 %ifndef NO_ATA
 init_nvs_ata:
-	sub rsi, 8			; Move RSI back to start of Bus record
+	sub esi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call ata_init
 	jmp init_nvs_done
@@ -95,7 +95,7 @@ init_nvs_done:
 	call os_debug_block
 %else
 	; Output progress via serial
-	mov rsi, msg_ok
+	mov esi, msg_ok
 	call os_debug_string
 %endif
 
