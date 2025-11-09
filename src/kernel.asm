@@ -121,7 +121,7 @@ ap_halt:				; Halt until a wakeup call is received
 	jmp ap_check			; Core will jump to ap_check when it wakes up
 
 ap_process:
-	mov rcx, 1			; Set the active flag
+	mov ecx, 1			; Set the active flag
 	call b_smp_setflag
 	xor ecx, ecx
 	call rax			; Run the code

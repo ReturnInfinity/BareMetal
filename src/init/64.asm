@@ -63,7 +63,7 @@ init_64:
 	; Create exception gate stubs (Pure64 has already set the correct gate markers)
 	xor edi, edi			; 64-bit IDT at linear address 0x0000000000000000
 	mov ecx, 32
-	mov rax, exception_gate		; A generic exception handler
+	mov eax, exception_gate		; A generic exception handler
 make_exception_gate_stubs:
 	call create_gate
 	inc edi
@@ -73,7 +73,7 @@ make_exception_gate_stubs:
 	; Set up the exception gates for all of the CPU exceptions
 	xor edi, edi
 	mov ecx, 21
-	mov rax, exception_gate_00
+	mov eax, exception_gate_00
 make_exception_gates:
 	call create_gate
 	inc edi
@@ -83,7 +83,7 @@ make_exception_gates:
 
 	; Create interrupt gate stubs (Pure64 has already set the correct gate markers)
 	mov ecx, 256-32
-	mov rax, interrupt_gate
+	mov eax, interrupt_gate
 make_interrupt_gate_stubs:
 	call create_gate
 	inc edi
@@ -92,14 +92,14 @@ make_interrupt_gate_stubs:
 
 	; Set up IRQ handlers for CPUs
 	mov edi, 0x80
-	mov rax, ap_wakeup
+	mov eax, ap_wakeup
 	call create_gate
 	mov edi, 0x81
-	mov rax, ap_reset
+	mov eax, ap_reset
 	call create_gate
 
 	; Set device syscalls to stub
-	mov rax, os_stub
+	mov eax, os_stub
 	mov rdi, os_nvs_io
 	stosq
 	stosq

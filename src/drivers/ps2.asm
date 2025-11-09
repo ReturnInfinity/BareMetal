@@ -65,7 +65,7 @@ ps2_init:
 	bt ebx, 0
 	jnc init_64_no_ps2keyboard
 	mov edi, 0x21
-	mov rax, int_keyboard
+	mov eax, int_keyboard
 	call create_gate
 
 	; Enable specific interrupts

@@ -22,10 +22,10 @@ vga_init:
 	mov dx, 0x03C8			; DAC Address Write Mode Register
 	out dx, al
 	mov dx, 0x03C9			; DAC Data Register
-	mov rbx, 16			; 16 lines
+	mov ebx, 16			; 16 lines
 nextlineq:
-	mov rcx, 16			; 16 colors
-	mov rsi, palette
+	mov ecx, 16			; 16 colors
+	mov esi, palette
 nexttritone:
 	lodsb
 	out dx, al
@@ -33,18 +33,18 @@ nexttritone:
 	out dx, al
 	lodsb
 	out dx, al
-	dec rcx
-	test rcx, rcx
+	dec ecx
+	test ecx, ecx
 	jnz nexttritone
-	dec rbx
+	dec ebx
 	jnz nextlineq			; Set the next 16 colors to the same
 
 	mov eax, 0x14			; Fix for color 6
 	mov dx, 0x03C8			; DAC Address Write Mode Register
 	out dx, al
 	mov dx, 0x03C9			; DAC Data Register
-	mov rsi, palette
-	add rsi, 18
+	mov esi, palette
+	add esi, 18
 	lodsb
 	out dx, al
 	lodsb
@@ -52,7 +52,7 @@ nexttritone:
 	lodsb
 	out dx, al
 
-	mov rax, vga_output_chars
+	mov eax, vga_output_chars
 	mov [0x100018], rax
 
 	ret
@@ -229,18 +229,18 @@ vga_output_char:
 	push rax
 
 	push rax
+	xor eax, eax
 	mov ax, [vga_Cursor_Row]
-	and rax, 0x000000000000FFFF	; only keep the low 16 bits
 	mov cl, 80			; 80 columns per row
 	mul cl				; AX = AL * CL
 	mov bx, [vga_Cursor_Col]
 	add ax, bx
 	shl ax, 1			; multiply by 2
-	mov rbx, rax			; Save the row/col offset
+	mov ebx, eax			; Save the row/col offset
 	pop rax
-	mov rdi, 0xb8000
-	add rdi, rbx
-	stosb				; Write the character and attribute to screen
+	mov edi, 0xb8000
+	add edi, ebx
+	stosb				; Write the character to screen
 
 vga_output_char_done:
 	call vga_inc_cursor

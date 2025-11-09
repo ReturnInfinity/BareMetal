@@ -69,7 +69,7 @@ os_pcie_convert:
 	push rax
 
 	; Check the submitted Segment Group against known ones
-	mov rsi, 0x5408			; Start of the PCIe info, offset to PCIe Segment Group at 0x8
+	mov esi, 0x5408			; Start of the PCIe info, offset to PCIe Segment Group at 0x8
 	ror rdx, 32			; Rotate PCIe Segment Group to DX
 os_pcie_convert_check_segment:
 	mov ax, [rsi]			; Load a known PCIe Segment Group

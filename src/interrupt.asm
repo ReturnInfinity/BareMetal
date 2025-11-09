@@ -113,7 +113,7 @@ ap_wakeup:
 align 8
 ap_reset:
 	; Don't use 'os_apic_write' as we can't guarantee the state of the stack
-	mov rax, ap_clear		; Set RAX to the address of ap_clear
+	mov eax, ap_clear		; Set RAX to the address of ap_clear
 	mov [rsp], rax			; Overwrite the return address on the CPU's stack
 	mov rdi, [os_LocalAPICAddress]	; Acknowledge the IPI
 	add rdi, 0xB0

@@ -152,10 +152,10 @@ xhci_init_msi:
 xhci_init_msix_msi_done:
 	; Create a gate in the IDT
 	mov edi, 0xA0
-	mov rax, xhci_int0
+	mov eax, xhci_int0
 	call create_gate		; Create the gate for the Primary Interrupter
 	mov edi, 0xA1
-	mov rax, xhci_int1
+	mov eax, xhci_int1
 	call create_gate		; Create the gate for Interrupter 1 (Keyboard)
 
 	; Mark controller memory as un-cacheable
@@ -281,7 +281,7 @@ xhci_reset_halt:
 xhci_reset_halt_done:
 
 	; Clear memory controller will be using
-	mov rdi, os_usb_mem
+	mov edi, os_usb_mem
 	xor eax, eax
 	mov ecx, 32768			; 32768 * 8 = 262144 bytes
 	rep stosq
@@ -347,7 +347,7 @@ xhci_reset_build_scratchpad:
 	; ├──────────────────────────────┴───────┤
 	; |     Ring Segment Base Address Hi     |
 	; ├──────────────────┬───────────────────┤
-	; |      RsvdZ       | Ring Segment Size | 
+	; |      RsvdZ       | Ring Segment Size |
 	; ├──────────────────┴───────────────────┤
 	; |                RsvdZ                 |
 	; └──────────────────────────────────────┘
@@ -1862,7 +1862,7 @@ xHCI_CC_STALL_ERROR			equ 6
 xHCI_CC_RESOURCE_ERROR			equ 7
 xHCI_CC_BANDWIDTH_ERROR			equ 8
 xHCI_CC_NO_SLOTS_ERROR			equ 9
-xHCI_CC_INVALID_STREAM_TYPE_ERROR	equ 10 
+xHCI_CC_INVALID_STREAM_TYPE_ERROR	equ 10
 xHCI_CC_SLOT_NOT_ENABLED_ERROR		equ 11
 xHCI_CC_EP_NOT_ENABLED_ERROR		equ 12
 xHCI_CC_SHORT_PACKET			equ 13

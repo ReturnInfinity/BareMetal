@@ -21,8 +21,8 @@ lfb_init:
 	je lfb_init_error		; If so, no LFB was configured
 
 	; Convert font data to pixel data. The default 12x6 font is 72 pixels per glyph. 288 bytes per.
-	mov rdi, os_font
-	mov rsi, font_data
+	mov edi, os_font
+	mov esi, font_data
 	xor ebx, ebx
 next_char:
 	cmp ebx, 128
@@ -117,12 +117,12 @@ render_done:
 	mov [lfb_last_cursor], rax
 
 	; Overwrite the kernel b_output function so output goes to the screen instead of the serial port
-	mov rax, lfb_output_chars
+	mov eax, lfb_output_chars
 	mov [0x100018], rax
 	jmp lfb_init_done
 
 lfb_init_error:
-	mov rax, b_output_serial
+	mov eax, b_output_serial
 	mov [0x100018], rax		; Set kernel b_output to the serial port
 
 lfb_init_done:
