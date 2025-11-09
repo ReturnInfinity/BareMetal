@@ -120,11 +120,11 @@ keydown:
 	je keyboard_lowercase
 
 keyboard_uppercase:
-	mov rbx, keylayoutupper
+	mov ebx, keylayoutupper
 	jmp keyboard_processkey
 
 keyboard_lowercase:
-	mov rbx, keylayoutlower
+	mov ebx, keylayoutlower
 
 keyboard_processkey:			; Convert the scan code
 	add rbx, rax

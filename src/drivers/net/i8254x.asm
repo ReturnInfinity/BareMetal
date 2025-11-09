@@ -16,7 +16,7 @@ net_i8254x_init:
 	push rcx
 	push rax
 
-	mov rdi, net_table
+	mov edi, net_table
 	xor eax, eax
 	mov al, [os_net_icount]
 	shl eax, 7			; Quick multiply by 128
@@ -75,11 +75,11 @@ net_i8254x_init:
 	call net_i8254x_reset
 
 	; Store call addresses
-	mov rax, net_i8254x_config
+	mov eax, net_i8254x_config
 	mov [rdi+nt_config], rax
-	mov rax, net_i8254x_transmit
+	mov eax, net_i8254x_transmit
 	mov [rdi+nt_transmit], rax
-	mov rax, net_i8254x_poll
+	mov eax, net_i8254x_poll
 	mov [rdi+nt_poll], rax
 
 net_i8254x_init_error:

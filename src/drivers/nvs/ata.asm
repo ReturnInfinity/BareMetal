@@ -20,10 +20,10 @@
 ; -----------------------------------------------------------------------------
 ata_init:
 	bts word [os_nvsVar], 2	; Set the bit flag that ATA has been initialized
-	mov rdi, os_nvs_io
-	mov rax, ata_io
+	mov edi, os_nvs_io
+	mov eax, ata_io
 	stosq
-	mov rax, ata_id
+	mov eax, ata_id
 	stosq
 	add rsi, 15
 	mov byte [rsi], 1		; Mark driver as installed in Bus Table
@@ -102,7 +102,7 @@ ata_io_nextsector:
 
 ata_io_dataready:
 	sub dx, 7		; Data port (0x1F0)
-	mov rcx, 256		; Read 
+	mov rcx, 256		; Read
 	rep insw		; Copy a 512 byte sector to RDI
 	add dx, 7		; Set DX back to status register (0x01F7)
 	in al, dx		; Delay ~400ns to allow drive to set new values of BSY and DRQ

@@ -273,7 +273,7 @@ xhci_reset_halt:
 	jnc xhci_reset_halt_done	; If the bit was clear, proceed onward
 	btr eax, 0			; Clear RS (bit 0)
 	mov [rsi+xHCI_USBCMD], eax	; Write updated Command Register value
-	mov rax, 20000			; Wait 20ms (20000µs)
+	mov eax, 20000			; Wait 20ms (20000µs)
 	call b_delay
 	mov eax, [rsi+xHCI_USBSTS]	; Read Status Register
 	bt eax, 0			; Check HCHalted (bit 0) - it should be 1
@@ -291,7 +291,7 @@ xhci_reset_reset:
 	mov eax, [rsi+xHCI_USBCMD]	; Read current Command Register value
 	bts eax, 1			; Set HCRST (bit 1)
 	mov [rsi+xHCI_USBCMD], eax	; Write updated Command Register value
-	mov rax, 100000			; Wait 100ms (100000µs)
+	mov eax, 100000			; Wait 100ms (100000µs)
 	call b_delay
 	mov eax, [rsi+xHCI_USBSTS]	; Read Status Register
 	bt eax, 11			; Check CNR (bit 11)
@@ -464,7 +464,7 @@ xhci_reset_skip:
 
 	; Check Event ring for xHCI_ETRB_PSC and gather enabled ports
 	xor ecx, ecx
-	mov rdi, xhci_portlist
+	mov edi, xhci_portlist
 	mov rsi, os_usb_ERS
 	sub rsi, 16
 xhci_check_port:
