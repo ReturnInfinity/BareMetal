@@ -108,6 +108,10 @@ make_interrupt_gate_stubs:
 	mov rax, 0x200000		; Stacks start at 2MiB
 	mov [os_StackBase], rax
 
+	; Configure Network packet buffer base
+	mov eax, 0x300000
+	mov [os_PacketBase], rax
+
 	; Configure the serial port (if present)
 	call serial_init
 
