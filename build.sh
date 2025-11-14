@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-BUILDFLAGS=""
+BUILDFLAGS="-dNO_VGA"
 
 # Internal
 # -dNO_VIRTIO	Remove VirtIO drivers (NVS, NET)
@@ -14,7 +14,8 @@ BUILDFLAGS=""
 # -dNO_I8259X	Remove i8259x 10-Gigabit driver
 # HID
 # -dNO_XHCI	Remove xHCI USB driver (hid)
-# -dNO_LFB	Remove LFB text driver
+# -dNO_LFB	Remove LFB graphical text output driver
+# -dNO_VGA	Remove VGA text output driver
 
 mkdir -p bin
 cd src

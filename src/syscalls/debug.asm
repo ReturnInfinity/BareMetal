@@ -155,7 +155,6 @@ os_debug_space:
 ; -----------------------------------------------------------------------------
 
 
-%ifdef NO_LFB
 ; -----------------------------------------------------------------------------
 ; os_debug_string - Dump a string to output
 ; IN:	RSI = String Address (null terminated)
@@ -172,14 +171,13 @@ os_debug_string:
 	not rcx
 	dec rcx
 
-	call b_output
+	call b_output_serial
 
 	pop rax
 	pop rcx
 	pop rdi
 	ret
 ; -----------------------------------------------------------------------------
-%endif
 
 
 %ifndef NO_LFB

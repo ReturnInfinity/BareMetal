@@ -25,11 +25,11 @@ init_sys_done:
 	; Output block to screen (8/8)
 	mov ebx, 14
 	call os_debug_block
-%else
+%endif
+
 	; Output progress via serial
 	mov rsi, msg_ready
 	call os_debug_string
-%endif
 
 	ret
 ; -----------------------------------------------------------------------------

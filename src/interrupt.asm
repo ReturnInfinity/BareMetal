@@ -10,9 +10,9 @@
 ; Default exception handler
 align 8
 exception_gate:
-	mov rsi, int_string00
+	mov esi, int_string00
 	call b_output
-	mov rsi, exc_string
+	mov esi, exc_string
 	call b_output
 	jmp $				; Hang
 ; -----------------------------------------------------------------------------
@@ -175,7 +175,7 @@ ap_wakeup:
 align 8
 ap_reset:
 	; Don't use 'os_apic_write' as we can't guarantee the state of the stack
-	mov rax, ap_clear		; Set RAX to the address of ap_clear
+	mov eax, ap_clear		; Set RAX to the address of ap_clear
 	mov [rsp], rax			; Overwrite the return address on the CPU's stack
 	mov rdi, [os_LocalAPICAddress]	; Acknowledge the IPI
 	add rdi, 0xB0
@@ -378,24 +378,24 @@ exception_gate_main:
 	push rcx			; Char counter for b_output
 	push rax			; Save RAX since b_smp_get_id clobbers it
 	call os_debug_newline
-	mov rsi, int_string00
-	mov rcx, 6
+	mov esi, int_string00
+	mov ecx, 6
 	call b_output
 	call b_smp_get_id		; Get the local CPU ID and print it
 	call os_debug_dump_ax
-	mov rsi, int_string01
-	mov rcx, 15
+	mov esi, int_string01
+	mov ecx, 15
 	call b_output
-	mov rsi, exc_string00
+	mov esi, exc_string00
 	pop rax
-	and rax, 0x00000000000000FF	; Clear out everything in RAX except for AL
+	and eax, 0x00000000000000FF	; Clear out everything in RAX except for AL
 	push rax
 	mov bl, 6			; Length of each message
 	mul bl				; AX = AL x BL
 	add rsi, rax			; Use the value in RAX as an offset to get to the right message
 	pop rax
 	mov bl, 0x0F
-	mov rcx, 6
+	mov ecx, 6
 	call b_output
 	pop rcx
 	pop rsi
@@ -420,14 +420,14 @@ exception_gate_main:
 	push rcx
 	push rbx
 	push rax
-	mov rsi, reg_string00		; Load address of first register string
+	mov esi, reg_string00		; Load address of first register string
 	mov ecx, 4			; Number of characters per reg_string
 	mov edx, 16			; Counter of registers to left to output
 	xor ebx, ebx			; Counter of registers output per line
 	call os_debug_newline
 exception_gate_main_nextreg:
 	call b_output
-	add rsi, 4
+	add esi, 4
 	pop rax
 	call os_debug_dump_rax
 	add ebx, 1
@@ -445,7 +445,7 @@ exception_gate_main_nextreg_continue:
 	mov rax, [rsp+8] 		; RIP of caller
 	call os_debug_dump_rax
 	call os_debug_space
-	add rsi, 4
+	add esi, 4
 	call b_output
 	mov rax, cr2
 	call os_debug_dump_rax

@@ -115,17 +115,25 @@ make_interrupt_gate_stubs:
 	; Configure the serial port (if present)
 	call serial_init
 
+init_64_lfb:
 	; Initialize text output
 %ifndef NO_LFB
+	; Check if LFB was enabled by Pure64
+	mov rax, [os_screen_lfb]
+	cmp rax, 0
+	je init_64_vga
 	call lfb_init			; Initialize LFB for text output
-%else
+%endif
+init_64_vga:
+%ifndef NO_VGA
 	call vga_init
-	; Output progress via serial
+%endif
+
+	; Output progress via debug
 	mov rsi, msg_baremetal
 	call os_debug_string
 	mov rsi, msg_64
 	call os_debug_string
-%endif
 
 	; Initialize the APIC
 	call os_apic_init
@@ -164,11 +172,11 @@ no_more_aps:
 	; Output block to screen (2/8)
 	mov ebx, 2
 	call os_debug_block
-%else
+%endif
+
 	; Output progress via serial
 	mov rsi, msg_ok
 	call os_debug_string
-%endif
 
 	ret
 ; -----------------------------------------------------------------------------

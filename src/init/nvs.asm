@@ -10,11 +10,9 @@
 ; init_nvs -- Configure the first non-volatile storage device it finds
 init_nvs:
 
-%ifdef NO_LFB
 	; Output progress via serial
 	mov rsi, msg_nvs
 	call os_debug_string
-%endif
 
 %ifndef NO_NVME
 	; Check Bus Table for NVMe
@@ -93,11 +91,11 @@ init_nvs_done:
 	; Output block to screen (5/8)
 	mov ebx, 8
 	call os_debug_block
-%else
+%endif
+
 	; Output progress via serial
 	mov rsi, msg_ok
 	call os_debug_string
-%endif
 
 	ret
 ; -----------------------------------------------------------------------------

@@ -55,7 +55,8 @@
 ; Video
 %ifndef NO_LFB
 %include "drivers/lfb/lfb.asm"
-%else
+%endif
+%ifndef NO_VGA
 %include "drivers/vga.asm"
 %endif
 

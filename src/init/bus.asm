@@ -29,11 +29,9 @@
 ; -----------------------------------------------------------------------------
 init_bus:
 
-%ifdef NO_LFB
 	; Output progress via serial
 	mov rsi, msg_bus
 	call os_debug_string
-%endif
 
 	mov rdi, bus_table		; Address of Bus Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
@@ -165,11 +163,11 @@ init_bus_usb_not_found:
 	; Output block to screen (4/8)
 	mov ebx, 6
 	call os_debug_block
-%else
+%endif
+
 	; Output progress via serial
 	mov rsi, msg_ok
 	call os_debug_string
-%endif
 
 	ret
 ; -----------------------------------------------------------------------------
