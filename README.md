@@ -54,7 +54,6 @@ BareMetal provides basic support for symmetric multiprocessing, network, and sto
 * Storage
   * NVMe
   * AHCI (SATA)
-  * IDE
   * Virtio-Blk
 * HID (Human Interface Devices)
   * Input

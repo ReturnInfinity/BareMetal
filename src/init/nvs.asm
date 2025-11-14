@@ -39,10 +39,6 @@ init_nvs_check_bus:
 	mov ax, [rsi]			; Load Class Code / Subclass Code
 	cmp ax, 0xFFFF			; Check if at end of list
 	je init_nvs_done		; No storage controller found
-%ifndef NO_ATA
-	cmp ax, 0x0101			; Mass Storage Controller (01) / ATA Controller (01)
-	je init_nvs_ata
-%endif
 %ifndef NO_AHCI
 	cmp ax, 0x0106			; Mass Storage Controller (01) / SATA Controller (06)
 	je init_nvs_ahci
@@ -74,14 +70,6 @@ init_nvs_virtio_blk:
 	sub rsi, 8			; Move RSI back to start of Bus record
 	mov edx, [rsi]			; Load value for os_bus_read/write
 	call virtio_blk_init
-	jmp init_nvs_done
-%endif
-
-%ifndef NO_ATA
-init_nvs_ata:
-	sub rsi, 8			; Move RSI back to start of Bus record
-	mov edx, [rsi]			; Load value for os_bus_read/write
-	call ata_init
 	jmp init_nvs_done
 %endif
 

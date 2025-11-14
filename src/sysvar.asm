@@ -71,7 +71,7 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
-os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=PS/2 Mouse, 2=Serial, 4=HPET, 5=xHCI
+os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 2=Serial, 4=HPET, 5=xHCI
 os_StackBase:		equ os_SystemVariables + 0x0020
 os_PacketBase:		equ os_SystemVariables + 0x0028
 sys_timer:		equ os_SystemVariables + 0x0048
@@ -102,7 +102,7 @@ os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interr
 ; DW - Starting at offset 512, increments by 2
 os_NumCores:		equ os_SystemVariables + 0x0200
 os_CoreSpeed:		equ os_SystemVariables + 0x0202
-os_nvsVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for ATA, 3 for Virtio Block
+os_nvsVar:		equ os_SystemVariables + 0x0208	; Bit 0 for NVMe, 1 for AHCI, 2 for Virtio SCSI, 3 for Virtio Block
 os_screen_x:		equ os_SystemVariables + 0x020A
 os_screen_y:		equ os_SystemVariables + 0x020C
 os_screen_ppsl:		equ os_SystemVariables + 0x020E

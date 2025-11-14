@@ -33,9 +33,6 @@
 %ifndef NO_VIRTIO
 %include "drivers/nvs/virtio-blk.asm"
 %endif
-%ifndef NO_ATA
-%include "drivers/nvs/ata.asm"
-%endif
 
 ; Network
 %ifndef NO_I8254X
