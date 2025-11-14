@@ -1,4 +1,5 @@
 <div align="center">
+<img src="doc/cheetah.png" alt="BareMetal Logo" width="120" height="120">
 
 # BareMetal
 **Just enough kernel**
