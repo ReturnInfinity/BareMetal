@@ -47,7 +47,6 @@ BareMetal provides basic support for symmetric multiprocessing, network, and sto
   * Gigabit
     * Intel 8254x Gigabit (e1000)
     * Intel 8257x Gigabit (e1000e)
-    * Realtek 816x/811x Gigabit (rtl8169)
   * 10 Gigabit
     * Intel 8259x 10 Gigabit (ixbge)
   * Virtual

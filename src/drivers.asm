@@ -50,7 +50,6 @@
 %ifndef NO_VIRTIO
 %include "drivers/net/virtio-net.asm"
 %endif
-; %include "drivers/net/r8169.asm"
 
 ; Video
 %ifndef NO_LFB
