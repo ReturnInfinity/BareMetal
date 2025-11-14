@@ -209,18 +209,6 @@ Return the amount of free memory.
 	OUT:	RAX = Free memory in Mebibytes (MiB)
 		All other registers preserved
 
-#### MOUSE
-
-Return details of the mouse
-
-	 IN:	Nothing
-	OUT:	RAX = Mouse details
-		All other registers preserved
-		Bits 63:48 - Padding
-		Bits 47:32 - Y position
-		Bits 31:16 - X position
-		Bits 15:0  - Buttons pressed
-
 #### SMP_ID
 
 Returns the APIC ID of the CPU that ran this function.
@@ -346,16 +334,6 @@ Configure an interface
 #### CALLBACK_NETWORK
 
 #### CALLBACK_KEYBOARD
-
-#### CALLBACK_MOUSE
-
-Set a callback for execution on mouse activity.
-
-	 IN:	Nothing
-	OUT:	RAX = Address of callback
-		All other registers preserved
-
-Set a callback of 0x0 to disable it.
 
 #### DUMP_MEM
 

@@ -60,7 +60,6 @@ BareMetal provides basic support for symmetric multiprocessing, network, and sto
 * HID (Human Interface Devices)
   * Input
     * PS/2 Keyboard
-    * PS/2 Mouse
     * USB Keyboard
     * Serial
   * Output

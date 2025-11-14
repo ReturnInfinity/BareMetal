@@ -38,10 +38,6 @@ b_system_free_memory:
 	mov eax, [os_MemAmount]
 	ret
 
-b_system_getmouse:
-	mov rax, [os_ps2_mouse]
-	ret
-
 ; CPU
 
 b_system_smp_get_id:
@@ -143,10 +139,6 @@ b_system_callback_network:
 	ret
 
 b_system_callback_keyboard:
-	ret
-
-b_system_callback_mouse:
-	mov [os_MouseCallback], rax
 	ret
 
 b_system_debug_dump_mem:
@@ -284,7 +276,7 @@ b_system_table:
 ; Basic
 	dw b_system_timecounter		; 0x00
 	dw b_system_free_memory		; 0x01
-	dw b_system_getmouse		; 0x02
+	dw none				; 0x02
 	dw none				; 0x03
 	dw none				; 0x04
 	dw none				; 0x05
@@ -391,7 +383,7 @@ b_system_table:
 	dw b_system_callback_timer	; 0x60
 	dw b_system_callback_network	; 0x61
 	dw b_system_callback_keyboard	; 0x62
-	dw b_system_callback_mouse	; 0x63
+	dw none				; 0x63
 	dw none				; 0x64
 	dw none				; 0x65
 	dw none				; 0x66

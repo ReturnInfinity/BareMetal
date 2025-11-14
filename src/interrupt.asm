@@ -73,68 +73,6 @@ int_serial:
 
 
 ; -----------------------------------------------------------------------------
-; Mouse interrupt. IRQ 0x0C, INT 0x2C
-; This IRQ runs whenever there is input on the mouse
-; Note: A PS/2 mouse sends one byte per interrupt. So this is triggered 3 or 4 times per mouse action.
-align 8
-int_mouse:
-	push rcx
-	push rax
-
-	call ps2_mouse_interrupt	; Call mouse interrupt code in PS/2 driver
-
-	; Check if the mouse driver has received a full packet
-	cmp word [os_ps2_mouse_count], 0
-	jne int_mouse_end		; Bail out if count isn't 0
-
-	; Check if the mouse interrupt has a callback to execute
-	cmp qword [os_MouseCallback], 0	; Is it valid?
-	je int_mouse_end		; If not then bail out
-
-	; We could do a 'call [os_MouseCallback]' here but that would not be ideal.
-	; A defective callback would hang the system if it never returned back to the
-	; interrupt handler. Instead, we modify the stack so that the callback is
-	; executed after the interrupt handler has finished. Once the callback has
-	; finished, the execution flow will pick up back in the program.
-	push rdi
-	push rsi
-	push rcx
-	mov rcx, [os_MouseCallback]	; RCX stores the callback function address
-	mov rsi, rsp			; Copy the current stack pointer to RSI
-	sub rsp, 8			; Subtract 8 since we add a 64-bit value to the stack
-	mov rdi, rsp			; Copy the 'new' stack pointer to RDI
-	movsq				; RCX
-	movsq				; RSI
-	movsq				; RDI
-	movsq				; Flags
-	movsq				; RAX
-	lodsq				; RIP
-	xchg rax, rcx
-	stosq				; Callback address
-	movsq				; CS
-	movsq				; Flags
-	lodsq				; RSP
-	sub rax, 8
-	stosq
-	movsq				; SS
-	mov [rax], rcx			; Original RIP
-	pop rcx
-	pop rsi
-	pop rdi
-
-int_mouse_end:
-	; Acknowledge the interrupt
-	mov ecx, APIC_EOI
-	xor eax, eax
-	call os_apic_write
-
-	pop rax
-	pop rcx
-	iretq
-; -----------------------------------------------------------------------------
-
-
-; -----------------------------------------------------------------------------
 ; HPET Timer 0 interrupt
 ; This IRQ runs whenever HPET Timer 0 expires
 align 8

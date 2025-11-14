@@ -56,15 +56,8 @@ ps2_init:
 	mov al, PS2_KBD_EN
 	call ps2_send_cmd
 
-	; Enable mouse
-;	mov al, PS2_COMMAND_AUX_EN
-;	call ps2_send_cmd
-
 	; Init keyboard
 	; TODO - set rate
-
-	; Init mouse
-	call ps2_mouse_init
 
 	; Set flag that the PS/2 keyboard was enabled
 	; TODO - Move to a ps2_keyboard_init function
@@ -77,21 +70,11 @@ ps2_init:
 	mov edi, 0x21
 	mov rax, int_keyboard
 	call create_gate
-init_64_no_ps2keyboard:
-	bt ebx, 0
-	jnc init_64_no_ps2mouse
-	mov edi, 0x2C
-	mov rax, int_mouse
-	call create_gate
-init_64_no_ps2mouse:
-
-	; Enable specific interrupts
+	; Enable specific interrupt
 	mov ecx, 1			; Keyboard IRQ
 	mov eax, 0x21			; Keyboard Interrupt Vector
 	call os_ioapic_mask_clear
-	mov ecx, 12			; Mouse IRQ
-	mov eax, 0x2C			; Mouse Interrupt Vector
-	call os_ioapic_mask_clear
+init_64_no_ps2keyboard:
 
 ps2_init_error:
 	ret
@@ -195,107 +178,6 @@ keyboard_done:
 ; -----------------------------------------------------------------------------
 
 
-;-----------------------------------------------------------------------------
-ps2_mouse_interrupt:
-	push rcx
-	push rbx
-	push rax
-
-	mov ecx, 1000
-	xor eax, eax
-mouse_wait:
-	in al, PS2_STATUS
-	dec cl
-	jnz mouse_getbyte
-	pop rax
-	pop rbx
-	pop rcx
-	iretq
-
-mouse_getbyte:
-	and al, 0x20			; Check bit 5 (set if data is from mouse)
-	jz mouse_wait			; If not, wait for more data
-	in al, PS2_DATA			; Get a byte of data from the mouse
-	mov cl, al			; Save the byte to CL
-;	in al, 0x61			; Read byte from keyboard controller unused port
-;	out 0x61, al			; Write same byte back to keyboard controller unused port
-	xor ebx, ebx
-	mov bl, [os_ps2_mouse_count]	; Get the byte counter
-	add ebx, os_ps2_mouse_packet	; Add the address of the mouse packet
-	mov [ebx], cl			; Store the byte in CL to the correct index into the mouse packet
-	inc byte [os_ps2_mouse_count]	; Increment the byte counter
-	mov bl, [os_ps2_mouse_count]	; Copy the byte counter value to BL
-	cmp bl, [packetsize]		; Compare byte counter to excepted packet size
-	jb mouse_end			; If below then bail out, wait for rest of packet
-	mov word [os_ps2_mouse_count], 0	; At this point we have a full packet. Clear the byte counter
-
-	; Process the mouse packet
-
-	; Get state of buttons as well as X/Y sign
-	xor eax, eax
-	mov al, [os_ps2_mouse_packet]	; State of the buttons
-	; TODO - Check X/Y overflow. If either are set then no movement, bail out
-	and al, 7			; Keep the low 3 bits for the buttons
-	mov [os_ps2_mouse_buttons], ax
-
-	; Process byte for Delta X - Left is negative (128-255), Right is positive (1-127)
-	mov bl, [os_ps2_mouse_packet+1]	; Load Delta X from mouse packet
-	cmp bl, 0			; Check if it was 0
-	je mouse_skip_x_movement
-	movsx eax, bl			; Sign extend the Delta for X movement
-	add [os_ps2_mouse_x], ax
-mouse_skip_x_movement:
-
-	; Process byte for Delta Y - Up is positive (1-127), Down is negative (128-255)
-	mov bl, [os_ps2_mouse_packet+2]	; Load Delta Y from mouse packet
-	cmp bl, 0			; Check if it was 0
-	je mouse_skip_y_movement	; If so, jump past setting cursor Y location
-	not bl				; Flip value since Y direction is, in my opinion, backwards - 0xFF becomes 0x00
-	inc bl				; Add 1
-	movsx eax, bl			; Sign extend the Delta for Y movement
-	add [os_ps2_mouse_y], ax
-mouse_skip_y_movement:
-
-	; Keep cursor on the screen
-	; X
-	mov bx, [os_screen_x]		; Screen X dimension in number of pixels
-	dec bx				; Decrement by one since valid pixels are 0 thru X-1
-	mov ax, [os_ps2_mouse_x]	; Get the current X value for the mouse location
-	cmp ax, 0xF000			; Check if it wrapped around below 0
-	ja checkx_min			; If so jump to min
-	cmp ax, bx			; Check X value against valid max pixel location
-	jbe checkx_end			; If less or equal then mouse cursor is on screen
-checkx_max:				; If greater then mouse cursor has moved off the right edge
-	mov [os_ps2_mouse_x], bx	; Set the mouse X location to Screen X-1
-	jmp checkx_end
-checkx_min:
-	xor ax, ax			; Clear AX
-	mov [os_ps2_mouse_x], ax	; Set the mouse X location to 0
-checkx_end:
-	; Y
-	mov bx, [os_screen_y]		; Screen Y dimension in number of pixels
-	dec bx				; Decrement by one since valid pixels are 0 thru Y-1
-	mov ax, [os_ps2_mouse_y]	; Get the current Y value for the mouse location
-	cmp ax, 0xF000			; Check if it wrapped around below 0
-	ja checky_min			; If so jump to min
-	cmp ax, bx			; Check Y value against valid max pixel location
-	jbe checky_end			; If less or equal then mouse cursor is on screen
-checky_max:				; If greater then mouse cursor has moved off the bottom edge
-	mov [os_ps2_mouse_y], bx	; Set the mouse Y location to Screen Y-1
-	jmp checky_end
-checky_min:
-	xor ax, ax			; Clear AX
-	mov [os_ps2_mouse_y], ax	; Set the mouse Y location to 0
-checky_end:
-
-mouse_end:
-	pop rax
-	pop rbx
-	pop rcx
-	ret
-; -----------------------------------------------------------------------------
-
-
 ; -----------------------------------------------------------------------------
 ; ps2_read_data - Read data from PS/2 port when it is ready
 ps2_read_data:
@@ -362,95 +244,6 @@ ps2wait_done:
 ; -----------------------------------------------------------------------------
 
 
-; -----------------------------------------------------------------------------
-; ps2_mouse_write/ps2_mouse_read
-;  IN:	AL = byte to send (ps2_mouse_write only)
-; OUT:	AL = byte received
-ps2_mouse_write:
-	mov dh, al
-	mov dl, 2
-	call ps2wait
-	mov al, PS2_AUX_WRITE
-	out PS2_CMD, al
-	call ps2wait
-	mov al, dh
-	out PS2_DATA, al
-	; no ret, fall into read code to read acknowledgement
-ps2_mouse_read:
-	mov dl, 1
-	call ps2wait
-	in al, PS2_DATA
-	ret
-; -----------------------------------------------------------------------------
-
-; Variables
-packetsize: db 0
-resolution: db 3 ; 8 count/mm
-samplerate: db 200 ; Decimal value - Samples/second
-
-ps2_mouse_init:
-	xor eax, eax
-	mov dl, 2			; Wait for write to be empty
-	call ps2wait
-	mov al, PS2_AUX_EN		; Enable mouse. Bit 5 of CCB should be clear
-	out PS2_CMD, al			; Send command to PS2 controller
-	call ps2_mouse_read		; Read acknowledgement
-	mov dl, 2			; Wait for write to be empty
-	call ps2wait
-
-	mov al, PS2_RD_CCB		; Command to Read "byte 0" from internal RAM
-	out PS2_CMD, al			; Send command to PS2 controller
-	mov dl, 1			; Wait for read to be empty
-	call ps2wait
-	in al, PS2_DATA			; Read data byte from PS2 controller
-	bt ax, 5			; Check if bit 5 is clear
-	jc ps2_mouse_init_fail		; If not, jump to end - no AUX
-
-	bts ax, 1			; Set bit 1 to enable second PS/2 port interrupts
-	btr ax, 5			; Clear bit 5 to enable second PS/2 port clock
-	mov bl, al			; Save new CCB value to BL
-	mov dl, 2
-
-	call ps2wait
-	mov al, PS2_WR_CCB		; Write next byte to "byte 0" of internal RAM
-	out PS2_CMD, al
-	call ps2wait
-	mov al, bl			; Restore new CCB value from BL
-	out PS2_DATA, al
-	mov dl, 1
-	call ps2wait			; Get optional acknowledgement
-
-	; Set mouse parameters
-	mov byte [packetsize], 3
-	mov al, PS2_SETDEFAULTS
-	call ps2_mouse_write
-	mov al, PS2_SETSAMPLERATE
-	call ps2_mouse_write
-	mov al, byte [samplerate]
-	call ps2_mouse_write
-	mov al, PS2_SETRESOLUTION
-	call ps2_mouse_write
-	mov al, byte [resolution]
-	call ps2_mouse_write
-	mov al, PS2_SETSCALING1TO1
-	call ps2_mouse_write
-	mov al, PS2_ENABLEPACKETSTREAM
-	call ps2_mouse_write
-
-	; Reset mouse variables
-	xor eax, eax
-	mov [os_ps2_mouse_count], ax
-	mov [os_ps2_mouse_buttons], ax
-	mov [os_ps2_mouse_x], ax
-	mov [os_ps2_mouse_y], ax
-
-	; Set flag that the PS/2 mouse was enabled
-	or qword [os_SysConfEn], 1 << 1
-
-ps2_mouse_init_fail:
-	ret
-; -----------------------------------------------------------------------------
-
 ; PS/2 Keyboard tables
 keylayoutlower:
 db 0x00, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0x0e, 0, 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', 0x1c, 0, 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', 0x27, '`', 0, '\', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0, 0, 0, ' ', 0
@@ -506,15 +299,6 @@ PS2_KBD_SET_LEDS	equ 0xED
 PS2_KBD_SCANSET		equ 0xF0
 PS2_KBD_RATE		equ 0xF3
 PS2_KBD_ENABLE		equ 0xF4
-
-; PS/2 Mouse Commands
-PS2_SETSCALING1TO1	equ 0xE6
-PS2_SETSCALING2TO1	equ 0xE7
-PS2_SETRESOLUTION	equ 0xE8
-PS2_SETSAMPLERATE	equ 0xF3
-PS2_ENABLEPACKETSTREAM	equ 0xF4
-PS2_DISABLEPACKETSTREAM	equ 0xF5
-PS2_SETDEFAULTS		equ 0xF6 ; Disables streaming, sets the packet rate to 100 per second, and resolution to 4 pixels per mm.
 
 
 ; =============================================================================

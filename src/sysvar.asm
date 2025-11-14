@@ -85,7 +85,6 @@ os_nvs_io:		equ os_SystemVariables + 0x00B0
 os_nvs_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
-os_MouseCallback:	equ os_SystemVariables + 0x00D8
 os_xHCI_Base:		equ os_SystemVariables + 0x00E0
 os_usb_evtoken:		equ os_SystemVariables + 0x00E8
 
@@ -97,7 +96,6 @@ os_AHCI_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
-os_ps2_mouse_packet:	equ os_SystemVariables + 0x0118
 os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interrupter 0
 
 
@@ -111,11 +109,6 @@ os_screen_ppsl:		equ os_SystemVariables + 0x020E
 os_screen_bpp:		equ os_SystemVariables + 0x0210
 os_pcie_count:		equ os_SystemVariables + 0x0212
 os_HPET_CounterMin:	equ os_SystemVariables + 0x0214
-os_ps2_mouse:		equ os_SystemVariables + 0x0218
-os_ps2_mouse_buttons:	equ os_SystemVariables + 0x0218 ; Button state, bit 0 - left, bit 1 - right, bit 3 - middle. 0-released, 1-pressed
-os_ps2_mouse_x:		equ os_SystemVariables + 0x021A ; Cursor screen position on X axis
-os_ps2_mouse_y:		equ os_SystemVariables + 0x021C ; Cursor screen position on Y axis
-os_ps2_mouse_count:	equ os_SystemVariables + 0x021E ; Byte counter
 os_boot_arch:		equ os_SystemVariables + 0x0220 ; Bit 0 set for legacy ports, bit 1 set for 60/64 support
 
 
