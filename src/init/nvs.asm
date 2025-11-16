@@ -45,7 +45,7 @@ init_nvs_check_bus:
 %endif
 %ifndef NO_VIRTIO
 	cmp ax, 0x0100			; Mass Storage Controller (01) / SCSI storage controller (00)
-	je init_nvs_virtio_blk
+	je init_nvs_virtio
 %endif
 	jmp init_nvs_check_bus		; Check Bus Table again
 
