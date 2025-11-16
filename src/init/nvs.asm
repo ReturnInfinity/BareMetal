@@ -11,7 +11,7 @@
 init_nvs:
 
 	; Output progress via serial
-	mov rsi, msg_nvs
+	mov esi, msg_nvs
 	call os_debug_string
 
 %ifndef NO_NVME
@@ -82,7 +82,7 @@ init_nvs_done:
 %endif
 
 	; Output progress via serial
-	mov rsi, msg_ok
+	mov esi, msg_ok
 	call os_debug_string
 
 	ret

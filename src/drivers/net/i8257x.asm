@@ -78,11 +78,11 @@ net_i8257x_init:
 	call net_i8257x_reset
 
 	; Store call addresses
-	mov rax, net_i8257x_config
+	mov eax, net_i8257x_config
 	mov [rdi+nt_config], rax
-	mov rax, net_i8257x_transmit
+	mov eax, net_i8257x_transmit
 	mov [rdi+nt_transmit], rax
-	mov rax, net_i8257x_poll
+	mov eax, net_i8257x_poll
 	mov [rdi+nt_poll], rax
 
 net_i8257x_init_error:

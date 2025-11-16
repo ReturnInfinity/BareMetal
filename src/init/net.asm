@@ -11,7 +11,7 @@
 init_net:
 
 	; Output progress via serial
-	mov rsi, msg_net
+	mov esi, msg_net
 	call os_debug_string
 
 	mov ax, [NIC_DeviceVendor_ID]	; Check for NIC driver definitions
@@ -38,7 +38,7 @@ init_net_probe_find_driver:
 	rol r8d, 16			; Swap the Device ID / Vendor ID
 	add rsi, 8			; Move RSI back to Class Code
 	xchg rsi, rdi
-	mov rsi, NIC_DeviceVendor_ID
+	mov esi, NIC_DeviceVendor_ID
 init_net_probe_find_next_driver:
 	lodsw				; Load a driver ID
 	mov bx, ax			; Save the driver ID
@@ -124,7 +124,7 @@ init_net_end:
 %endif
 
 	; Output progress via serial
-	mov rsi, msg_ok
+	mov esi, msg_ok
 	call os_debug_string
 
 	ret

@@ -176,9 +176,9 @@ ahci_init_search_ports_done:
 ahci_init_done:
 	bts word [os_nvsVar], 1	; Set the bit flag that AHCI has been initialized
 	mov rdi, os_nvs_io
-	mov rax, ahci_io
+	mov eax, ahci_io
 	stosq
-	mov rax, ahci_id
+	mov eax, ahci_id
 	stosq
 	pop rdx
 	pop rsi

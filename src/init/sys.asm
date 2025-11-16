@@ -28,7 +28,7 @@ init_sys_done:
 %endif
 
 	; Output progress via serial
-	mov rsi, msg_ready
+	mov esi, msg_ready
 	call os_debug_string
 
 	ret

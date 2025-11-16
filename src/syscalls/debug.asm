@@ -51,7 +51,7 @@ os_debug_dump_al_l:
 	pop rax
 	push rsi
 	push rcx
-	mov rsi, tchar
+	mov esi, tchar
 	mov rcx, 2
 	call b_output
 	pop rcx
@@ -76,7 +76,7 @@ os_debug_dump_mem:
 
 	push rsi			; Output '0x'
 	push rcx
-	mov rsi, os_debug_dump_mem_chars
+	mov esi, os_debug_dump_mem_chars
 	mov rcx, 2
 	call b_output
 	pop rcx
@@ -93,7 +93,7 @@ nextchar:
 	je os_debug_dump_mem_done_newline
 	push rsi			; Output ' '
 	push rcx
-	mov rsi, os_debug_dump_mem_chars+3
+	mov esi, os_debug_dump_mem_chars+3
 	mov rcx, 1
 	call b_output
 	pop rcx
@@ -130,7 +130,7 @@ os_debug_dump_mem_chars: db '0x: '
 os_debug_newline:
 	push rsi
 	push rcx
-	mov rsi, newline
+	mov esi, newline
 	mov rcx, 2
 	call b_output
 	pop rcx
@@ -146,7 +146,7 @@ os_debug_newline:
 os_debug_space:
 	push rsi
 	push rcx
-	mov rsi, space
+	mov esi, space
 	mov rcx, 1
 	call b_output
 	pop rcx

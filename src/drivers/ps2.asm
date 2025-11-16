@@ -68,7 +68,7 @@ ps2_init:
 	bt ebx, 0
 	jnc init_64_no_ps2keyboard
 	mov edi, 0x21
-	mov rax, int_keyboard
+	mov eax, int_keyboard
 	call create_gate
 	; Enable specific interrupt
 	mov ecx, 1			; Keyboard IRQ
@@ -121,11 +121,11 @@ keydown:
 	je keyboard_lowercase
 
 keyboard_uppercase:
-	mov rbx, keylayoutupper
+	mov ebx, keylayoutupper
 	jmp keyboard_processkey
 
 keyboard_lowercase:
-	mov rbx, keylayoutlower
+	mov ebx, keylayoutlower
 
 keyboard_processkey:			; Convert the scan code
 	add rbx, rax

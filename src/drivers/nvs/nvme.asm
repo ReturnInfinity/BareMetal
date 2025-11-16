@@ -174,9 +174,9 @@ nvme_init_LBA_end:
 nvme_init_done:
 	bts word [os_nvsVar], 0	; Set the bit flag that NVMe has been initialized
 	mov rdi, os_nvs_io
-	mov rax, nvme_io
+	mov eax, nvme_io
 	stosq
-	mov rax, nvme_id
+	mov eax, nvme_id
 	stosq
 	pop rdx
 	pop rsi
@@ -352,13 +352,13 @@ nvme_io_next_rpr:
 	stosq
 	sub rcx, 1
 	cmp rcx, 0
-	jne nvme_io_next_rpr	
+	jne nvme_io_next_rpr
 	pop rdi
 	mov rax, os_nvme_rpr
 	jmp nvme_io_calc_rpr2_end	; Write the address of the RPR2 data
 nvme_io_calc_rpr2_skip:
 	add rax, 4096
-nvme_io_calc_rpr2_end:	
+nvme_io_calc_rpr2_end:
 	stosq				; CDW8-9 PRP2
 	pop rcx				; Restore the sector count
 
@@ -463,7 +463,7 @@ NVMe_PMRCAP	equ 0xE00	; 4-byte Persistent Memory Region Capabilities
 NVMe_PMRCTL	equ 0xE04	; 4-byte Persistent Memory Region Control
 NVMe_PMRSTS	equ 0xE08	; 4-byte Persistent Memory Region Status
 NVMe_PMREBS	equ 0xE0C	; 4-byte Persistent Memory Region Elasticity Buffer Size
-NVMe_PMRSWTP	equ 0xE10	; 4-byte Persistent Memory Region Sustained Write Throughput 
+NVMe_PMRSWTP	equ 0xE10	; 4-byte Persistent Memory Region Sustained Write Throughput
 NVMe_PMRMSCL	equ 0xE14	; 4-byte Persistent Memory Region Memory Space Control Lower
 NVMe_PMRMSCU	equ 0xE18	; 4-byte Persistent Memory Region Memory Space Control Upper
 

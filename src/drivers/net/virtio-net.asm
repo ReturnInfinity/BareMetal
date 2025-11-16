@@ -199,11 +199,11 @@ virtio_net_init_cap_end:
 
 	; Store call addresses
 	sub rdi, 0x28
-	mov rax, net_virtio_config
+	mov eax, net_virtio_config
 	stosq
-	mov rax, net_virtio_transmit
+	mov eax, net_virtio_transmit
 	stosq
-	mov rax, net_virtio_poll
+	mov eax, net_virtio_poll
 	stosq
 
 virtio_net_init_error:
@@ -452,7 +452,7 @@ net_virtio_transmit:
 
 	; Create first entry in the Descriptor Table
 	mov rdi, r8
-	mov rax, virtio_net_hdr		; Address of the 12-byte virtio_net_hdr
+	mov eax, virtio_net_hdr		; Address of the 12-byte virtio_net_hdr
 	stosq				; 64-bit address
 	mov eax, 12
 	stosd				; 32-bit length

@@ -75,11 +75,11 @@ net_i8259x_init:
 	call net_i8259x_reset
 
 	; Store call addresses
-	mov rax, net_i8259x_config
+	mov eax, net_i8259x_config
 	mov [rdi+nt_config], rax
-	mov rax, net_i8259x_transmit
+	mov eax, net_i8259x_transmit
 	mov [rdi+nt_transmit], rax
-	mov rax, net_i8259x_poll
+	mov eax, net_i8259x_poll
 	mov [rdi+nt_poll], rax
 	mov eax, i8259x_MAX_DESC - 1
 	mov [rdi+nt_rx_tail], eax

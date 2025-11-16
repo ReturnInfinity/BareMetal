@@ -30,10 +30,10 @@
 init_bus:
 
 	; Output progress via serial
-	mov rsi, msg_bus
+	mov esi, msg_bus
 	call os_debug_string
 
-	mov rdi, bus_table		; Address of Bus Table in memory
+	mov edi, bus_table		; Address of Bus Table in memory
 	xor edx, edx			; Register 0 for Device ID/Vendor ID
 
 	; Check for PCIe first
@@ -124,6 +124,7 @@ init_bus_end:
 	call os_debug_block
 %endif
 
+%ifndef NO_XHCI
 init_bus_usb_search:
 	; Check Bus Table for a USB Controller
 	mov rsi, bus_table		; Load Bus Table address to RSI
@@ -145,14 +146,11 @@ init_bus_usb_find_driver:
 	mov dl, 0x02
 	call os_bus_read
 	shr eax, 8			; Shift Program Interface to AL
-%ifndef NO_XHCI
 	cmp al, 0x30			; PI for XHCI
 	je init_bus_usb_xhci_start
-%endif
 	add rsi, 8
 	jmp init_bus_usb_check
 
-%ifndef NO_XHCI
 init_bus_usb_xhci_start:
 	call xhci_init
 %endif
@@ -166,7 +164,7 @@ init_bus_usb_not_found:
 %endif
 
 	; Output progress via serial
-	mov rsi, msg_ok
+	mov esi, msg_ok
 	call os_debug_string
 
 	ret

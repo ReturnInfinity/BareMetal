@@ -11,14 +11,14 @@ init_hid:
 	; Configure the PS/2 keyboard and mouse (if they exist)
 	call ps2_init
 
+%ifndef NO_XHCI
 	; Enumerate USB devices
 	bt qword [os_SysConfEn], 5
 	jnc init_hid_done
 	sti
-%ifndef NO_XHCI
 	call xhci_enumerate_devices
-%endif
 	cli
+%endif
 
 init_hid_done:
 

@@ -22,10 +22,10 @@ vga_init:
 	mov dx, 0x03C8			; DAC Address Write Mode Register
 	out dx, al
 	mov dx, 0x03C9			; DAC Data Register
-	mov rbx, 16			; 16 lines
+	mov ebx, 16			; 16 lines
 nextlineq:
-	mov rcx, 16			; 16 colors
-	mov rsi, palette
+	mov ecx, 16			; 16 colors
+	mov esi, palette
 nexttritone:
 	lodsb
 	out dx, al
@@ -43,8 +43,8 @@ nexttritone:
 	mov dx, 0x03C8			; DAC Address Write Mode Register
 	out dx, al
 	mov dx, 0x03C9			; DAC Data Register
-	mov rsi, palette
-	add rsi, 18
+	mov esi, palette
+	add esi, 18
 	lodsb
 	out dx, al
 	lodsb
@@ -52,7 +52,7 @@ nexttritone:
 	lodsb
 	out dx, al
 
-	mov rax, vga_output_chars
+	mov eax, vga_output_chars
 	mov [0x100018], rax
 
 	ret

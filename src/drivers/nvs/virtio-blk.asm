@@ -105,7 +105,7 @@ virtio_blk_init_cap_end:
 	; Device Initialization (section 3.1)
 
 	; 3.1.1 - Step 1 -  Reset the device (section 2.4)
-	mov al, 0x00			
+	mov al, 0x00
 	mov [rsi+VIRTIO_DEVICE_STATUS], al
 virtio_blk_init_reset_wait:
 	mov al, [rsi+VIRTIO_DEVICE_STATUS]
@@ -202,9 +202,9 @@ virtio_blk_init_pop:
 virtio_blk_init_done:
 	bts word [os_nvsVar], 3	; Set the bit flag that Virtio Block has been initialized
 	mov rdi, os_nvs_io		; Write over the storage function addresses
-	mov rax, virtio_blk_io
+	mov eax, virtio_blk_io
 	stosq
-	mov rax, virtio_blk_id
+	mov eax, virtio_blk_id
 	stosq
 	pop rax
 	pop rbx
@@ -248,7 +248,7 @@ virtio_blk_io:
 					; FIXME: Add desc_index offset
 
 	; Add header to Descriptor Entry 0
-	mov rax, header			; Address of the header
+	mov eax, header			; Address of the header
 	stosq				; 64-bit address
 	mov eax, 16
 	stosd				; 32-bit length
@@ -267,7 +267,7 @@ virtio_blk_io:
 	add rdi, 2			; Skip Next as it is pre-populated
 
 	; Add footer to Descriptor Entry 3
-	mov rax, footer			; Address of the footer
+	mov eax, footer			; Address of the footer
 	stosq				; 64-bit address
 	mov eax, 1
 	stosd				; 32-bit length
@@ -276,7 +276,7 @@ virtio_blk_io:
 	add rdi, 2			; Skip Next as it is pre-populated
 
 	; Build the header
-	mov rdi, header
+	mov edi, header
 	; BareMetal I/O opcode for Read is 2, Write is 1
 	; Virtio-blk I/O opcode for Read is 0, Write is 1
 	; FIXME: Currently we just clear bit 1.
@@ -290,7 +290,7 @@ virtio_blk_io:
 	stosq				; starting sector
 
 	; Build the footer
-	mov rdi, footer
+	mov edi, footer
 	xor eax, eax
 	stosb
 
@@ -331,7 +331,7 @@ virtio_blk_io_wait:
 
 
 ; -----------------------------------------------------------------------------
-; virtio_blk_id -- 
+; virtio_blk_id --
 ; IN:	EAX = CDW0
 ;	EBX = CDW1
 ;	ECX = CDW10
@@ -380,15 +380,15 @@ VIRTIO_BLK_MIN_IO_SIZE				equ 0x2E ; 16-bit SUGGESTED MINIMUM I/O SIZE IN BLOCKS
 VIRTIO_BLK_OPT_IO_SIZE				equ 0x30 ; 32-bit OPTIMAL (SUGGESTED MAXIMUM) I/O SIZE IN BLOCKS
 VIRTIO_BLK_WRITEBACK				equ 0x34 ; 8-bit
 VIRTIO_BLK_NUM_QUEUES				equ 0x36 ; 16-bit
-VIRTIO_BLK_MAX_DISCARD_SECTORS			equ 0x38 ; 32-bit 
-VIRTIO_BLK_MAX_DISCARD_SEG			equ 0x3C ; 32-bit 
-VIRTIO_BLK_DISCARD_SECTOR_ALIGNMENT		equ 0x40 ; 32-bit 
-VIRTIO_BLK_MAX_WRITE_ZEROES_SECTORS		equ 0x44 ; 32-bit 
-VIRTIO_BLK_MAX_WRITE_ZEROES_SEG			equ 0x48 ; 32-bit 
+VIRTIO_BLK_MAX_DISCARD_SECTORS			equ 0x38 ; 32-bit
+VIRTIO_BLK_MAX_DISCARD_SEG			equ 0x3C ; 32-bit
+VIRTIO_BLK_DISCARD_SECTOR_ALIGNMENT		equ 0x40 ; 32-bit
+VIRTIO_BLK_MAX_WRITE_ZEROES_SECTORS		equ 0x44 ; 32-bit
+VIRTIO_BLK_MAX_WRITE_ZEROES_SEG			equ 0x48 ; 32-bit
 VIRTIO_BLK_WRITE_ZEROES_MAY_UNMAP		equ 0x4C ; 8-bit
-VIRTIO_BLK_MAX_SECURE_ERASE_SECTORS		equ 0x50 ; 32-bit 
-VIRTIO_BLK_MAX_SECURE_ERASE_SEG			equ 0x54 ; 32-bit 
-VIRTIO_BLK_SECURE_ERASE_SECTOR_ALIGNMENT	equ 0x58 ; 32-bit 
+VIRTIO_BLK_MAX_SECURE_ERASE_SECTORS		equ 0x50 ; 32-bit
+VIRTIO_BLK_MAX_SECURE_ERASE_SEG			equ 0x54 ; 32-bit
+VIRTIO_BLK_SECURE_ERASE_SECTOR_ALIGNMENT	equ 0x58 ; 32-bit
 
 ; VIRTIO_DEVICEFEATURES bits
 VIRTIO_BLK_F_BARRIER			equ 0 ; Legacy - Device supports request barriers

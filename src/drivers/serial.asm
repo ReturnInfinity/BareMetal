@@ -27,7 +27,7 @@ serial_init_skip_arch:
 %ifdef NO_LFB
 	; Configure interrupt handler
 	mov edi, 0x24
-	mov rax, int_serial
+	mov eax, int_serial
 	call create_gate
 
 	; Enable specific interrupts
@@ -41,7 +41,7 @@ serial_init_skip_arch:
 	out dx, al
 %endif
 
-	mov rax, b_output_serial
+	mov eax, b_output_serial
 	mov [0x100018], rax		; Set kernel b_output to the serial port
 
 serial_init_error:
