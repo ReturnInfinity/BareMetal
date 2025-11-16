@@ -90,7 +90,7 @@ nvme_init_enable_wait:
 	mov ecx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
 	mov edx, 0x00000001		; CDW11 PC Enabled (0)
 	mov rdi, os_nvme_iocqb		; CDW6-7 DPTR
-	call nvme_admin
+	call nvs_nvme_admin
 
 	; Create I/O Submission Queue
 	mov eax, 0x00010001		; CDW0 CID (31:16), PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Create I/O Submission Queue (0x01)
@@ -98,7 +98,7 @@ nvme_init_enable_wait:
 	mov ecx, 0x003F0001		; CDW10 QSIZE 64 entries (31:16), QID 1 (15:0)
 	mov edx, 0x00010001		; CDW11 CQID 1 (31:16), PC Enabled (0)
 	mov rdi, os_nvme_iosqb		; CDW6-7 DPTR
-	call nvme_admin
+	call nvs_nvme_admin
 
 	; Save the Identify Controller structure
 	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
@@ -106,7 +106,7 @@ nvme_init_enable_wait:
 	mov ecx, NVMe_ID_CTRL		; CDW10 CNS
 	xor edx, edx			; CDW11 Ignored
 	mov rdi, os_nvme_CTRLID		; CDW6-7 DPTR
-	call nvme_admin
+	call nvs_nvme_admin
 
 	; Save the Active Namespace ID list
 	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
@@ -114,7 +114,7 @@ nvme_init_enable_wait:
 	mov ecx, NVMe_ANS		; CDW10 CNS
 	xor edx, edx			; CDW11 Ignored
 	mov rdi, os_nvme_ANS		; CDW6-7 DPTR
-	call nvme_admin
+	call nvs_nvme_admin
 
 	; Save the Identify Namespace data
 	mov eax, 0x00000006		; CDW0 CID 0, PRP used (15:14 clear), FUSE normal (bits 9:8 clear), command Identify (0x06)
@@ -122,7 +122,7 @@ nvme_init_enable_wait:
 	mov ecx, NVMe_ID_NS		; CDW10 CNS
 	xor edx, edx			; CDW11 Ignored
 	mov rdi, os_nvme_NSID		; CDW6-7 DPTR
-	call nvme_admin
+	call nvs_nvme_admin
 
 	; Parse the Controller Identify data
 	; Serial Number (SN) bytes 23-04
