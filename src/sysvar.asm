@@ -71,7 +71,7 @@ app_start:		equ 0xFFFF800000000000	; Location of application memory
 ; DQ - Starting at offset 0, increments by 8
 os_LocalAPICAddress:	equ os_SystemVariables + 0x0000
 os_IOAPICAddress:	equ os_SystemVariables + 0x0008
-os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 2=Serial, 4=HPET, 5=xHCI
+os_SysConfEn:		equ os_SystemVariables + 0x0010	; Enabled bits: 0=PS/2 Keyboard, 1=x2APIC, 2=Serial, 4=HPET, 5=xHCI
 os_StackBase:		equ os_SystemVariables + 0x0020
 os_PacketBase:		equ os_SystemVariables + 0x0028
 sys_timer:		equ os_SystemVariables + 0x0048
@@ -85,6 +85,7 @@ os_nvs_io:		equ os_SystemVariables + 0x00B0
 os_nvs_id:		equ os_SystemVariables + 0x00B8
 os_screen_lfb:		equ os_SystemVariables + 0x00C0
 os_virtioblk_base:	equ os_SystemVariables + 0x00C8
+os_virtioscsi_base:	equ os_SystemVariables + 0x00C8
 os_xHCI_Base:		equ os_SystemVariables + 0x00E0
 os_usb_evtoken:		equ os_SystemVariables + 0x00E8
 

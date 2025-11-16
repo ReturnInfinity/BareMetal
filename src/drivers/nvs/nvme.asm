@@ -7,7 +7,7 @@
 
 
 ; -----------------------------------------------------------------------------
-nvme_init:
+nvs_nvme_init:
 	push rsi			; Used in init_storage
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 
@@ -174,9 +174,9 @@ nvme_init_LBA_end:
 nvme_init_done:
 	bts word [os_nvsVar], 0	; Set the bit flag that NVMe has been initialized
 	mov rdi, os_nvs_io
-	mov eax, nvme_io
+	mov eax, nvs_nvme_io
 	stosq
-	mov eax, nvme_id
+	mov eax, nvs_nvme_id
 	stosq
 	pop rdx
 	pop rsi
@@ -193,7 +193,7 @@ nvme_init_error:
 
 
 ; -----------------------------------------------------------------------------
-; nvme_admin -- Perform an Admin operation on a NVMe controller
+; nvs_nvme_admin -- Perform an Admin operation on a NVMe controller
 ; IN:	EAX = CDW0
 ;	EBX = CDW1
 ;	ECX = CDW10
@@ -201,7 +201,7 @@ nvme_init_error:
 ;	RDI = CDW6-7
 ; OUT:	Nothing
 ;	All other registers preserved
-nvme_admin:
+nvs_nvme_admin:
 	push r9
 	push rdi
 	push rdx
@@ -278,7 +278,7 @@ nvme_admin_wait:
 
 
 ; -----------------------------------------------------------------------------
-; nvme_io -- Perform an I/O operation on a NVMe device
+; nvs_nvme_io -- Perform an I/O operation on a NVMe device
 ; IN:	RAX = starting sector #
 ;	RBX = I/O Opcode
 ;	RCX = number of sectors
@@ -286,7 +286,7 @@ nvme_admin_wait:
 ;	RDI = memory location used for reading/writing data from/to device
 ; OUT:	Nothing
 ;	All other registers preserved
-nvme_io:
+nvs_nvme_io:
 	push rdi
 	push rcx
 	push rbx
@@ -417,12 +417,12 @@ nvme_io_error:
 
 
 ; -----------------------------------------------------------------------------
-; nvme_id -- Identify a NVMe device
+; nvs_nvme_id -- Identify a NVMe device
 ; IN:	RBX = NameSpace ID
 ;	RDI = memory location to store data
 ; OUT:	Nothing
 ;	All other registers preserved
-nvme_id:
+nvs_nvme_id:
 	ret
 ; -----------------------------------------------------------------------------
 

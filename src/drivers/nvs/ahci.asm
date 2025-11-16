@@ -7,7 +7,7 @@
 
 
 ; -----------------------------------------------------------------------------
-ahci_init:
+nvs_ahci_init:
 	push rsi			; Used in init_storage
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 
@@ -176,9 +176,9 @@ ahci_init_search_ports_done:
 ahci_init_done:
 	bts word [os_nvsVar], 1	; Set the bit flag that AHCI has been initialized
 	mov rdi, os_nvs_io
-	mov eax, ahci_io
+	mov eax, nvs_ahci_io
 	stosq
-	mov eax, ahci_id
+	mov eax, nvs_ahci_id
 	stosq
 	pop rdx
 	pop rsi
@@ -203,7 +203,7 @@ ahci_init_error:
 ;	RDI = memory location used for reading/writing data from/to device
 ; OUT:	Nothing
 ;	All other registers preserved
-ahci_io:
+nvs_ahci_io:
 	push r8
 	push rdx
 	push rbx
@@ -354,7 +354,7 @@ achi_io_error:
 ; IN:	RDX = Port # to query
 ;	RDI = memory location to store details (512 bytes)
 ; OUT:	Nothing, all registers preserved
-ahci_id:
+nvs_ahci_id:
 	push rdi
 	push rsi
 	push rdx

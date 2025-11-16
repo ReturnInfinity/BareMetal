@@ -7,28 +7,11 @@
 
 
 ; -----------------------------------------------------------------------------
-virtio_blk_init:
+nvs_virtio_blk_init:
 	push rsi
 	push rdx			; RDX should already point to a supported device for os_bus_read/write
 	push rbx
 	push rax
-
-	; Verify this driver supports the Vendor
-	mov eax, [rsi+4]		; Offset to Vendor/Device ID in the Bus Table
-	mov rsi, virtio_blk_driverid
-	mov bx, [rsi]			; Load the Vendor (0x1AF4)
-	cmp ax, bx
-	jne virtio_blk_init_error	; Bail out if it wasn't a match
-
-	; Verify this driver support the Device
-	shr eax, 16			; Move Device ID into AX
-virtio_blk_init_next_dev:
-	add rsi, 2
-	mov bx, [rsi]			; Load the Device
-	cmp bx, 0			; End of list?
-	je virtio_blk_init_error	; If so, bail out
-	cmp ax, bx			; Check against the list
-	jne virtio_blk_init_next_dev	; No match? Try next entry
 
 	; Grab the Base I/O Address of the device
 	mov al, 4			; Read BAR4
@@ -202,9 +185,9 @@ virtio_blk_init_pop:
 virtio_blk_init_done:
 	bts word [os_nvsVar], 3	; Set the bit flag that Virtio Block has been initialized
 	mov rdi, os_nvs_io		; Write over the storage function addresses
-	mov eax, virtio_blk_io
+	mov eax, nvs_virtio_blk_io
 	stosq
-	mov eax, virtio_blk_id
+	mov eax, nvs_virtio_blk_id
 	stosq
 	pop rax
 	pop rbx
@@ -225,7 +208,7 @@ virtio_blk_init_error:
 
 
 ; -----------------------------------------------------------------------------
-; virtio_blk_io -- Perform an I/O operation on a VIRTIO Block device
+; nvs_virtio_blk_io -- Perform an I/O operation on a VIRTIO Block device
 ; IN:	RAX = starting sector #
 ;	RBX = I/O Opcode
 ;	RCX = number of sectors
@@ -233,7 +216,7 @@ virtio_blk_init_error:
 ;	RDI = memory location used for reading/writing data from/to device
 ; OUT:	Nothing
 ;	All other registers preserved
-virtio_blk_io:
+nvs_virtio_blk_io:
 	push r9
 	push rdi
 	push rdx
@@ -331,7 +314,7 @@ virtio_blk_io_wait:
 
 
 ; -----------------------------------------------------------------------------
-; virtio_blk_id --
+; nvs_virtio_blk_id --
 ; IN:	EAX = CDW0
 ;	EBX = CDW1
 ;	ECX = CDW10
@@ -339,7 +322,7 @@ virtio_blk_io_wait:
 ;	RDI = CDW6-7
 ; OUT:	Nothing
 ;	All other registers preserved
-virtio_blk_id:
+nvs_virtio_blk_id:
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -348,13 +331,6 @@ notify_offset: dq 0
 notify_offset_multiplier: dq 0
 descindex: dw 0
 availindex: dw 1
-
-; Driver
-virtio_blk_driverid:
-dw 0x1AF4				; Vendor ID
-dw 0x1001				; Device ID - legacy
-dw 0x1042				; Device ID - v1.0
-dw 0x0000				; End of list
 
 align 16
 footer:

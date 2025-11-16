@@ -31,7 +31,9 @@
 %include "drivers/nvs/ahci.asm"
 %endif
 %ifndef NO_VIRTIO
+%include "drivers/nvs/virtio.asm"
 %include "drivers/nvs/virtio-blk.asm"
+%include "drivers/nvs/virtio-scsi.asm"
 %endif
 
 ; Network
