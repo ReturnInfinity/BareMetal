@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/ReturnInfinity/BareMetal/actions/workflows/main.yml/badge.svg)](https://github.com/ReturnInfinity/BareMetal/actions/workflows/main.yml)
 
-<sub>Exokernel • Pure Assembly • Virtual/Physical</sub>
+<sub>Exokernel • 100% Assembly • Virtual/Physical</sub>
 </div>
 
 Official repo of the BareMetal [exokernel](http://en.wikipedia.org/wiki/Exokernel). It's written from scratch in Assembly, designed for x86-64 hardware, with no dependencies except for the virtual/physical hardware. An ARM and/or RISC-V rewrite would be considered once hardware is standardized.
@@ -26,13 +26,10 @@ BareMetal is a _very_ lean kernel. The name is a play on the phrase "bare metal"
 
 BareMetal provides basic support for symmetric multiprocessing, network, and storage access via a low-level abstraction layer.
 
-![BareMetal Model](./doc/BareMetal-Model.png)
-
-
 ## Key features
-* **64-bit**: Make use of the extra-wide and additional registers available in 64-bit mode.
+* **64-bit only**: Make use of the extra-wide and additional registers available in 64-bit mode.
 * **Mono-processing, multi-core**: The system is able to execute a single program but can spread the work load amongst available CPU cores.
-* **Extremely tiny memory footprint**: The kernel binary is less than 32KiB. BareMetal uses 4 MiB of RAM while running. The majority of RAM usage is for required memory structures for operating in 64-bit mode, drivers/system buffers, and CPU stacks.
+* **Extremely tiny memory footprint**: The kernel binary is less than 32KiB. BareMetal uses 4 MiB of RAM while running. The majority of its RAM usage is for required memory structures while operating in 64-bit mode, drivers/system buffers, and CPU stacks. All other system memory is dedicated to the running program.
 * **Physical and virtual hardware support** with full virtualization, using [x86 hardware virtualization](https://en.wikipedia.org/wiki/X86_virtualization) whenever available (it is on most modern x86-64 CPU's). In principle BareMetal should run on any x86-64 hardware platform, even on a physical x86-64 computer, given appropriate drivers. Officially, we develop on [QEMU](http://www.qemu.org) and [VirtualBox](https://www.virtualbox.org), which means that you can run BareMetal on both Linux, Microsoft Windows, and Apple macOS.
 
 ## Supported Hardware
