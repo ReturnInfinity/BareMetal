@@ -52,6 +52,9 @@ init_64:
 	mov [os_pcie_count], ax
 	lodsw
 	mov [os_boot_arch], ax
+	mov esi, 0x000050E1		; x2APIC enabled
+	lodsb
+	mov [os_x2APIC], al
 	mov esi, 0x000050E2
 	lodsb
 	mov [os_boot_mode], al

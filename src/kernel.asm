@@ -46,12 +46,16 @@ start:
 start_payload:
 	cmp byte [os_payload], 0
 	je ap_clear			; If no payload was present then skip to ap_clear
-	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
+	mov ecx, APIC_TPR
 	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
-	mov dword [rsi+0x80], eax	; APIC Task Priority Register (TPR)
-	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
-	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
-	mov [os_BSP], al		; Keep a record of the BSP APIC ID
+	call os_apic_write
+	mov ecx, APIC_ID
+	call os_apic_read
+	cmp byte [os_x2APIC], 1		; Check for x2APIC
+	je start_payload_skip_shift	; If enabled skip the shr
+	shr rax, 24		; AL now holds the CPU's APIC ID (0 - 255)
+start_payload_skip_shift:
+	mov [os_BSP], eax		; Keep a record of the BSP APIC ID
 	mov ebx, eax			; Save the APIC ID
 	mov rdi, os_SMP			; Clear the entry in the work table
 	shl rax, 3			; Quick multiply by 8 to get to proper record
@@ -68,6 +72,10 @@ align 16
 ap_clear:				; All cores start here on first start-up and after an exception
 	cli				; Disable interrupts on this core
 
+	cmp byte [os_x2APIC], 1
+	je ap_clear_x2apic
+
+ap_clear_apic:
 	; Get local ID of the core
 	mov rsi, [os_LocalAPICAddress]	; We can't use b_smp_get_id as no configured stack yet
 	xor eax, eax			; Clear Task Priority (bits 7:4) and Task Priority Sub-Class (bits 3:0)
@@ -75,7 +83,18 @@ ap_clear:				; All cores start here on first start-up and after an exception
 	mov eax, dword [rsi+0x20]	; APIC ID in upper 8 bits
 	shr eax, 24			; Shift to the right and AL now holds the CPU's APIC ID
 	mov ebx, eax			; Save the APIC ID
+	jmp ap_clear_apic_done
 
+ap_clear_x2apic:
+	mov ecx, 0x808			; x2APIC TPR
+	xor eax, eax
+	xor edx, edx
+	wrmsr
+	mov ecx, 0x802			; x2APIC ID
+	rdmsr
+	mov ebx, eax			; Save the APIC ID
+
+ap_clear_apic_done:
 	; Clear the entry in the work table
 	mov rdi, os_SMP
 	shl rax, 3			; Quick multiply by 8 to get to proper record

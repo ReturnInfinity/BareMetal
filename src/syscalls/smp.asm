@@ -8,14 +8,17 @@
 
 ; -----------------------------------------------------------------------------
 ; b_smp_reset -- Resets a CPU Core
-;  IN:	AL = CPU #
+;  IN:	EAX = CPU #
 ; OUT:	Nothing. All registers preserved.
 ; Note:	This code resets an AP for set-up use only.
 b_smp_reset:
 	push rcx
 	push rax
-
 	cli
+
+	cmp byte [os_x2APIC], 1	; Check for x2APIC
+	je b_smp_reset_x2apic
+
 b_smp_reset_wait:
 	mov ecx, APIC_ICRL
 	call os_apic_read
@@ -29,8 +32,16 @@ b_smp_reset_wait:
 	xor eax, eax		; Clear EAX, namely bits 31:24
 	mov al, 0x81		; Execute interrupt 0x81
 	call os_apic_write	; Then write to the low bits
-	sti
+	jmp b_smp_reset_done
 
+b_smp_reset_x2apic:
+	mov ecx, APIC_ICR
+	shl rax, 32		; Shift APIC ID into upper 32 bits
+	mov al, 0x81		; Execute interrupt 0x81
+	call os_apic_write	; Then write to the low bits
+
+b_smp_reset_done:
+	sti
 	pop rax
 	pop rcx
 	ret
@@ -39,13 +50,16 @@ b_smp_reset_wait:
 
 ; -----------------------------------------------------------------------------
 ; b_smp_wakeup -- Wake up a CPU Core
-;  IN:	AL = CPU #
+;  IN:	EAX = CPU #
 ; OUT:	Nothing. All registers preserved.
 b_smp_wakeup:
 	push rcx
 	push rax
-
 	cli
+
+	cmp byte [os_x2APIC], 1	; Check for x2APIC
+	je b_smp_wakeup_x2apic
+
 b_smp_wakeup_wait:
 	mov ecx, APIC_ICRL
 	call os_apic_read
@@ -57,10 +71,18 @@ b_smp_wakeup_wait:
 	call os_apic_write	; Write to the high bits first
 	mov ecx, APIC_ICRL
 	xor eax, eax		; Clear EAX, namely bits 31:24
-	mov al, 0x80		; Execute interrupt 0x81
+	mov al, 0x80		; Execute interrupt 0x80
 	call os_apic_write	; Then write to the low bits
-	sti
+	jmp b_smp_wakeup_done
 
+b_smp_wakeup_x2apic:
+	mov ecx, APIC_ICR
+	shl rax, 32
+	mov al, 0x80		; Execute interrupt 0x80
+	call os_apic_write
+
+b_smp_wakeup_done:
+	sti
 	pop rax
 	pop rcx
 	ret
@@ -74,8 +96,11 @@ b_smp_wakeup_wait:
 b_smp_wakeup_all:
 	push rcx
 	push rax
-
 	cli
+
+	cmp byte [os_x2APIC], 1	; Check for x2APIC
+	je b_smp_wakeup_all_x2apic
+
 b_smp_wakeup_all_wait:
 	mov ecx, APIC_ICRL
 	call os_apic_read
@@ -87,8 +112,15 @@ b_smp_wakeup_all_wait:
 	mov ecx, APIC_ICRL
 	mov eax, 0x000C0080	; Execute interrupt 0x80 on All Excluding Self (0xC)
 	call os_apic_write	; Then write to the low bits
-	sti
+	jmp b_smp_wakeup_all_done
 
+b_smp_wakeup_all_x2apic:
+	mov ecx, APIC_ICR
+	mov eax, 0x000C0080	; Execute interrupt 0x80 on All Excluding Self (0xC)
+	call os_apic_write
+
+b_smp_wakeup_all_done:
+	sti
 	pop rax
 	pop rcx
 	ret
@@ -103,9 +135,14 @@ b_smp_get_id:
 	push rcx
 
 	mov ecx, APIC_ID
-	call os_apic_read	; Write to the high bits first
+	call os_apic_read
+
+	cmp byte [os_x2APIC], 1	; Check for x2APIC
+	je b_smp_get_id_done	; If enabled skip the shr
+
 	shr rax, 24		; AL now holds the CPU's APIC ID (0 - 255)
 
+b_smp_get_id_done:
 	pop rcx
 	ret
 ; -----------------------------------------------------------------------------
