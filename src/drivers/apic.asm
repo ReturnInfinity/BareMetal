@@ -20,27 +20,59 @@ os_apic_init:
 
 
 ; -----------------------------------------------------------------------------
-; os_apic_read -- Read from a register in the APIC
+; os_apic_read -- Read from a register in the APIC/x2APIC
 ;  IN:	ECX = Register to read
-; OUT:	EAX = Register value
+; OUT:	RAX = Register value
 ;	All other registers preserved
 os_apic_read:
+	cmp byte [os_x2APIC], 1
+	je os_apic_read_x2
+
+os_apic_read_x:
 	mov rax, [os_LocalAPICAddress]
 	mov eax, [rax + rcx]
+	ret
+
+os_apic_read_x2:
+	push rdx
+	push rcx
+	shr ecx, 4		; Convert xAPIC register to x2APIC
+	add ecx, 0x800		; Add MSR base offset
+	rdmsr			; Read to EDX:EAX
+	shl rdx, 32		; Shift to upper 32 bits
+	or rax, rdx		; Combine into RAX
+	pop rcx
+	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
 
 ; -----------------------------------------------------------------------------
-; os_apic_write -- Write to a register in the APIC
+; os_apic_write -- Write to a register in the APIC/x2APIC
 ;  IN:	ECX = Register to write
-;	EAX = Value to write
+;	RAX = Value to write
 ; OUT:	All registers preserved
 os_apic_write:
+	cmp byte [os_x2APIC], 1
+	je os_apic_write_x2
+
+os_apic_write_x:
 	push rcx
 	add rcx, [os_LocalAPICAddress]
 	mov [rcx], eax
 	pop rcx
+	ret
+
+os_apic_write_x2:
+	push rdx
+	push rcx
+	shr ecx, 4		; Convert xAPIC register to x2APIC
+	add ecx, 0x800		; Add MSR base offset
+	mov rdx, rax		; Copy RAX to RDX
+	shr rdx, 32		; Shift upper 32 bits to lower 32
+	wrmsr			; Write as EDX:EAX
+	pop rcx
+	pop rdx
 	ret
 ; -----------------------------------------------------------------------------
 
@@ -63,6 +95,7 @@ APIC_TMR	equ 0x180		; Trigger Mode Register (Starting Address)
 APIC_IRR	equ 0x200		; Interrupt Request Register (Starting Address)
 APIC_ESR	equ 0x280		; Error Status Register
 ; 0x290 - 0x2E0 are Reserved
+APIC_ICR	equ 0x300		; Interrupt Command Register - x2APIC
 APIC_ICRL	equ 0x300		; Interrupt Command Register (low 32 bits)
 APIC_ICRH	equ 0x310		; Interrupt Command Register (high 32 bits)
 APIC_LVT_TMR	equ 0x320		; LVT Timer Register

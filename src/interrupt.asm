@@ -113,12 +113,27 @@ ap_wakeup:
 align 8
 ap_reset:
 	; Don't use 'os_apic_write' as we can't guarantee the state of the stack
+
 	mov eax, ap_clear		; Set RAX to the address of ap_clear
 	mov [rsp], rax			; Overwrite the return address on the CPU's stack
+
+	cmp byte [os_x2APIC], 1
+	je ap_reset_x2apic
+
+ap_reset_apic:
 	mov rdi, [os_LocalAPICAddress]	; Acknowledge the IPI
 	add rdi, 0xB0
 	xor eax, eax
 	stosd
+	jmp ap_reset_done
+
+ap_reset_x2apic:
+	mov ecx, 0x80B			; Acknowledge the IPI
+	xor eax, eax
+	xor edx, edx
+	wrmsr
+
+ap_reset_done:
 	iretq				; Return from the IPI. CPU will execute code at ap_clear
 ; -----------------------------------------------------------------------------
 

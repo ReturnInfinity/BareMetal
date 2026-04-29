@@ -97,6 +97,7 @@ os_AHCI_PA:		equ os_SystemVariables + 0x0108	; Each set bit is an active port
 os_NVMeTotalLBA:	equ os_SystemVariables + 0x010C
 os_apic_ver:		equ os_SystemVariables + 0x0110
 os_HPET_Frequency:	equ os_SystemVariables + 0x0114
+os_BSP:			equ os_SystemVariables + 0x0118
 os_xhci_int0_count:	equ os_SystemVariables + 0x011C	; Incremented on xHCI Interrupter 0
 
 
@@ -121,6 +122,7 @@ os_BusEnabled:		equ os_SystemVariables + 0x0303	; 1 if PCI is enabled, 2 if PCIe
 os_NetEnabled:		equ os_SystemVariables + 0x0304	; 1 if a supported network card was enabled
 os_payload:		equ os_SystemVariables + 0x0305
 os_boot_mode:		equ os_SystemVariables + 0x0306
+os_x2APIC:		equ os_SystemVariables + 0x0307
 os_NVMeIRQ:		equ os_SystemVariables + 0x030C
 os_NVMeMJR:		equ os_SystemVariables + 0x030D
 os_NVMeMNR:		equ os_SystemVariables + 0x030E
@@ -134,7 +136,6 @@ os_AHCI_IRQ:		equ os_SystemVariables + 0x0315
 os_ioapic_ver:		equ os_SystemVariables + 0x0316
 os_ioapic_mde:		equ os_SystemVariables + 0x0317
 key_control:		equ os_SystemVariables + 0x0318
-os_BSP:			equ os_SystemVariables + 0x0319
 os_HPET_IRQ:		equ os_SystemVariables + 0x031A
 os_net_icount:		equ os_SystemVariables + 0x031B
 
