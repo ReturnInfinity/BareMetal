@@ -15,6 +15,7 @@ msg_64:			db 13, 10, '64', 0
 msg_bus:		db 13, 10, 'bus', 0
 msg_nvs:		db 13, 10, 'nvs', 0
 msg_net:		db 13, 10, 'net', 0
+msg_hid:		db 13, 10, 'hid', 0
 msg_ok:			db ' ok', 0
 msg_ready:		db 13, 10, 'system ready', 13, 10, 13, 10, 0
 

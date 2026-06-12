@@ -8,6 +8,10 @@
 
 ; -----------------------------------------------------------------------------
 init_hid:
+	; Output progress via serial
+	mov esi, msg_hid
+	call os_debug_string
+
 	; Configure the PS/2 keyboard and mouse (if they exist)
 	call ps2_init
 
@@ -18,6 +22,10 @@ init_hid_done:
 	mov ebx, 12
 	call os_debug_block
 %endif
+
+	; Output progress via serial
+	mov esi, msg_ok
+	call os_debug_string
 
 	ret
 ; -----------------------------------------------------------------------------

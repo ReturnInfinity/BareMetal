@@ -32,6 +32,7 @@ b_nvs_read_sector:
 	mov rcx, 1
 	mov ebx, 2			; Read opcode for driver
 	call [os_nvs_io]		; Call the non-volatile storage driver IO command
+	inc rax
 	add rdi, 4096
 	sub r8, 1
 	jne b_nvs_read_sector
@@ -72,6 +73,7 @@ b_nvs_write_sector:
 	mov rcx, 1
 	mov ebx, 1			; Write opcode for driver
 	call qword [os_nvs_io]		; Call the non-volatile driver IO command
+	inc rax
 	add rdi, 4096
 	sub r8, 1
 	jne b_nvs_write_sector
